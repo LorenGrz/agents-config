@@ -19,7 +19,8 @@
       "mcp__claude-in-chrome__read_network_requests",
       "mcp__claude_ai_Supabase__list_migrations",
       "Bash(systemctl is-active *)",
-      "Bash(pnpm -v)"
+      "Bash(pnpm -v)",
+      "Bash(*gemini-delegate.sh *)"
     ],
     "ask": [
       "Bash(aws * delete-*)",

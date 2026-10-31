@@ -37,6 +37,7 @@ Pick the model by task complexity, not by habit:
 - **Opus** (plan mode / `reasoner`) only reasons and decides — architecture, unknown-cause bugs, plan review, hard-to-reverse calls. Never does worker-type writing.
 - **Sonnet** (`worker`) writes all code/docs from an already-decided plan.
 - **Haiku** (`scout`) does light read-only lookups only.
+- **Gemini** (`gemini-delegate` skill, `agy`) for bulk mechanical writing or wide reading when Google's quota is the better spend; always review the diff and run the acceptance command (ADR 0010).
 
 When superpowers dispatches subagents (`subagent-driven-development`, `executing-plans`, `dispatching-parallel-agents`, `requesting-code-review`), set `subagent_type`:
 
