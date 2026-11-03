@@ -37,15 +37,48 @@ try {
   process.exit(0)
 }
 
-let ts
-try {
-  ts = require(require.resolve('typescript', { paths: [projectDir] }))
-} catch {
-  printManualEdit(`typescript not installed yet under ${projectDir}/node_modules`)
-  process.exit(0)
+// tsconfig is JSONC. Newer TypeScript builds (native 7.x) no longer expose
+// ts.parseConfigFileTextToJson, so fall back to a small comment/trailing-comma stripper.
+function parseJsonc(text) {
+  let out = ''
+  let inString = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inString) {
+      out += c
+      if (c === '\\') out += text[++i]
+      else if (c === '"') inString = false
+    } else if (c === '"') {
+      inString = true
+      out += c
+    } else if (c === '/' && text[i + 1] === '/') {
+      while (i < text.length && text[i] !== '\n') i++
+      out += '\n'
+    } else if (c === '/' && text[i + 1] === '*') {
+      i += 2
+      while (i < text.length && !(text[i] === '*' && text[i + 1] === '/')) i++
+      i++
+    } else {
+      out += c
+    }
+  }
+  return JSON.parse(out.replace(/,(\s*[}\]])/g, '$1'))
 }
 
-const parsed = ts.parseConfigFileTextToJson(tsconfigPath, raw)
+let parsed
+try {
+  const ts = require(require.resolve('typescript', { paths: [projectDir] }))
+  parsed = typeof ts.parseConfigFileTextToJson === 'function'
+    ? ts.parseConfigFileTextToJson(tsconfigPath, raw)
+    : { config: parseJsonc(raw) }
+} catch {
+  try {
+    parsed = { config: parseJsonc(raw) }
+  } catch {
+    printManualEdit(`could not parse ${path.basename(tsconfigPath)} safely`)
+    process.exit(0)
+  }
+}
 if (parsed.error || !parsed.config || !parsed.config.compilerOptions) {
   printManualEdit(`could not parse ${path.basename(tsconfigPath)} safely`)
   process.exit(0)

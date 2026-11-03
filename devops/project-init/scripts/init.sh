@@ -5,6 +5,10 @@
 #                 [--dir <path>] [--owner <owner>] [--project-number N]
 #                 [--force] [--install]
 #
+# Also installs the stack's skills/rules/MCP into .claude/ via
+# scripts/project-agents.sh; --with adds extra stacks (rn,aws,python,kotlin,
+# apex,docker,llm,supabase,jira).
+#
 # --owner defaults to `gh api user --jq .login` (if gh is authenticated),
 # else `git config github.user`, else it is required.
 #
@@ -26,6 +30,8 @@ Usage: init.sh --stack <react-vite|next|nestjs|node-ts> --name <name>
                      --jq .login` if gh is authenticated, else `git config
                      github.user`; required if neither resolves)
   --project-number   GitHub Project number, used as {{PROJECT_NUMBER}} (default: TBD)
+  --with             extra stacks for skills/rules/MCP, comma-separated
+                     (rn,aws,python,kotlin,apex,docker,llm,supabase,jira)
   --force            overwrite files that already exist
   --install          actually install the missing devDependencies (ESLint plus
                      any prettier/vitest/tsx the scripts use), write missing
@@ -52,6 +58,7 @@ NAME=""
 DIR="$(pwd)"
 OWNER=""
 PROJECT_NUMBER="TBD"
+WITH=""
 FORCE=0
 INSTALL=0
 
@@ -62,6 +69,7 @@ while [ $# -gt 0 ]; do
     --dir) DIR="$2"; shift 2 ;;
     --owner) OWNER="$2"; shift 2 ;;
     --project-number) PROJECT_NUMBER="$2"; shift 2 ;;
+    --with) WITH="$2"; shift 2 ;;
     --force) FORCE=1; shift ;;
     --install) INSTALL=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -194,15 +202,16 @@ generate_agents_md() {
 # eslint-config-next) is superseded by a flat config carrying the
 # typescript-code-quality rules. `nest new` now also defaults to oxlint with
 # no eslint.config.mjs at all, so nestjs gets the same override. node-ts has
-# no generator, so it additionally needs a pinned `typescript`
+# no generator, so it additionally needs a pinned `typescript` (react-vite pins
+# it too: `pnpm create vite` now installs TS 7, which typescript-eslint rejects)
 # (typescript-eslint doesn't support >=6.1 yet) and `@types/node` for the
 # tsconfig.json this skill ships for that stack.
 eslint_deps() {
   case "$STACK" in
     react-vite)
-      echo eslint @eslint/js globals typescript-eslint eslint-plugin-react-hooks eslint-plugin-react-refresh eslint-plugin-react-you-might-not-need-an-effect eslint-plugin-jsx-a11y ;;
+      echo eslint @eslint/js globals typescript-eslint eslint-plugin-react-hooks eslint-plugin-react-refresh eslint-plugin-react-you-might-not-need-an-effect eslint-plugin-jsx-a11y "typescript@^5" ;;
     next)
-      echo eslint-plugin-react-hooks eslint-plugin-react-you-might-not-need-an-effect eslint-plugin-jsx-a11y ;;
+      echo eslint-plugin-react-hooks eslint-plugin-react-you-might-not-need-an-effect eslint-plugin-jsx-a11y "typescript@^5" ;;
     nestjs)
       echo eslint @eslint/js globals typescript-eslint ;;
     node-ts)
@@ -367,24 +376,30 @@ ensure_package_manager() {
 # flags that are missing - see that script for why. node-ts isn't listed:
 # templates/node-ts/tsconfig.json already ships every flag turned on.
 ensure_tsconfig_strict() {
-  local tsconfig_path
+  local -a paths=()
   case "$STACK" in
-    react-vite) tsconfig_path="$DIR/tsconfig.app.json" ;;
-    next|nestjs) tsconfig_path="$DIR/tsconfig.json" ;;
+    # vite's tsconfig.node.json covers vite.config.ts, which eslint lints too;
+    # newer templates omit strict there (TS 6+ defaults it on) but the
+    # type-aware rules still require it explicitly.
+    react-vite) paths=("$DIR/tsconfig.app.json" "$DIR/tsconfig.node.json") ;;
+    next|nestjs) paths=("$DIR/tsconfig.json") ;;
     node-ts) return 0 ;;
   esac
 
-  if [ ! -f "$tsconfig_path" ]; then
-    echo "no tsconfig found at $tsconfig_path, skipping strictness check"
-    return
-  fi
+  local tsconfig_path
+  for tsconfig_path in "${paths[@]}"; do
+    if [ ! -f "$tsconfig_path" ]; then
+      echo "no tsconfig found at $tsconfig_path, skipping strictness check"
+      continue
+    fi
 
-  if [ "$INSTALL" != 1 ]; then
-    echo "Run with --install to ensure strict/noUncheckedIndexedAccess/noImplicitOverride/noFallthroughCasesInSwitch are set in $(basename "$tsconfig_path")."
-    return
-  fi
+    if [ "$INSTALL" != 1 ]; then
+      echo "Run with --install to ensure strict/noUncheckedIndexedAccess/noImplicitOverride/noFallthroughCasesInSwitch are set in $(basename "$tsconfig_path")."
+      continue
+    fi
 
-  node "$SKILL_DIR/scripts/ensure-tsconfig-strict.js" "$tsconfig_path" "$DIR"
+    node "$SKILL_DIR/scripts/ensure-tsconfig-strict.js" "$tsconfig_path" "$DIR"
+  done
 }
 
 # Last step: generator output plus this skill's templates won't match
@@ -405,3 +420,9 @@ ensure_package_manager
 print_or_install_deps
 ensure_tsconfig_strict
 run_format
+install_agent_scope() {
+  local hub; hub="$(cd "$SKILL_DIR/../.." && pwd)"
+  [ -x "$hub/scripts/project-agents.sh" ] || return 0
+  bash "$hub/scripts/project-agents.sh" --stack "$STACK${WITH:+,$WITH}" --dir "$DIR"
+}
+install_agent_scope

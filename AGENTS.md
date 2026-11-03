@@ -32,7 +32,9 @@ writing. Don't hand-edit those generated files; edit the repo and re-run `instal
    `devops/`, `meta/`, `productivity/`, `quality/`, `security/`). Each skill is a directory
    with its own `SKILL.md`; frontmatter needs `name` and a `description` that states when to
    use it.
-2. Run `./sync.sh` to refresh the flat `~/.claude/skills` mirror.
+2. Decide its scope: generic skills are global by default; stack-specific ones go under a stack in
+   `config/scopes.json` (installed per project by `scripts/project-agents.sh`, ADR 0011). Then run
+   `./sync.sh` to refresh the flat `~/.claude/skills` mirror (global skills only).
 3. Commit with a Conventional Commit subject (`feat:`, `fix:`, `docs:`, `refactor:`, ...).
 
 ## Repo conventions

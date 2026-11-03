@@ -18,7 +18,7 @@ Scaffold a new repo once, correctly, instead of re-deciding workflow per project
    - node-ts: just `mkdir <dir>`; `init.sh --install` creates `package.json` and `src/index.ts`
    Then run:
    ```
-   bash scripts/init.sh --stack <stack> --name <repo-name> --dir <path> [--owner <owner>] [--project-number N] --install
+   bash scripts/init.sh --stack <stack> --name <repo-name> --dir <path> [--owner <owner>] [--project-number N] --install [--with aws,llm,supabase,...]
    ```
    `--owner` defaults to `gh api user --jq .login` (if `gh` is authenticated), then `git config github.user`; pass it explicitly if neither resolves.
    Without `--install`, `init.sh` only prints the commands needed (devDependencies, missing package.json scripts); nothing is installed or written to `package.json` scripts.
@@ -94,3 +94,5 @@ Use `scripts/adopt.sh` instead of `init.sh` when the repo was **not** generated 
 - The project's `guard-branch.sh` hook blocks `git commit`/`git push` on dev/main, except the initial commit (no HEAD yet). It judges the repo the command targets (`git -C <dir>` or a leading `cd <dir> &&`), not the session cwd.
 - node-ts's ESLint config is `eslint.config.mjs` so it loads regardless of the package `"type"`.
 - After editing anything in this skill, run `bash scripts/e2e.sh --stack all` (generates all four stacks in temp dirs, runs `init.sh --install`, `verify-ci.sh`, and an idempotency re-run; never touches GitHub). It must end with every stack PASS.
+
+- `init.sh` also installs the stack's skills/rules/MCP into `.claude/` and `.mcp.json` via `scripts/project-agents.sh` (stacks in `config/scopes.json`; `--with` adds extra ones). Stack skills are NOT global anymore.

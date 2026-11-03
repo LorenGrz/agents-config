@@ -1,0 +1,38 @@
+{
+  "_comment": "Anything NOT listed under a stack is global (installed in ~/.claude by install.sh/sync.sh). Listed skills/rules are installed per project by scripts/project-agents.sh.",
+  "stacks": {
+    "react-vite": { "skills": ["react-scalable-frontend", "react-component-validator"], "rules": ["react"] },
+    "next": {
+      "skills": ["nextjs-ssr-frontend", "react-scalable-frontend", "react-component-validator", "api-contract-design"],
+      "rules": ["next", "react"]
+    },
+    "nestjs": {
+      "skills": ["nest-module-generator", "database-persistence-patterns", "api-contract-design", "auth-security-basics"],
+      "rules": ["nestjs"]
+    },
+    "node-ts": { "skills": [], "rules": [] },
+    "rn": {
+      "skills": ["react-native-mobile", "react-scalable-frontend", "react-component-validator", "api-contract-design"],
+      "rules": ["react"]
+    },
+    "aws": {
+      "skills": ["sam-deploy", "lambda-patterns", "iam-least-privilege", "cost-optimizer", "serverless-scanner"],
+      "rules": []
+    },
+    "python": { "skills": [], "rules": ["python"] },
+    "kotlin": { "skills": [], "rules": ["kotlin"] },
+    "apex": { "skills": ["apexlang"], "rules": [] },
+    "docker": { "skills": ["run-docker-environment"], "rules": [] },
+    "llm": { "skills": ["prompt-injection-defense"], "rules": [] },
+    "supabase": {
+      "skills": ["database-persistence-patterns"],
+      "rules": [],
+      "mcp": { "supabase": { "type": "http", "url": "https://mcp.supabase.com/mcp" } }
+    },
+    "jira": {
+      "skills": [],
+      "rules": [],
+      "mcp": { "atlassian": { "type": "http", "url": "https://mcp.atlassian.com/v1/mcp" } }
+    }
+  }
+}
