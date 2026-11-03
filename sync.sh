@@ -26,6 +26,13 @@ mkdir -p "$MIRROR"
 
 created=0 updated=0 pruned=0
 
+# Skills listed under a stack in config/scopes.json are project-scoped: they are
+# installed per project by scripts/project-agents.sh, never in the global mirror.
+SCOPES="$HUB/config/scopes.json"
+PROJECT_SKILLS=""
+[ -f "$SCOPES" ] && PROJECT_SKILLS="$(jq -r '[.stacks[].skills[]] | unique[]' "$SCOPES")"
+is_project_skill() { grep -qxF -- "$1" <<<"$PROJECT_SKILLS"; }
+
 # 1. Link every skill found two levels deep in the hub (<category>/<skill>/SKILL.md).
 #    This includes aws/<skill>/SKILL.md (cost-optimizer, iam-least-privilege,
 #    lambda-patterns, sam-deploy, serverless-scanner) now that aws/ is folded
@@ -34,6 +41,8 @@ while IFS= read -r skill_md; do
   dir="$(dirname "$skill_md")"
   name="$(basename "$dir")"
   link="$MIRROR/$name"
+
+  is_project_skill "$name" && continue
 
   if [ -L "$link" ]; then
     [ "$(readlink "$link")" = "$dir" ] && continue
@@ -51,6 +60,13 @@ for link in "$MIRROR"/*; do
   case "$(readlink "$link")" in
     "$HUB"/*) [ -e "$link" ] || { rm -f "$link"; pruned=$((pruned+1)); } ;;
   esac
+done
+
+# 2b. Remove mirror symlinks of project-scoped skills (e.g. left from when
+#     everything was global, or external ones like apexlang).
+for name in $PROJECT_SKILLS; do
+  link="$MIRROR/$name"
+  [ -L "$link" ] && { rm -f "$link"; pruned=$((pruned+1)); }
 done
 
 # 3. Ensure Antigravity config has access to the mirror.

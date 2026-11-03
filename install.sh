@@ -235,6 +235,32 @@ write_generated() {
   fi
 }
 
+# ---------------------------------------------------------------------------
+# link_rules — ~/.claude/rules holds symlinks to the GLOBAL rules only
+# (config/rules/*.md not listed under a stack in config/scopes.json).
+# Stack rules are installed per project by scripts/project-agents.sh.
+# ---------------------------------------------------------------------------
+link_rules() {
+  local dir="$CLAUDE_DIR/rules" scopes="$HUB/config/scopes.json" f name
+  if [ -L "$dir" ]; then
+    echo "replace symlink: $dir (was -> $(readlink "$dir")) with a real dir of per-rule links"
+    [ "$DRY_RUN" -eq 1 ] || { rm -f "$dir"; mkdir -p "$dir"; }
+  elif [ ! -d "$dir" ]; then
+    [ "$DRY_RUN" -eq 1 ] || mkdir -p "$dir"
+  fi
+  for f in "$HUB"/config/rules/*.md; do
+    name="$(basename "$f" .md)"
+    if jq -e --arg n "$name" '[.stacks[].rules[]] | index($n)' "$scopes" >/dev/null; then
+      if [ -L "$dir/$name.md" ]; then
+        echo "remove:  $dir/$name.md (project-scoped)"
+        [ "$DRY_RUN" -eq 1 ] || rm -f "$dir/$name.md"
+      fi
+    else
+      link "$f" "$dir/$name.md"
+    fi
+  done
+}
+
 echo
 echo "== generated config files =="
 if [ "$DRY_RUN" -eq 1 ]; then
@@ -262,7 +288,7 @@ write_generated "$CODEX_DIR/AGENTS.md" "$codex_agents_content"
 
 echo
 echo "== symlinks =="
-link "$HUB/config/rules"     "$CLAUDE_DIR/rules"
+link_rules
 link "$HUB/config/hooks"     "$CLAUDE_DIR/hooks"
 link "$HUB/config/agents"    "$CLAUDE_DIR/agents"
 

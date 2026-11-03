@@ -193,6 +193,22 @@ driving:
 In short: instructions (global layer) only guide Claude; repo enforcement (`project-init`)
 works for any AI *and* humans, because it lives in the tooling, not the prompt.
 
+### Global vs project scope
+
+`config/scopes.json` decides what is global and what is per stack (ADR
+[0011](docs/decisions/0011-global-vs-project-scope.md)); anything not listed is global.
+`install.sh`/`sync.sh` install only the global set (generic skills, `security`/`testing`/`typescript`
+rules). Stack skills, rules and MCP servers go into a repo on demand:
+
+```bash
+scripts/project-agents.sh --stack nestjs,aws,supabase --dir ~/projects/my-app
+# project-init does the same: init.sh --stack nestjs --with aws,supabase ...
+```
+
+Stacks: `react-vite`, `next`, `nestjs`, `node-ts`, `rn`, `aws`, `python`, `kotlin`, `apex`,
+`docker`, `llm`, `supabase`, `jira`. Files are copied into the project's `.claude/` (commit them);
+MCPs are merged into `.mcp.json`.
+
 ### When do I need `project-init`?
 
 | Situation | Action |

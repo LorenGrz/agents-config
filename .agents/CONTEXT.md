@@ -8,7 +8,7 @@ on-demand skills in category dirs. Public repo: never commit secrets.
 ## Layout
 - `development/ devops/ quality/ security/ productivity/ meta/ aws/` — skills (`<category>/<skill>/SKILL.md`); `aws/` came in via `git subtree` (ADR 0001).
 - `apexlang`, `omarchy`, `diagnose-crash` — external symlinks (gitignored / ship with Omarchy).
-- `config/` — `AGENTS.md`, `CLAUDE.md` (kept <=60 lines), `profiles/`, `settings.base.json`, `agents/` (scout/worker/reasoner), `rules/`, `hooks/` (*.sh), `rulesync/`.
+- `config/` — `AGENTS.md`, `CLAUDE.md` (kept <=60 lines), `profiles/`, `settings.base.json`, `agents/` (scout/worker/reasoner), `rules/`, `hooks/` (*.sh), `rulesync/`, `scopes.json` (global vs per-stack skills/rules/MCP).
 - `hooks/hooks.json` — generic plugin hooks (6 of the `config/hooks` scripts).
 - `.claude-plugin/` — `plugin.json` + `marketplace.json`.
 - `docs/decisions/` — ADRs 0001-0008 (index in its README).
@@ -17,7 +17,7 @@ on-demand skills in category dirs. Public repo: never commit secrets.
 
 ## How it is installed
 - `install.sh` generates `~/.claude/CLAUDE.md` (@-imports config AGENTS.md + profile + CLAUDE.md) and `~/.codex/AGENTS.md` (concatenated).
-- Symlinks `config/{rules,hooks,agents}` into `~/.claude/`.
+- Symlinks `config/{hooks,agents}` and the global `config/rules/*.md` (per file) into `~/.claude/`; stack skills/rules/MCP go per project via `scripts/project-agents.sh`.
 - Runs `sync.sh`: mirrors skills flat into `~/.claude/skills`.
 - Merges `config/settings.base.json` into `~/.claude/settings.json` (backup first; idempotent).
 - Alternative: plugin marketplace (skills + agents + generic hooks only).
