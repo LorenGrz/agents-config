@@ -5,11 +5,11 @@
 # re-runs init.sh and asserts the tree stays clean (idempotency). Run it after
 # editing anything under this skill. Never touches GitHub.
 #
-# Usage: e2e.sh [--stack <react-vite|next|nestjs|node-ts|python|all>] [--keep]
+# Usage: e2e.sh [--stack <react-vite|next|nestjs|node-ts|python|java-spring|java-spring-gradle|kotlin-spring|all>] [--keep]
 #   --keep   keep the temp dirs (and print their path) for inspection
 set -euo pipefail
 
-usage() { echo "Usage: e2e.sh [--stack <react-vite|next|nestjs|node-ts|python|all>] [--keep]"; }
+usage() { echo "Usage: e2e.sh [--stack <react-vite|next|nestjs|node-ts|python|java-spring|java-spring-gradle|kotlin-spring|all>] [--keep]"; }
 
 STACK="all"
 KEEP=0
@@ -22,10 +22,10 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-ALL_STACKS=(react-vite next nestjs node-ts python)
+ALL_STACKS=(react-vite next nestjs node-ts python java-spring java-spring-gradle kotlin-spring)
 case "$STACK" in
   all) STACKS=("${ALL_STACKS[@]}") ;;
-  react-vite|next|nestjs|node-ts|python) STACKS=("$STACK") ;;
+  react-vite|next|nestjs|node-ts|python|java-spring|java-spring-gradle|kotlin-spring) STACKS=("$STACK") ;;
   *) echo "Error: --stack must be one of react-vite|next|nestjs|node-ts|all" >&2; exit 1 ;;
 esac
 
@@ -57,12 +57,22 @@ generate() { # generate <stack> <dir>
       mkdir -p "$dir" ;;
     python)
       uv init --package --vcs none "$dir" ;;
+    java-spring|java-spring-gradle|kotlin-spring)
+      # Spring Initializr; a lowercase artifact/package name derived from the dir.
+      local type=maven-project lang=java
+      [ "$stack" = java-spring-gradle ] && type=gradle-project
+      [ "$stack" = kotlin-spring ] && { type=gradle-project-kotlin; lang=kotlin; }
+      mkdir -p "$dir"
+      curl -fsS https://start.spring.io/starter.zip -d type=$type -d language=$lang -d javaVersion=21 \
+        -d groupId=com.example -d artifactId="$base" -d name="$base" -d packageName="com.example.${base//-/}" \
+        -d dependencies=web,validation,actuator -o "$dir.zip"
+      unzip -q "$dir.zip" -d "$dir" && rm -f "$dir.zip" ;;
   esac
 }
 
 run_stack() { # run_stack <stack> <dir>
   local stack="$1" dir="$2"
-  local -a init_args=(--stack "$stack" --name "E2e-$stack" --dir "$dir" --owner e2e-owner --install)
+  local -a init_args=(--stack "${stack%-gradle}" --name "E2e-$stack" --dir "$dir" --owner e2e-owner --install)
 
   # `|| return 1` everywhere: this function runs inside `if`, where set -e is off.
   generate "$stack" "$dir" || return 1

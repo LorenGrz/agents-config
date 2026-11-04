@@ -16,13 +16,16 @@ Scaffold a new repo once, correctly, instead of re-deciding workflow per project
    - next: `pnpm create next-app@latest <dir> --yes --use-pnpm --disable-git`
    - nestjs: `pnpm dlx @nestjs/cli new <dir> --directory <dir> --package-manager pnpm --skip-git --no-observe`
    - node-ts: just `mkdir <dir>`; `init.sh --install` creates `package.json` and `src/index.ts`
+   - python: `uv init --package --vcs none <dir>`
+   - java-spring / kotlin-spring: Spring Initializr (`curl -fsS https://start.spring.io/starter.zip -d type=<t> -d language=<l> -d javaVersion=21 -d groupId=<g> -d artifactId=<dir> -d name=<dir> -d packageName=<g>.<pkg> -d dependencies=<deps> -o x.zip && unzip -q x.zip -d <dir>`). `type`: `maven-project` or `gradle-project` (Java), `gradle-project-kotlin` with `language=kotlin` (Kotlin supports Gradle only). `dependencies` comes from the interview (e.g. `web,validation,actuator`; `data-jpa,postgresql,flyway` for Postgres + Flyway). `init.sh` picks Maven or Gradle from the generated project (`pom.xml` / `build.gradle[.kts]`) and adds Spotless.
    Then run:
    ```
    bash scripts/init.sh --manifest <manifest> --dir <path> [--owner <owner>] [--project-number N] --install
    ```
-   `--manifest` supplies `--name`, `--stack` (its first stack) and `--with`, and writes `.agents/project.json`, one ADR per decision and the pending decisions into `.agents/CONTEXT.md`. Without a manifest, pass `--stack <stack> --name <repo-name> [--with aws,llm,supabase,...]` as before. Stacks without a template (`java-spring`, `kotlin-spring`, `python`) are refused for now.
+   `--manifest` supplies `--name`, `--stack` (its first stack) and `--with`, and writes `.agents/project.json`, one ADR per decision and the pending decisions into `.agents/CONTEXT.md`. Without a manifest, pass `--stack <stack> --name <repo-name> [--with aws,llm,supabase,...]` as before.
    `--owner` defaults to `gh api user --jq .login` (if `gh` is authenticated), then `git config github.user`; pass it explicitly if neither resolves.
    Without `--install`, `init.sh` only prints the commands needed (devDependencies, missing package.json scripts); nothing is installed or written to `package.json` scripts.
+   **Stack profiles.** Node stacks use pnpm defaults inside `init.sh`. Other stacks ship `templates/<stack>/stack.env` (commands, lint/format text, allowed commands), optional `@maven/` / `@gradle/` variant overlays and a `setup.sh` that patches the build file (Spotless, ruff/mypy/pytest). Stack files win over `templates/common` (`SKIP_COMMON` drops the ones that don't apply). For non-node stacks `init.sh` writes `.agents/stack.env`, which `scripts/gh-flow.sh pr` and `verify-ci.sh` use instead of `package.json` scripts.
 
 3. **Local git setup** (do this, do not delegate it):
    - `git init -b main` if the directory is not already a repo.
@@ -95,6 +98,6 @@ Use `scripts/adopt.sh` instead of `init.sh` when the repo was **not** generated 
 - The project's `guard-branch.sh` hook blocks `git commit`/`git push` on dev/main, except the initial commit (no HEAD yet). It judges the repo the command targets (`git -C <dir>` or a leading `cd <dir> &&`), not the session cwd.
 - node-ts's ESLint config is `eslint.config.mjs` so it loads regardless of the package `"type"`.
 - After editing the manifest/interview parts, run `bash scripts/test-manifest.sh` (offline, no network).
-- After editing anything in this skill, run `bash scripts/e2e.sh --stack all` (generates all four stacks in temp dirs, runs `init.sh --install`, `verify-ci.sh`, and an idempotency re-run; never touches GitHub). It must end with every stack PASS.
+- After editing anything in this skill, run `bash scripts/e2e.sh --stack all` (generates every stack, including `java-spring`, `java-spring-gradle`, `kotlin-spring` and `python`, in temp dirs, runs `init.sh --install`, `verify-ci.sh`, and an idempotency re-run; never touches GitHub). It must end with every stack PASS.
 
 - `init.sh` also installs the stack's skills/rules/MCP into `.claude/` and `.mcp.json` via `scripts/project-agents.sh` (stacks in `config/scopes.json`; `--with` adds extra ones). Stack skills are NOT global anymore.

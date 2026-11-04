@@ -15,7 +15,7 @@ Run before generating anything. Output: a manifest (`.agents/project.json`, sche
 | # | Key | Ask | Typical options |
 |---|---|---|---|
 | 1 | `org` | Which organization owns this project? | Detected one (see below) / another registered / personal (`null`) |
-| 2 | `stacks` | Stack | Scaffoldable today: `react-vite`, `next`, `nestjs`, `node-ts`. Other stacks have no template yet: record the choice, scaffold by hand |
+| 2 | `stacks` | Stack and build tool | `react-vite`, `next`, `nestjs`, `node-ts`, `python`, `java-spring` (Maven or Gradle), `kotlin-spring` (Gradle). `rn` and others have no template: record the choice, scaffold by hand |
 | 3 | `backend-style` | Backend architecture (only if a backend stack) | hexagonal + DDD per bounded context / modular monolith per feature / layered |
 | 4 | `frontend-style` | Frontend architecture (only if a frontend stack) | feature-sliced with barrels + lint boundaries / hexagonal (ports for API) / simple |
 | 5 | `data`, `auth` | Database, persistence and migrations; auth strategy | Ask each separately. Never assume |

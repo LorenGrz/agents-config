@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # init.sh - overlay project-init's templates onto a project directory.
 #
-# Usage: init.sh --stack <react-vite|next|nestjs|node-ts> --name <name>
+# Usage: init.sh --stack <react-vite|next|nestjs|node-ts|python|java-spring|kotlin-spring> --name <name>
 #                 [--dir <path>] [--owner <owner>] [--project-number N]
 #                 [--force] [--install] [--manifest <file>]
 #
@@ -19,11 +19,13 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: init.sh --stack <react-vite|next|nestjs|node-ts> --name <name>
+Usage: init.sh --stack <react-vite|next|nestjs|node-ts|python|java-spring|kotlin-spring> --name <name>
                [--dir <path>] [--owner <owner>] [--project-number N]
                [--force] [--install]
 
-  --stack            react-vite | next | nestjs | node-ts (required)
+  --stack            react-vite | next | nestjs | node-ts | python | java-spring |
+                     kotlin-spring (required). JVM stacks: generate the project first
+                     (pom.xml or build.gradle[.kts] decides Maven/Gradle)
   --name             project name, used as {{PROJECT}} (required)
   --dir              target directory (default: cwd)
   --owner            GitHub owner, used as {{OWNER}} (default: `gh api user
@@ -97,10 +99,8 @@ if [ -n "$MANIFEST" ]; then
 fi
 
 case "$STACK" in
-  react-vite|next|nestjs|node-ts|python) ;;
-  java-spring|kotlin-spring)
-    echo "Error: no project template for '$STACK' yet; scaffold it by hand and use scripts/adopt.sh for the docs layer" >&2; exit 1 ;;
-  *) echo "Error: --stack must be one of react-vite|next|nestjs|node-ts|python" >&2; exit 1 ;;
+  react-vite|next|nestjs|node-ts|python|java-spring|kotlin-spring) ;;
+  *) echo "Error: --stack must be one of react-vite|next|nestjs|node-ts|python|java-spring|kotlin-spring" >&2; exit 1 ;;
 esac
 [ -n "$NAME" ] || { echo "Error: --name is required" >&2; exit 1; }
 
@@ -509,7 +509,7 @@ write_stack_env() {
 run_stack_setup() {
   local s
   for s in "$STACK_DIR/setup.sh" "${VARIANT:+$STACK_DIR/@$VARIANT/setup.sh}"; do
-    [ -n "$s" ] && [ -f "$s" ] && DIR="$DIR" INSTALL="$INSTALL" bash "$s"
+    [ -n "$s" ] && [ -f "$s" ] && DIR="$DIR" INSTALL="$INSTALL" SKILL_DIR="$SKILL_DIR" bash "$s"
   done
   return 0
 }

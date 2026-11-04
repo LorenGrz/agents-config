@@ -57,8 +57,11 @@ Q="$W/app"; mkdir -p "$Q"
 bash "$SD/init.sh" --manifest "$W/ok.json" --dir "$Q" --owner e2e-owner >"$W/init.log" 2>&1
 check "init.sh --manifest takes name and stack from the manifest" '[ -f "$Q/AGENTS.md" ] && grep -q "shop-api" "$Q/.agents/CONTEXT.md"'
 check "init.sh --manifest writes project.json, ADRs and pending decisions" '[ -f "$Q/.agents/project.json" ] && [ -f "$Q/docs/decisions/0002-backend-style.md" ] && grep -q "^## Pending decisions" "$Q/.agents/CONTEXT.md"'
-check "extras reach project-agents; unknown stacks are filtered" 'ls "$Q/.claude/skills" | grep -q "sam-deploy" && ! grep -q "unknown stack" "$W/init.log"'
-check "init.sh refuses a stack without template" '! bash "$SD/init.sh" --stack java-spring --name x --dir "$W/j" --owner o >/dev/null 2>&1'
+check "extras and known extra stacks reach project-agents" 'ls "$Q/.claude/skills" | grep -q "sam-deploy" && [ -f "$Q/.claude/rules/java.md" ]'
+jq '.stacks = ["node-ts","zig"]' "$W/ok.json" > "$W/zig.json"; Z="$W/zig"; mkdir -p "$Z"
+bash "$SD/init.sh" --manifest "$W/zig.json" --dir "$Z" --owner e2e-owner >"$W/zig.log" 2>&1
+check "unknown extra stacks are filtered out" '[ -f "$Z/AGENTS.md" ] && ! grep -q "unknown stack" "$W/zig.log"'
+check "JVM stack needs the generated project first" 'out="$(bash "$SD/init.sh" --stack java-spring --name x --dir "$W/j" --owner o 2>&1)"; grep -q "generate the project first" <<<"$out"'
 
 echo; echo "$pass passed, $failn failed"
 [ "$failn" -eq 0 ]
