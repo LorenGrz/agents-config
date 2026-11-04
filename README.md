@@ -90,6 +90,8 @@ the generated `CLAUDE.md`/`AGENTS.md`/`settings.json` merge — use Method 1 for
 │   └── decisions/                 # ADRs for this hub's own structure (0001-single-repo.md, ...)
 │
 ├── aws/                        # AWS skills, folded in via `git subtree` (ADR 0001)
+├── packs/                      # skills + slash commands bundled by architecture (ADR 0014)
+├── organizations/              # private org repos (ignored) + contract and _template (ADR 0012)
 ├── development/                # building features (React, Next.js, NestJS, TS quality, ...)
 ├── devops/                     # repo/release lifecycle — includes project-init (see below)
 ├── quality/                    # review and tests
@@ -108,6 +110,19 @@ your own project/tool paths) lives in `config/profiles/<your-name>.md`, never in
 agent session and must stay shareable with anyone who clones this repo. Copy
 `config/profiles/_template.md` to get started, or let `install.sh`/the
 `agents-config-setup` skill offer to do it for you.
+
+## Projects and organizations
+
+`project-init` interviews (org, stack, architecture, data/auth, testing/deploy, SDD), writes `.agents/project.json`, scaffolds the stack (`react-vite`, `next`, `nestjs`, `node-ts`, `python`, `java-spring`, `kotlin-spring`) and installs only the skills, commands and rules that match, plus the organization's if any.
+
+```
+base (this repo, public) -> organization (private repo in organizations/) -> project (.agents/)
+```
+
+- Add a company or client: `scripts/orgs.sh add <name> <git-url>` or `--init`, or the `org-creator` skill. Details: `organizations/README.md`.
+- Packs: `packs/<name>/pack.json` says when it applies; `scripts/project-agents.sh --manifest <file> [--org <name>]` installs it.
+- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `devops/project-init/scripts/test-manifest.sh`, and `e2e.sh` per stack.
+- Guards: `scripts/leak-guard.sh` (blocklist stays local) and `scripts/gen-plugin.sh --check`; enable with `git config core.hooksPath .githooks`.
 
 ## Categories
 
