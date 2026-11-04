@@ -16,7 +16,7 @@ Read the changed files and the project's design-system skill/docs, then report. 
 - **Responsive**: smallest and largest supported widths, no horizontal scroll, touch targets.
 - **Dark mode** (if supported): every colored element has its dark variant.
 - **States**: loading, empty, error and disabled are handled.
-- **Architecture and code**: presentational components, logic in hooks, project boundaries respected, no `any`, no unnecessary effects, stable keys, named exports.
+- **Architecture and code**: presentational components, logic in hooks, project boundaries respected, no `any`, no unnecessary effects (see `react-component-validator`), stable keys, named exports, remote data through the query client, no long prop-drilling chains, new dependencies weighed against bundle size.
 
 ## Output
 

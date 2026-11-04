@@ -128,6 +128,7 @@ done
 
 # ---------------------------------------------------------------- packs
 # select_packs: "always" packs, packs named with --pack, and packs whose "when" matches the manifest.
+MJSON='{}'; [ -n "$MANIFEST" ] && MJSON="$(cat "$MANIFEST")"
 select_packs() {
   local d name
   for d in "$HUB"/packs/*/; do
@@ -135,11 +136,12 @@ select_packs() {
     name="$(basename "$d")"
     if jq -e '.always == true' "$d/pack.json" >/dev/null; then echo "$name"; continue; fi
     if [ -n "$PACKS" ] && grep -qxF "$name" < <(tr ',' '\n' <<<"$PACKS"); then echo "$name"; continue; fi
-    if [ -n "$MANIFEST" ] && jq -e --slurpfile m "$MANIFEST" '
+    # stacks come from --stack and the manifest; decisions only from the manifest
+    if jq -e --argjson m "$MJSON" --arg ls "$STACKS" '
         (.when // null) as $w
         | $w != null
-        and (($w.stacks // null) == null or any($w.stacks[]; . as $s | ($m[0].stacks // []) | index($s) != null))
-        and (($w.decisions // {}) | to_entries | all(.[]; . as $e | any($m[0].decisions[]?; .key == $e.key and .value == $e.value)))
+        and (($w.stacks // null) == null or any($w.stacks[]; . as $s | (($ls | split(",")) + ($m.stacks // [])) | index($s) != null))
+        and (($w.decisions // {}) | to_entries | all(.[]; . as $e | any($m.decisions[]?; .key == $e.key and .value == $e.value)))
       ' "$d/pack.json" >/dev/null; then echo "$name"; fi
   done
 }

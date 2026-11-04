@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # docs-check.sh - advisory reminder, run from CI's `ci` job.
 #
-# If this PR changes something that usually needs a docs update (package.json
-# dependencies, an env example file, docker/compose, a workflow file, or a
+# If this PR changes something that usually needs a docs update (dependencies in
+# package.json, pom.xml, build.gradle[.kts], libs.versions.toml, pyproject.toml or
+# requirements*.txt, an env example file, docker/compose, a workflow file, or a
 # new/removed top-level folder) without touching AGENTS.md, .agents/CONTEXT.md,
 # or docs/, print a `::warning::` annotation. Non-blocking: always exits 0.
 #
@@ -61,6 +62,43 @@ if command -v jq >/dev/null 2>&1; then
 $CHANGED
 EOF
 fi
+
+# Dependency changes in the other ecosystems (Maven, Gradle, Python). Each file is reduced to a
+# normalized "dependency signature" so a project version bump, a new task or a formatting edit
+# does not warn, and the signature at the base is compared with the one at HEAD.
+dep_signature() { # dep_signature <kind> : reads the file on stdin
+  case "$1" in
+    pom) sed 's/>[[:space:]]*</>\n</g' | awk '   # one tag per line, so a minified pom works too
+      /<dependency>/ { d = 1; coord = ""; next }
+      /<\/dependency>/ { if (d) print coord; d = 0; next }
+      d { l = $0; gsub(/^[ \t]+|[ \t]+$/, "", l); if (l ~ /^<(groupId|artifactId|version|scope|classifier|type)>/) coord = coord l }' ;;
+    gradle) awk '{ l = $0; gsub(/^[ \t]+|[ \t]+$/, "", l)
+      if (l ~ /^(implementation|api|compileOnly|runtimeOnly|testImplementation|testRuntimeOnly|testCompileOnly|annotationProcessor|developmentOnly|kapt|ksp|classpath|id|alias|kotlin)[ (\x27"]/) print l }' ;;
+    catalog) sed -e 's/^[[:space:]]*//' -e '/^#/d' -e '/^$/d' ;;
+    py) awk '
+      /^\[/ { t = $0; next }
+      t ~ /^\[(project|dependency-groups|tool\.uv|build-system)\]/ || t ~ /^\[project\.optional-dependencies\]/ {
+        l = $0; gsub(/^[ \t]+|[ \t]+$/, "", l)
+        if (l ~ /^"/ || l ~ /^(dependencies|dev-dependencies|requires)[ \t]*=/ || (t ~ /dependency-groups|optional-dependencies/ && l ~ /^[A-Za-z0-9_-]+[ \t]*=/)) print l
+      }' ;;
+    req) sed -e 's/^[[:space:]]*//' -e '/^#/d' -e '/^$/d' ;;
+  esac
+}
+while IFS= read -r f; do
+  case "$f" in
+    pom.xml | */pom.xml) kind=pom ;;
+    build.gradle | build.gradle.kts | */build.gradle | */build.gradle.kts) kind=gradle ;;
+    libs.versions.toml | */libs.versions.toml) kind=catalog ;;
+    pyproject.toml | */pyproject.toml) kind=py ;;
+    requirements*.txt | */requirements*.txt) kind=req ;;
+    *) continue ;;
+  esac
+  old_sig="$(git show "origin/$BASE_REF:$f" 2>/dev/null | dep_signature "$kind" | sort)"
+  new_sig=""; [ -f "$f" ] && new_sig="$(dep_signature "$kind" < "$f" | sort)"
+  [ "$old_sig" = "$new_sig" ] || reasons+=("dependency change in $f")
+done <<EOF
+$CHANGED
+EOF
 
 # Env example files.
 while IFS= read -r f; do

@@ -91,5 +91,15 @@ jq '. = [{"skill":"hexagonal-architecture","keywords":"(unclosed"}] + .' "$P/.ag
 out="$(hook "$P" '{"hook_event_name":"UserPromptSubmit","prompt":"nuevo bounded context"}')"
 check "an invalid regex entry does not silence valid ones" 'grep -q "new-bounded-context/SKILL.md" <<<"$out"'
 
+# --- without a manifest, packs that only depend on the stack still install (decision packs do not)
+nm() { d="$W/nm-$1"; rm -rf "$d"; mkp "$d"; bash "$HUB/scripts/project-agents.sh" --stack "$1" --dir "$d" >/dev/null 2>&1; }
+nm react-vite
+check "react-vite without a manifest gets the frontend-ui pack but no architecture pack" '[ -d "$d/.claude/skills/ui-builder" ] && [ -d "$d/.claude/skills/vitest-rtl" ] && [ ! -d "$d/.claude/skills/feature-architecture" ] && [ ! -d "$d/.claude/skills/react-scalable-frontend" ]'
+nm python
+check "python without a manifest gets pytest-conventions only" '[ -d "$d/.claude/skills/pytest-conventions" ] && [ ! -d "$d/.claude/skills/hexagonal-architecture-py" ]'
+nm java-spring
+check "java-spring without a manifest gets spring-testing only" '[ -d "$d/.claude/skills/spring-testing" ] && [ ! -d "$d/.claude/skills/hexagonal-architecture" ]'
+check "react-component-validator stays a stack skill" 'nm react-vite; [ -d "$d/.claude/skills/react-component-validator" ]'
+
 echo; echo "$pass passed, $failn failed"
 [ "$failn" -eq 0 ]

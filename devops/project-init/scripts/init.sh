@@ -497,6 +497,27 @@ run_format() {
   (cd "$DIR" && pnpm run format)
 }
 
+# The interview's `sdd` decision (required | light | off) changes the workflow AGENTS.md describes.
+# `required` (and pending/absent) keeps the template's spec-driven text untouched.
+apply_sdd() {
+  [ -n "$MANIFEST" ] || return 0
+  local v dest="$DIR/AGENTS.md" heading tmp
+  v="$(jq -r '[.decisions[]? | select(.key == "sdd") | .value][0] // empty' "$MANIFEST")"
+  case "$v" in
+    light) heading='## How we work (specs for big work, with superpowers)' ;;
+    off) heading='## How we work (issue-driven, with superpowers)' ;;
+    *) return 0 ;;
+  esac
+  # only patch the template's own step 2 (a second run or a hand-edited file is left alone)
+  [ -f "$dest" ] && grep -q '^2\. Non-trivial `feat`/`refactor` work' "$dest" || return 0
+  tmp="$(mktemp)"
+  S="$(cat "$SKILL_DIR/references/sdd/$v.md")" H="$heading" awk '
+    /^2\. Non-trivial `feat`\/`refactor` work/ { print ENVIRON["S"]; next }
+    /^## How we work \(spec-driven, with superpowers\)$/ { print ENVIRON["H"]; next }
+    { print }' "$dest" > "$tmp" && cat "$tmp" > "$dest"; rm -f "$tmp"
+  echo "AGENTS.md: workflow adjusted for sdd=$v"
+}
+
 # Interview result (references/interview.md): project.json, ADRs, pending decisions.
 # Runs before run_format so the generated files get formatted with the rest.
 apply_manifest() {
@@ -547,6 +568,7 @@ install_agent_scope() {
 copy_template_tree "$STACK_DIR"
 copy_template_tree "$COMMON_DIR" "$SKIP_COMMON"
 generate_agents_md
+apply_sdd
 if [ "$RUNTIME" = node ]; then
   report_scripts
   ensure_package_manager

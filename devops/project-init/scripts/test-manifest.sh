@@ -74,5 +74,21 @@ N="$W/special"; mkdir -p "$N"
 bash "$SD/init.sh" --stack node-ts --name 'A&B|c/d' --dir "$N" --owner 'o&w|n' >"$W/sp.log" 2>&1
 check "names with & | / are substituted literally" 'grep -q "A&B|c/d" "$N/AGENTS.md" && grep -q "o&w|n" "$N/.agents/CONTEXT.md"'
 
+# --- sdd modes change the generated workflow
+sddm() { jq --arg v "$1" '.stacks = ["node-ts"] | .decisions |= map(if .key == "sdd" then .value = $v else . end)' "$W/ok.json" > "$W/sdd-$1.json"; }
+jq '.decisions |= map(if .key == "sdd" then .value = "none" else . end)' "$W/ok.json" > "$W/sdd-bad.json"
+check "sdd outside required|light|off is rejected" 'rejects "$W/sdd-bad.json" "sdd must be one of"'
+for mode in required light off; do
+  sddm $mode; D="$W/sdd-app-$mode"; mkdir -p "$D"
+  bash "$SD/init.sh" --manifest "$W/sdd-$mode.json" --dir "$D" --owner o >"$W/sdd-$mode.log" 2>&1
+done
+check "sdd=required keeps the spec-driven template text" 'grep -q "^2\. Non-trivial" "$W/sdd-app-required/AGENTS.md" && grep -q "spec-driven, with superpowers" "$W/sdd-app-required/AGENTS.md"'
+check "sdd=light limits specs to big work" 'grep -q "Small changes skip the spec" "$W/sdd-app-light/AGENTS.md" && grep -q "specs for big work" "$W/sdd-app-light/AGENTS.md" && ! grep -q "^2\. Non-trivial" "$W/sdd-app-light/AGENTS.md"'
+check "sdd=off drops the spec requirement" 'grep -q "not required in this project" "$W/sdd-app-off/AGENTS.md" && grep -q "issue-driven" "$W/sdd-app-off/AGENTS.md"'
+check "the sdd ADR is still written" 'ls "$W/sdd-app-off/docs/decisions" | grep -q "sdd"'
+before="$(sha1sum "$W/sdd-app-light/AGENTS.md")"
+bash "$SD/init.sh" --manifest "$W/sdd-light.json" --dir "$W/sdd-app-light" --owner o >/dev/null 2>&1
+check "a second run leaves the adjusted AGENTS.md alone" '[ "$before" = "$(sha1sum "$W/sdd-app-light/AGENTS.md")" ]'
+
 echo; echo "$pass passed, $failn failed"
 [ "$failn" -eq 0 ]

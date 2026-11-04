@@ -73,7 +73,7 @@ PY
 done
 
 # -- skills: symlink into .rulesync/skills (no content duplication) --------
-for name in project-init typescript-code-quality react-scalable-frontend; do
+for name in project-init typescript-code-quality react-component-validator; do
   src="$(find "$HUB" -mindepth 2 -maxdepth 2 -type d -name "$name" | head -1)"
   if [ -z "$src" ]; then
     echo "build.sh: skill not found: $name" >&2

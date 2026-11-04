@@ -1,0 +1,1 @@
+2. `feat`/`refactor` work that is big (touches several modules or needs a design decision): superpowers `brainstorming` -> write a spec in `docs/superpowers/specs/` -> superpowers `writing-plans` -> write a plan in `docs/superpowers/plans/`. Small changes skip the spec and go straight to step 4 (they still ship with tests).

@@ -95,6 +95,6 @@ When acting as a validator, report issues in this order:
 
 ## Compatibility Notes
 
-- Pair this skill with `react-scalable-frontend` for broad frontend architecture decisions.
+- Pair this skill with `ui-builder` / `ui-review` (frontend-ui pack) for broad frontend build and review.
 - Pair this skill with `nextjs-ssr-frontend` when reviewing server/client boundaries.
 - Pair this skill with `react-native-mobile` when lifecycle behavior depends on mobile APIs.

@@ -1,0 +1,1 @@
+2. Specs and plans are not required in this project (decision `sdd: off`). Use superpowers `brainstorming` only when the design is unclear; any plan you do write is still saved in `docs/superpowers/plans/`.

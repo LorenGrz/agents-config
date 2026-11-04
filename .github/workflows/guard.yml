@@ -38,3 +38,4 @@ jobs:
           bash scripts/test-packs.sh
           bash scripts/test-orgs.sh
           bash devops/project-init/scripts/test-manifest.sh
+          bash devops/project-init/scripts/test-docs-check.sh
