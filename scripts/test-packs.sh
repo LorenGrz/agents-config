@@ -42,5 +42,33 @@ check "no hint when the skill is not installed" '[ -z "$out" ]'
 out="$(hook "$P" '{"hook_event_name":"UserPromptSubmit","prompt":"necesito una migración de la base y un nuevo bounded context"}')"
 check "critical reasoning and skill hint combine" 'grep -q "reasoner" <<<"$out" && grep -q "new-bounded-context" <<<"$out"'
 
+
+# --- all packs: structure
+for d in "$HUB"/packs/*/; do
+  n="$(basename "$d")"
+  check "pack $n: pack.json valid with description and index" 'jq -e ".description and (.index | length > 0)" "$d/pack.json" >/dev/null'
+  check "pack $n: skills have matching name and a description" 'for s in "$d"/skills/*/; do [ -d "$s" ] || continue; [ "$(sed -n "s/^name: //p" "$s/SKILL.md" | head -1)" = "$(basename "$s")" ] && grep -q "^description: " "$s/SKILL.md" || exit 1; done'
+  check "pack $n: commands have a description" 'for c in "$d"/commands/*.md; do [ -f "$c" ] || continue; grep -q "^description: " "$c" || exit 1; done'
+  check "pack $n: critical entries point to a skill of the pack" 'for sk in $(jq -r ".critical[]?.skill" "$d/pack.json"); do [ -f "$d/skills/$sk/SKILL.md" ] || exit 1; done'
+done
+
+# --- selection per stack/decision
+sel() { jq -n --argjson st "$1" --argjson dec "$2" '{version:1,name:"x",org:null,stacks:$st,decisions:$dec,pending:[]}' > "$W/sel.json"
+        d="$W/sel"; rm -rf "$d"; mkp "$d"; bash "$HUB/scripts/project-agents.sh" --stack "$(jq -r '.[0]' <<<"$1")" --manifest "$W/sel.json" --dir "$d" >/dev/null 2>&1; }
+sel '["python"]' '[{"key":"backend-style","value":"hexagonal"}]'
+check "python hexagonal: python packs, no spring packs" '[ -d "$d/.claude/skills/hexagonal-architecture-py" ] && [ -d "$d/.claude/skills/pytest-conventions" ] && [ ! -d "$d/.claude/skills/spring-testing" ]'
+sel '["java-spring"]' '[{"key":"backend-style","value":"modular"}]'
+check "spring modular: feature-module and spring-testing" '[ -d "$d/.claude/skills/feature-module" ] && [ -d "$d/.claude/skills/spring-testing" ] && [ -f "$d/.claude/commands/new-module.md" ]'
+sel '["react-vite"]' '[{"key":"frontend-style","value":"feature-sliced"}]'
+check "react feature-sliced: ui skills plus feature-architecture" '[ -d "$d/.claude/skills/ui-builder" ] && [ -d "$d/.claude/skills/vitest-rtl" ] && [ -d "$d/.claude/skills/feature-architecture" ] && [ ! -d "$d/.claude/skills/frontend-ports-adapters" ]'
+sel '["next"]' '[{"key":"frontend-style","value":"hexagonal"}]'
+check "next hexagonal: frontend-ports-adapters and /new-feature" '[ -d "$d/.claude/skills/frontend-ports-adapters" ] && [ -f "$d/.claude/commands/new-feature.md" ] && [ ! -d "$d/.claude/skills/feature-architecture" ]'
+sel '["react-vite"]' '[{"key":"frontend-style","value":"simple"},{"key":"project-kind","value":"ui-library"}]'
+check "ui-library is opt-in via project-kind" '[ -d "$d/.claude/skills/component-a11y-guard" ]'
+sel '["react-vite"]' '[{"key":"frontend-style","value":"simple"}]'
+check "ui-library absent without project-kind; run-app always present" '[ ! -d "$d/.claude/skills/component-a11y-guard" ] && [ -d "$d/.claude/skills/run-app" ]'
+sel '["java-spring"]' '[{"key":"backend-style","value":"hexagonal"}]'
+check "AGENTS.md keyword table stays within 10 rows" '[ "$(sed -n "/agents-index:start/,/agents-index:end/p" "$d/AGENTS.md" | grep -c "^| .* | .* |$")" -le 11 ]'
+
 echo; echo "$pass passed, $failn failed"
 [ "$failn" -eq 0 ]

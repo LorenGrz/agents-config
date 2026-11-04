@@ -22,6 +22,8 @@ Run before generating anything. Output: a manifest (`.agents/project.json`, sche
 | 6 | `testing`, `deploy` | Test pyramid and e2e; deploy target | Deploy: none / Docker / AWS / Vercel. Respect `feedback-frugal-personal-projects`: nothing that costs money without asking |
 | 7 | `sdd` | Specs before features? | `required` (spec + plan for every feat/refactor) / `light` (only big features) / `off` |
 
+Optional, only when it applies: a component/UI library project gets the decision `project-kind: ui-library` (installs the `ui-library` pack).
+
 Org detection: if `~/.config/agents-config/organizations.json` exists, match the repo owner or remote against each entry's `match`; propose the hit and always confirm. No registry → skip block 1 (`org: null`).
 
 ## Manifest (v1)

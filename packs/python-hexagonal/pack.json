@@ -1,0 +1,12 @@
+{
+  "description": "Hexagonal (ports and adapters) backend in Python.",
+  "when": { "stacks": ["python"], "decisions": { "backend-style": "hexagonal" } },
+  "index": [
+    { "when": "Where does this logic go, layers, ports, domain model", "use": "hexagonal-architecture-py" },
+    { "when": "New use case or module", "use": "new-use-case" }
+  ],
+  "critical": [
+    { "skill": "new-use-case", "keywords": "caso de uso|use case|nuevo m(o|ó)dulo|new module" },
+    { "skill": "hexagonal-architecture-py", "paths": ["/domain/.*\\.py$", "/application/.*\\.py$"] }
+  ]
+}

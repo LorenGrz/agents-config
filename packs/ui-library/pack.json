@@ -1,0 +1,8 @@
+{
+  "description": "Accessibility floor and completeness gate for a reusable UI component library (opt-in: decision project-kind = ui-library).",
+  "when": { "decisions": { "project-kind": "ui-library" } },
+  "index": [{ "when": "Create or change a library component (a11y + completeness checklist)", "use": "component-a11y-guard" }],
+  "critical": [
+    { "skill": "component-a11y-guard", "paths": ["/src/components/.*\\.tsx$"] }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "description": "Run the project and see a change working.",
+  "always": true,
+  "index": [{ "when": "Run or screenshot the app, smoke-test a change", "use": "run-app" }],
+  "critical": []
+}

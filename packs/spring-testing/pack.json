@@ -1,0 +1,6 @@
+{
+  "description": "Testing conventions for Spring Boot (Java/Kotlin).",
+  "when": { "stacks": ["java-spring", "kotlin-spring"] },
+  "index": [{ "when": "Write, complete or review tests", "use": "spring-testing" }],
+  "critical": []
+}

@@ -1,0 +1,8 @@
+{
+  "description": "Hexagonal frontend: ports for API and storage, use cases, adapters.",
+  "when": { "stacks": ["react-vite", "next", "rn"], "decisions": { "frontend-style": "hexagonal" } },
+  "index": [{ "when": "New feature, ports and adapters, where logic goes", "use": "frontend-ports-adapters" }],
+  "critical": [
+    { "skill": "frontend-ports-adapters", "keywords": "nueva feature|new feature|ports and adapters|puertos y adaptadores", "paths": ["/domain/.*\\.tsx?$", "/application/.*\\.tsx?$"] }
+  ]
+}

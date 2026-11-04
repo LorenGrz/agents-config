@@ -4,10 +4,12 @@
   "index": [
     { "when": "Where does this logic go, layers, domain model, ports, SOLID", "use": "hexagonal-architecture" },
     { "when": "New bounded context / module / aggregate", "use": "new-bounded-context" },
+    { "when": "Paginated or filtered GET endpoint", "use": "list-endpoint" },
     { "when": "Before handing over any code (checklist)", "use": "pre-delivery-review" }
   ],
   "critical": [
     { "skill": "new-bounded-context", "keywords": "bounded context|nuevo dominio|nuevo m(o|ó)dulo|new module|new aggregate|nuevo agregado" },
+    { "skill": "list-endpoint", "keywords": "endpoint de list|list endpoint|paginaci(o|ó)n|paginated|listar todos" },
     { "skill": "hexagonal-architecture", "paths": ["/domain/.*\\.(java|kt)$", "/application/.*\\.(java|kt)$"] }
   ]
 }

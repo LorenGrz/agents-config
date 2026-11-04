@@ -1,0 +1,8 @@
+{
+  "description": "Feature-sliced frontend with barrels and lint-enforced boundaries.",
+  "when": { "stacks": ["react-vite", "next", "rn"], "decisions": { "frontend-style": "feature-sliced" } },
+  "index": [{ "when": "New feature, where files go, cross-feature imports", "use": "feature-architecture" }],
+  "critical": [
+    { "skill": "feature-architecture", "keywords": "nueva feature|new feature|nuevo feature|feature nueva|entre features|between features" }
+  ]
+}

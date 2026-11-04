@@ -130,6 +130,7 @@ if [ "${#SELECTED[@]}" -gt 0 ] && [ "$DRY" -eq 0 ]; then
   if [ "$CRITICAL" != "[]" ]; then jq . <<<"$CRITICAL" > "$DIR/.agents/critical.json"; echo "wrote .agents/critical.json"; fi
   # AGENTS.md keyword table: replace the marked block, else insert it before "## How we work", else append.
   if [ -f "$DIR/AGENTS.md" ] && [ -n "${ROWS//[$'\n']/}" ]; then
+    [ "$(grep -c . <<<"$ROWS")" -gt 10 ] && echo "warning: more than 10 keyword rows; AGENTS.md table keeps the first 10" >&2
     block="$(printf '<!-- agents-index:start -->\n## Skills and commands by keyword\n\nBefore implementing, read the skill for what you are touching.\n\n| When | Use |\n|---|---|\n%s<!-- agents-index:end -->\n' "$(head -n 10 <<<"$ROWS")"$'\n')"
     tmp="$(mktemp)"
     if grep -q 'agents-index:start' "$DIR/AGENTS.md"; then
