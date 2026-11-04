@@ -5,7 +5,12 @@ ROOT="$(git rev-parse --show-toplevel)"
 "$ROOT/scripts/leak-guard.sh" --all || exit 1
 zero=0000000000000000000000000000000000000000
 while read -r _lref lsha _rref rsha; do
+  # names about to be created on the remote (the guard never prints them)
+  "$ROOT/scripts/leak-guard.sh" --refs "${_lref:-}" "${_rref:-}" || exit 1
   [ "$lsha" = "$zero" ] && continue
+  case "$_lref" in refs/tags/*)   # an annotated tag carries its own message
+    _t="$(mktemp)"; git cat-file -p "$lsha" > "$_t" 2>/dev/null; "$ROOT/scripts/leak-guard.sh" --message "$_t" || { rm -f "$_t"; exit 1; }; rm -f "$_t" ;;
+  esac
   if [ "$rsha" = "$zero" ]; then "$ROOT/scripts/leak-guard.sh" --log "$lsha" --not --remotes || exit 1
   else "$ROOT/scripts/leak-guard.sh" --log "$rsha..$lsha" || exit 1; fi
 done

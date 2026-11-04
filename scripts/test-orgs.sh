@@ -14,6 +14,8 @@ check() { if eval "$2"; then pass=$((pass + 1)); echo "ok   $1"; else failn=$((f
 
 bash "$ORGS" add acme --init >/dev/null 2>&1
 A="$H/organizations/acme"
+jq '.match.gh_owners = ["acme-inc"]' "$A/org.json" > "$W/a.json" && mv "$W/a.json" "$A/org.json"   # the template ships no owner on purpose
+bash "$ORGS" index >/dev/null 2>&1
 check "add --init creates a git repo from the template" '[ -d "$A/.git" ] && jq -e ".name == \"acme\"" "$A/org.json" >/dev/null'
 check "registry and index list the org" 'grep -q "\"acme\"" "$W/state/organizations.json" && grep -q "| acme |" "$H/organizations/INDEX.md"'
 check "blocklist gets the org terms" 'grep -qx "acme" "$W/state/blocklist"'
@@ -113,6 +115,37 @@ check "mentions of a replaced skill are rewritten inside installed skills" 'grep
 P8="$W/personal"; mkp "$P8"
 bash "$PA" --stack java-spring --manifest "$W/rw.json" --dir "$P8" >/dev/null 2>&1
 check "a project without an org carries no org terms" '! grep -rqiE "acme|rw-hex|evil" "$P8"'
+
+# --- re-review regressions
+P9="$W/lifecycle"; mkp "$P9"; man "$W/lc.json" '["react-vite"]' '[{"key":"frontend-style","value":"feature-sliced"}]'
+bash "$PA" --stack react-vite --manifest "$W/lc.json" --dir "$P9" >/dev/null 2>&1
+bash "$PA" --stack react-vite --manifest "$W/lc.json" --org acme --dir "$P9" >"$W/lc2.log" 2>&1
+check "adding an org does not delete freshly installed skills" '[ -d "$P9/.claude/skills/run-app" ] && ! grep -q "removed stale skill: run-app" "$W/lc2.log" && [ -d "$P9/.claude/skills/acme-ui-builder" ]'
+check "skills.lock names are never glued together" '! jq -e "[.installed.skills[], .installed.commands[]] | any(test(\"run-app[a-z]\"))" "$P9/.agents/skills.lock" >/dev/null 2>&1'
+bash "$PA" --stack react-vite --manifest "$W/lc.json" --dir "$P9" >/dev/null 2>&1
+check "dropping the org removes its skills and policies and restores the base ones" '[ ! -d "$P9/.claude/skills/acme-ui-builder" ] && [ ! -f "$P9/.agents/POLICIES.md" ] && [ -d "$P9/.claude/skills/ui-builder" ] && [ -d "$P9/.claude/skills/run-app" ]'
+
+# a same-named directory in the cwd must not be validated instead of the hub org
+mkdir -p "$W/cwd"; cp -r "$H/organizations/acme" "$W/cwd/badpol"; jq '.name = "badpol"' "$W/cwd/badpol/org.json" > "$W/cwd/t.json" && mv "$W/cwd/t.json" "$W/cwd/badpol/org.json"
+mkp "$W/n2"
+(cd "$W/cwd" && bash "$PA" --stack react-vite --org badpol --dir "$W/n2" >/dev/null 2>&1); rc=$?
+check "the org is validated from organizations/, not from a lookalike in the cwd" '[ $rc -ne 0 ] && [ ! -d "$W/n2/.claude/commands" ]'
+
+# org.json shape checks
+mkorg shp; cp "$H/organizations/shp/org.json" "$W/shp.bak"
+shape() { cp "$W/shp.bak" "$H/organizations/shp/org.json"; setj shp "$1"; ! bash "$ORGS" validate shp >/dev/null 2>&1; }
+check "critical stacks must be an array" 'shape ".critical = [{\"skill\":\"x\",\"stacks\":\"python\"}]"'
+check "index use must be a string" 'shape ".index = [{\"when\":\"w\",\"use\":5}]"'
+check "index when must not contain |" 'shape ".index = [{\"when\":\"a|b\",\"use\":\"x\"}]"'
+check "asset stacks must be an array" 'shape ".assets = {\"skills/x\":{\"stacks\":\"python\"}}"'
+check "replaces values must be strings" 'shape ".replaces = {\"ui-builder\":{\"a\":1}}"'
+check "replaces targets must exist in the org" 'shape ".replaces = {\"ui-builder\":\"missing-skill\"}"'
+mkorg nm; setj nm '.name = "other"'
+check "org.json name must match the directory" '! bash "$ORGS" validate nm >/dev/null 2>&1'
+check "the template has no placeholder owner either" '[ "$(jq ".match.gh_owners | length" "$H/organizations/_template/org.json")" -eq 0 ]'
+check "a non-ascii org name is rejected" '! bash "$ORGS" add "é" --init >/dev/null 2>&1'
+out="$(bash "$H/install.sh" --org foo 2>&1)"; rc=$?
+check "install.sh --org without a url explains itself" '[ $rc -ne 0 ] && grep -q -- "--org needs" <<<"$out" && ! grep -q "unbound" <<<"$out"'
 
 # org / owner mismatch
 Q2="$W/app2"; mkdir -p "$Q2"

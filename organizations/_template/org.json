@@ -3,9 +3,7 @@
   "version": "0.1.0",
   "extends": "agents-config>=0.1.0",
   "match": {
-    "gh_owners": [
-      "acme-inc"
-    ],
+    "gh_owners": [],
     "remote_patterns": []
   },
   "defaults": {

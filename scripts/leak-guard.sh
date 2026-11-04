@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # leak-guard.sh - keep private organization data out of this public repo.
 #
-# Usage: leak-guard.sh [--all | --staged | --message <file> | --log <git-log-args...>]
+# Usage: leak-guard.sh [--all | --staged | --message <file> | --log <git-log-args...> | --refs <name...>]
 #   --all      every tracked file: names and content (default)
 #   --staged   files being committed: names (renames included) and the staged blobs
 #   --message  a commit message file (used by the commit-msg hook)
-#   --log      commit messages and ref names of a git log range, e.g. --log A..B
+#   --log      commit messages, ref names and patches of a git log range, e.g. --log A..B
+#   --refs     branch/tag names about to be pushed (the pre-push hook)
 #
 # Checks (exit 1 on any):
 #   1. nothing tracked under organizations/ except README.md and _template/
@@ -31,7 +32,7 @@ SECRETS='AKIA[0-9A-Z]{16}|-----BEGIN ([A-Z]+ )?PRIVATE KEY-----|ghp_[A-Za-z0-9]{
 fail=0
 tf="$(mktemp)"; trap 'rm -f "$tf"' EXIT
 
-{ printf '%s\n' "${LEAK_BLOCKLIST:-}"; [ -f "$BL_FILE" ] && cat "$BL_FILE"; } | sed '/^[[:space:]]*\(#\|$\)/d' > "$tf"
+{ printf '%s\n' "${LEAK_BLOCKLIST:-}"; [ -f "$BL_FILE" ] && cat "$BL_FILE"; } | sed -e 's/\r$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e '/^\(#\|$\)/d' > "$tf"
 have_terms=0; [ -s "$tf" ] && have_terms=1
 
 has_term() { [ "$have_terms" -eq 1 ] && grep -qiF -f "$tf" <<<"$1"; }
@@ -44,7 +45,8 @@ hit_list() { # hit_list <label> : reads "path:line" or "path" lines on stdin
   local n=0 shown=0 l p
   while IFS= read -r l; do
     n=$((n + 1)); [ "$shown" -lt 15 ] || continue
-    p="${l%%:*}"; shown=$((shown + 1)); echo "  $(loc "$p")${l#"$p"}" >&2
+    shown=$((shown + 1))
+    if [ -n "${CI:-}" ] || has_term "$l"; then echo "  <hit #$(printf '%s' "$l" | cksum | cut -d' ' -f1)>" >&2; else echo "  $l" >&2; fi
   done
   [ "$n" -gt 0 ] && report "$1: $n hit(s)"
   return 0
@@ -68,24 +70,34 @@ case "$MODE" in
   --staged)
     git diff --cached --name-only -z --diff-filter=ACMR | scan_names
     while IFS= read -r -d '' f; do
-      if [ "$have_terms" -eq 1 ]; then git show ":$f" 2>/dev/null | grep -aniF -f "$tf" | cut -d: -f1 | sed "s|^|$f:|" ; fi
+      if [ "$have_terms" -eq 1 ]; then git show ":$f" 2>/dev/null | grep -aniF -f "$tf" | cut -d: -f1 | while read -r n; do printf '%s:%s\n' "$f" "$n"; done; fi
     done < <(git diff --cached --name-only -z --diff-filter=ACMR) | hit_list "blocklist term in staged content"
     while IFS= read -r -d '' f; do
-      git show ":$f" 2>/dev/null | grep -anE "$SECRETS" | cut -d: -f1 | sed "s|^|$f:|"
+      git show ":$f" 2>/dev/null | grep -anE "$SECRETS" | cut -d: -f1 | while read -r n; do printf '%s:%s\n' "$f" "$n"; done
     done < <(git diff --cached --name-only -z --diff-filter=ACMR) | hit_list "possible secret in staged content"
     ;;
   --message)
     f="${1:-}"; [ -f "$f" ] || { echo "leak-guard: --message needs a file" >&2; exit 2; }
-    [ "$have_terms" -eq 1 ] && { grep -aniF -f "$tf" "$f" | cut -d: -f1 | sed 's|^|commit message line |' | hit_list "blocklist term in the commit message"; }
-    grep -anE "$SECRETS" "$f" | cut -d: -f1 | sed 's|^|commit message line |' | hit_list "possible secret in the commit message"
+    msg="$(grep -av '^#' "$f" || true)"   # git comments (and the -v diff) are not part of the message
+    [ "$have_terms" -eq 1 ] && { grep -aiF -f "$tf" <<<"$msg" | sed 's|.*|commit message|' | hit_list "blocklist term in the commit message"; }
+    grep -aE "$SECRETS" <<<"$msg" | sed 's|.*|commit message|' | hit_list "possible secret in the commit message"
     ;;
   --log)
     [ $# -gt 0 ] || { echo "leak-guard: --log needs git log arguments" >&2; exit 2; }
-    out="$(git log --format='%H%n%B%n%D%n--' "$@" 2>/dev/null || true)"
+    if ! out="$(git log --format='%H%n%B%n%D%n--' "$@" 2>/dev/null)"; then
+      echo "leak-guard: git log failed for the given range (unknown commit?); nothing was checked" >&2; exit 2
+    fi
+    # patches too: a term added in one commit and removed in the next is still in the pushed history
+    if ! patches="$(git log -p --format= "$@" 2>/dev/null)"; then echo "leak-guard: git log -p failed" >&2; exit 2; fi
     [ "$have_terms" -eq 1 ] && { grep -aniF -f "$tf" <<<"$out" | cut -d: -f1 | sed 's|^|log line |' | hit_list "blocklist term in commit messages or ref names"; }
+    [ "$have_terms" -eq 1 ] && { grep -aiF -f "$tf" <<<"$patches" | sed 's|.*|patch|' | hit_list "blocklist term in the patches of the range"; }
     grep -anE "$SECRETS" <<<"$out" | cut -d: -f1 | sed 's|^|log line |' | hit_list "possible secret in commit messages"
+    grep -aE "$SECRETS" <<<"$patches" | sed 's|.*|patch|' | hit_list "possible secret in the patches of the range"
     ;;
-  *) echo "usage: leak-guard.sh [--all | --staged | --message <file> | --log <args>]" >&2; exit 2 ;;
+  --refs)
+    for r in "$@"; do has_term "$r" && echo "$r"; done | sed 's|.*|ref|' | hit_list "blocklist term in a branch or tag name"
+    ;;
+  *) echo "usage: leak-guard.sh [--all | --staged | --message <file> | --log <args> | --refs <name...>]" >&2; exit 2 ;;
 esac
 
 if [ "$have_terms" -eq 0 ]; then

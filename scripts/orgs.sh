@@ -25,15 +25,17 @@ die() { echo "orgs: $*" >&2; exit 1; }
 mkdir -p "$STATE"
 [ -f "$REG" ] || echo '{"orgs":[]}' > "$REG"
 
-valid_name() { [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]]; }
+valid_name() { local LC_ALL=C; [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]]; }
 names() { jq -r '.orgs[].name' "$REG"; }
 registered() { names | grep -qxF -- "$1"; }
 org_dir() { printf '%s/%s' "$ORGS" "$1"; }
 need_name() { valid_name "${1:-}" || die "invalid org name '${1:-}' (lowercase letters, digits and dashes)"; }
 
 resolve() { # resolve <name|path> -> directory
-  if [ -d "$1" ] && [ -f "$1/org.json" ]; then (cd "$1" && pwd)
-  else need_name "$1"; [ -d "$(org_dir "$1")" ] || die "no such org: $1"; org_dir "$1"; fi
+  case "$1" in
+    */*) [ -d "$1" ] && [ -f "$1/org.json" ] || die "not an org directory: $1"; (cd "$1" && pwd) ;;
+    *) need_name "$1"; [ -d "$(org_dir "$1")" ] || die "no such org: $1"; org_dir "$1" ;;
+  esac
 }
 
 register() { # register <name> <remote>
@@ -71,6 +73,21 @@ cmd_index() {
 
 # Contract check. Advisory: it catches mistakes and the obvious baseline-weakening phrases,
 # it is not a security boundary. Every check runs; the exit status is the OR of all of them.
+SHAPE_JQ='def arr_str: type == "array" and all(.[]; type == "string");
+  [
+    (if has("critical") and ((.critical | type) != "array") then "critical must be an array" else empty end),
+    (.critical[]? | select(type != "object") | "critical entries must be objects"),
+    (.critical[]? | select(type == "object") | select(((.skill // null) | type) != "string") | "critical entries need a string skill"),
+    (.critical[]? | select(type == "object") | select(((.keywords // "") | type) != "string" or ((.paths // []) | arr_str | not) or ((.stacks // []) | arr_str | not)) | "critical keywords must be a string, paths and stacks arrays of strings"),
+    (if has("index") and ((.index | type) != "array") then "index must be an array" else empty end),
+    (.index[]? | select(type != "object") | "index entries must be objects"),
+    (.index[]? | select(type == "object") | select(((.when // null) | type) != "string" or ((.use // null) | type) != "string" or ((.stacks // []) | arr_str | not)) | "index entries need string when/use and an array of strings for stacks"),
+    (.index[]? | select(type == "object" and ((.when // "") | type == "string") and ((.when // "") | test("[|\n]"))) | "index.when must not contain | or a newline"),
+    (if has("replaces") and ((.replaces | type) != "object") then "replaces must be an object" else empty end),
+    ((.replaces // {}) | if type == "object" then to_entries[] | select(.value | type != "string") | "replaces values must be strings" else empty end),
+    (if has("assets") and ((.assets | type) != "object") then "assets must be an object" else empty end),
+    ((.assets // {}) | if type == "object" then to_entries[] | select((.value | type) != "object" or ((.value.stacks // []) | arr_str | not)) | "asset stacks must be an array of strings" else empty end)
+  ] | .[]'
 BASELINE_RE='skip (the )?(tests|verification)|commit (the )?\.env|force.push to (main|dev|master)'
 NEGATION_RE="never|don't|do not|must not|not |nunca|jamás|prohibid"
 cmd_validate() {
@@ -80,13 +97,21 @@ cmd_validate() {
   name="$(jq -r '.name // empty' "$d/org.json")"
   jq -e '.name and .version and .match' "$d/org.json" >/dev/null 2>&1 || fail "org.json needs name, version and match"
   valid_name "$name" || fail "org.json name '$name' is not a valid name"
+  [ "$name" = "$(basename "$d")" ] || fail "org.json name '$name' differs from its directory name '$(basename "$d")'"
   jq -e '((.match.gh_owners // []) + (.match.remote_patterns // [])) | length > 0' "$d/org.json" >/dev/null 2>&1 \
     || fail "org.json match needs gh_owners or remote_patterns"
   if [ "$name" != acme ] && jq -e '(.blocklist_terms // []) | index("acme") != null' "$d/org.json" >/dev/null 2>&1; then
     fail "blocklist_terms still has the template placeholder 'acme'"
   fi
+  local e
+  while IFS= read -r e; do [ -n "$e" ] && fail "org.json: $e"; done < <(jq -r "$SHAPE_JQ" "$d/org.json" 2>/dev/null)
+  while IFS=$'\t' read -r _f t; do
+    [ -n "$t" ] || continue
+    case "$t" in /*) [ -f "$d/commands/${t#/}.md" ] || fail "replaces target '$t' does not exist in the org" ;;
+                 *) [ -f "$d/skills/$t/SKILL.md" ] || fail "replaces target '$t' does not exist in the org" ;; esac
+  done < <(jq -r '(.replaces // {}) | to_entries[] | select(.value | type == "string") | [.key, .value] | @tsv' "$d/org.json" 2>/dev/null)
   [ -f "$d/POLICIES.md" ] || fail "POLICIES.md is missing"
-  if [ -f "$d/POLICIES.md" ] && grep -q '^## ' "$d/POLICIES.md" && [ "$(awk '/^## /{print NR - 1; exit}' "$d/POLICIES.md")" -gt 17 ]; then
+  if [ -f "$d/POLICIES.md" ] && grep -q '^## ' "$d/POLICIES.md" && [ "$(awk '/^## /{print NR - 1; exit}' "$d/POLICIES.md")" -gt 15 ]; then
     fail "POLICIES.md must start with a summary of 15 lines or fewer before the first ## section"
   fi
   for s in "$d"/skills/*/; do
@@ -118,7 +143,7 @@ cmd_add() {
     git -C "$d" init -q -b main; register "$name" ""
     echo "created $d (local only: edit org.json/POLICIES.md, validate, commit, then create its private remote)"
   else
-    [ -e "$d" ] && echo "skip clone: $d exists" || git clone -q "$src" "$d"
+    [ -e "$d" ] && echo "skip clone: $d exists" || git clone -q -- "$src" "$d"
     register "$name" "$src"
     cmd_validate "$name" || echo "orgs: $name registered but does not validate yet" >&2
   fi

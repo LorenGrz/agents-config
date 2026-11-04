@@ -66,7 +66,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --profile) PROFILE_FLAG="$2"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
-    --org) ORG_ADD=("$2" "$3"); shift 3 ;;
+    --org) [ $# -ge 3 ] || { echo "--org needs <name> <git-url>" >&2; exit 1; }; ORG_ADD=("$2" "$3"); shift 3 ;;
     --with-rtk) WITH_RTK=1; shift ;;
     --with-rulesync) WITH_RULESYNC=1; shift ;;
     -h|--help)

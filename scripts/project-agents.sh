@@ -45,16 +45,17 @@ command -v jq >/dev/null || { echo "Error: jq is required" >&2; exit 1; }
 
 run() { if [ "$DRY" -eq 1 ]; then echo "  [dry-run] $*"; else "$@"; fi; }
 die() { echo "Error: $*" >&2; exit 1; }
-valid_name() { [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]]; }
-valid_file() { [[ "$1" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; }
+valid_name() { local LC_ALL=C; [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]]; }
+valid_file() { local LC_ALL=C; [[ "$1" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; }
 # literal (non-regex) replacement of every occurrence of $1 by $2 in stdin
 replace_literal() { F="$1" T="$2" awk '{ out = ""; line = $0; f = ENVIRON["F"]; t = ENVIRON["T"]
   while ((i = index(line, f)) > 0) { out = out substr(line, 1, i - 1) t; line = substr(line, i + length(f)) } print out line }'; }
 INST_S="" INST_C="" STACK_S=""   # skills/commands installed from packs and the org (tracked in skills.lock); stack skills
 rec_s() { INST_S+="$1"$'\n'; }
 rec_c() { INST_C+="$1"$'\n'; }
-unrec_s() { INST_S="$(grep -vxF -- "$1" <<<"$INST_S" || true)"; }
-unrec_c() { INST_C="$(grep -vxF -- "$1" <<<"$INST_C" || true)"; }
+# $(...) strips the trailing newline, so put one back or the next rec_* glues two names together
+unrec_s() { INST_S="$(grep -vxF -- "$1" <<<"$INST_S" || true)"$'\n'; }
+unrec_c() { INST_C="$(grep -vxF -- "$1" <<<"$INST_C" || true)"$'\n'; }
 replace_file() { local tmp; tmp="$(mktemp)"; replace_literal "$2" "$3" < "$1" > "$tmp" && cat "$tmp" > "$1"; rm -f "$tmp"; }
 
 # ---------------------------------------------------------------- preflight
@@ -67,7 +68,7 @@ if [ -n "$ORG" ]; then
   valid_name "$ORG" || die "invalid organization name '$ORG'"
   OD="$HUB/organizations/$ORG"; OJ="$OD/org.json"
   [ -f "$OJ" ] || die "organization '$ORG' is not installed (scripts/orgs.sh add)"
-  bash "$HUB/scripts/orgs.sh" validate "$ORG" >/dev/null || die "organization '$ORG' does not validate (scripts/orgs.sh validate $ORG)"
+  bash "$HUB/scripts/orgs.sh" validate "$OD" >/dev/null || die "organization '$ORG' does not validate (scripts/orgs.sh validate $ORG)"
   [ -z "$(find "$OD" -path "$OD/.git" -prune -o -type l -print -quit)" ] || die "organization '$ORG' contains symlinks"
   while IFS=$'\t' read -r from to; do
     [ -n "$from" ] || continue
@@ -244,6 +245,10 @@ if [ "${#SELECTED[@]}" -gt 0 ] && [ "$DRY" -eq 0 ]; then
       [ -n "$n" ] && valid_file "$n" && ! grep -qxF -- "$n" <<<"$INST_C" \
         && { echo "removed stale command: $n"; rm -f "$DIR/.claude/commands/$n"; }
     done < <(jq -r '.installed.commands[]?' "$DIR/.agents/skills.lock")
+  fi
+  if [ -n "$MANIFEST" ] && [ -z "$ORG" ] && [ -f "$DIR/.agents/skills.lock" ] \
+     && [ -n "$(jq -r '.org.name // empty' "$DIR/.agents/skills.lock")" ] && [ -f "$DIR/.agents/POLICIES.md" ]; then
+    rm -f "$DIR/.agents/POLICIES.md"; echo "removed stale .agents/POLICIES.md (the project no longer uses an org)"
   fi
   # critical.json: read by the critical-reasoning hook (keywords/paths -> skill hint).
   if [ "$CRITICAL" != "[]" ]; then jq . <<<"$CRITICAL" > "$DIR/.agents/critical.json"; echo "wrote .agents/critical.json"
