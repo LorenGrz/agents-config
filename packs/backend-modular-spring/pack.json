@@ -1,0 +1,10 @@
+{
+  "description": "Modular monolith by feature on Spring Boot, Java or Kotlin.",
+  "when": { "stacks": ["java-spring", "kotlin-spring"], "decisions": { "backend-style": "modular" } },
+  "index": [
+    { "when": "New feature module, module boundaries, cross-module calls", "use": "feature-module" }
+  ],
+  "critical": [
+    { "skill": "feature-module", "keywords": "nuevo m(o|ó)dulo|new module|nueva feature|new feature module|entre m(o|ó)dulos|between modules" }
+  ]
+}

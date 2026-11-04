@@ -12,10 +12,7 @@
   },
   "permissions": {
     "allow": [
-      "Bash(pnpm lint)",
-      "Bash(pnpm typecheck)",
-      "Bash(pnpm test)",
-      "Bash(pnpm test *)",
+      {{ALLOW_CMDS}}
       "Bash(gh pr view *)",
       "Bash(gh pr checks *)",
       "Bash(gh issue view *)",

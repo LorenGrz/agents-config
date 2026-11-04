@@ -1,0 +1,12 @@
+{
+  "description": "UI workflow for React apps: build from a design, review, unit tests.",
+  "when": { "stacks": ["react-vite", "next", "rn"] },
+  "index": [
+    { "when": "Build a page, screen or component from a design", "use": "ui-builder" },
+    { "when": "Review UI that was built (a11y, responsive, dark mode)", "use": "ui-review" },
+    { "when": "Write or complete unit tests for components and hooks", "use": "vitest-rtl" }
+  ],
+  "critical": [
+    { "skill": "ui-builder", "keywords": "crea(r)? (una )?(page|pantalla|componente)|nueva (pantalla|page)|new (page|screen|component)|pixel perfect|maqueta|mockup|implement(á|a|e) (este|el|the) (figma|dise(ñ|n)o|design)" }
+  ]
+}

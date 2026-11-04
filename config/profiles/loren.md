@@ -27,6 +27,13 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 - Long-term product track: Study Tracker / Developer Progress Tracker (StudyQuest).
 - Portfolio work should explain problem solved, stack, architecture decisions, lessons learned, repository link, and live demo when available.
 
+## Model routing
+
+- Main session: Sonnet via `opusplan` (Opus in plan mode), ADR 0009.
+- `worker` = Sonnet: implements common writing tasks (code, docs, tests) from an approved plan. `reasoner` = Opus: decisions only. `scout` = Haiku: light read-only lookups.
+- Gemini (`agy`) for bulk mechanical writing or wide reading when its quota is the better spend.
+- Planning: recommend subagents and ask. Default recommendation: `scout` for open lookups, `reasoner` for critical decisions, `worker` for changes over 3 files.
+
 ## Local tool paths
 
 - MarkItDown (PDF conversion, use first for PDF work): `~/projects/markitdown/.venv/bin/markitdown`.

@@ -10,3 +10,8 @@
 - [0008 — SessionStart hook for routing and codebase-map refresh](0008-session-start-hook.md) — re-inject routing each session; nudge to refresh `.agents/CONTEXT.md` in large or stale repos.
 - [0009 — `opusplan` default and critical-reasoning hook](0009-opusplan-and-critical-reasoning-hook.md) — plans on Opus, execution on Sonnet; hook nudges toward `reasoner` on critical work.
 - [0010 — Delegating work to Gemini through `agy`](0010-gemini-delegation-via-agy.md) — `gemini-delegate` skill + script (`run` headless / `open` interactive); clean-worktree guard.
+- [0011 — Global vs project scope for skills, rules and MCP](0011-global-vs-project-scope.md) — only global skills in `~/.claude`; stack skills are copied per project.
+- [0012 — Layers: base, organizations, projects](0012-layers-and-organizations.md) — public base + `baseline.md`; private org repos in `organizations/`; `orgs.sh`.
+- [0013 — project-init interview, manifest and stack profiles](0013-interview-manifest-and-stack-profiles.md) — `project.json`, ADR per decision, `stack.env`, Java/Kotlin/Python templates.
+- [0014 — Packs, keyword index and critical hooks](0014-packs-keyword-index-and-critical-hooks.md) — packs by architecture; table in `AGENTS.md`; `critical.json` hint hook.
+- [0015 — Leak guard and generated plugin files](0015-leak-guard-and-generated-plugin-files.md) — local blocklist, pre-commit + CI; `gen-plugin.sh`.

@@ -51,10 +51,20 @@ step() { # step <label> <command...>
   fi
 }
 
-step "pnpm install --frozen-lockfile" pnpm install --frozen-lockfile
-step "format:check" pnpm run --if-present format:check
-step "lint --max-warnings 0" pnpm run --if-present lint --max-warnings 0
-step "typecheck" pnpm run --if-present typecheck
-step "test" pnpm run --if-present test
-step "build" pnpm run --if-present build
+if [ -f .agents/stack.env ]; then
+  # Non-node stack: same steps as its ci.yml, taken from .agents/stack.env.
+  # shellcheck disable=SC1091
+  . .agents/stack.env
+  for pair in "install:$CMD_INSTALL" "format check:$CMD_FORMAT_CHECK" "lint:$CMD_LINT" \
+              "typecheck:$CMD_TYPECHECK" "test:$CMD_TEST" "build:$CMD_BUILD"; do
+    [ -n "${pair#*:}" ] && step "${pair%%:*}" bash -c "${pair#*:}"
+  done
+else
+  step "pnpm install --frozen-lockfile" pnpm install --frozen-lockfile
+  step "format:check" pnpm run --if-present format:check
+  step "lint --max-warnings 0" pnpm run --if-present lint --max-warnings 0
+  step "typecheck" pnpm run --if-present typecheck
+  step "test" pnpm run --if-present test
+  step "build" pnpm run --if-present build
+fi
 echo "verify-ci: all steps passed"

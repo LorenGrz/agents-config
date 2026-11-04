@@ -1,0 +1,40 @@
+name: guard
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Leak guard (tree)
+        env:
+          LEAK_BLOCKLIST: ${{ secrets.LEAK_BLOCKLIST }}
+        run: scripts/leak-guard.sh --all
+      - name: Leak guard (commit messages)
+        env:
+          LEAK_BLOCKLIST: ${{ secrets.LEAK_BLOCKLIST }}
+        run: |
+          if [ "${{ github.event_name }}" = pull_request ]; then
+            range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          elif [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ] \
+               && git cat-file -e "${{ github.event.before }}^{commit}" 2>/dev/null; then
+            range="${{ github.event.before }}..${{ github.sha }}"
+          else
+            range="-n 50 ${{ github.sha }}"
+          fi
+          scripts/leak-guard.sh --log $range
+      - name: Derived plugin files are up to date
+        run: scripts/gen-plugin.sh --check
+      - name: Offline test suites
+        run: |
+          bash scripts/test-leak-guard.sh
+          bash scripts/test-packs.sh
+          bash scripts/test-orgs.sh
+          bash devops/project-init/scripts/test-manifest.sh

@@ -1,0 +1,6 @@
+{
+  "description": "pytest conventions.",
+  "when": { "stacks": ["python"] },
+  "index": [{ "when": "Write, complete or review tests", "use": "pytest-conventions" }],
+  "critical": []
+}

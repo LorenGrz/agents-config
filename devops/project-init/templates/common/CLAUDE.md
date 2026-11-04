@@ -16,4 +16,4 @@ AGENTS.md above is the source of truth for this repo. This file only maps the wo
 | Before opening a PR | `verification-before-completion` |
 | Branching/PR/merge | `scripts/gh-flow.sh start\|pr\|merge\|release` |
 
-`.claude/hooks/guard-branch.sh` blocks `git commit`/`git push` against `dev` or `main` directly - use `scripts/gh-flow.sh` instead. `.claude/hooks/lint-on-edit.sh` runs ESLint on every edited `.ts`/`.tsx`/`.js`/`.jsx` file and reports errors back to the agent immediately.
+`.claude/hooks/guard-branch.sh` blocks `git commit`/`git push` against `dev` or `main` directly - use `scripts/gh-flow.sh` instead. `.claude/hooks/lint-on-edit.sh` runs {{LINT_HOOK_DESC}} and reports errors back to the agent immediately.

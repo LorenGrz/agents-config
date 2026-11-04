@@ -1,0 +1,19 @@
+{
+  "name": "acme",
+  "version": "0.1.0",
+  "extends": "agents-config>=0.1.0",
+  "match": {
+    "gh_owners": [],
+    "remote_patterns": []
+  },
+  "defaults": {
+    "base_branch": "dev",
+    "pr_language": "en",
+    "tracker": "none"
+  },
+  "blocklist_terms": [],
+  "replaces": {},
+  "assets": {},
+  "index": [],
+  "critical": []
+}

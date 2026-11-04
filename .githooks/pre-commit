@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Enable with: git config core.hooksPath .githooks
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+"$ROOT/scripts/leak-guard.sh" --staged
+"$ROOT/scripts/gen-plugin.sh" --check

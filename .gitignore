@@ -9,5 +9,10 @@
 # Local git metadata when this tree is also the working hub
 /.claude
 
+# Private organizations: each one is its own git repo, never tracked here
+/organizations/*
+!/organizations/README.md
+!/organizations/_template/
+
 # Skill eval output
 evals/results/

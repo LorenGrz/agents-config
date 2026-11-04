@@ -1,0 +1,11 @@
+{
+  "description": "Commit, PR and session-summary commands that work with scripts/gh-flow.sh.",
+  "always": true,
+  "index": [
+    { "when": "Group my changes into commits", "use": "/smart-commit" },
+    { "when": "Write the PR description", "use": "/pr-message" },
+    { "when": "Commit, push and open the PR", "use": "/ship-pr" },
+    { "when": "Summarize the session to resume later", "use": "/smart-compact" }
+  ],
+  "critical": []
+}

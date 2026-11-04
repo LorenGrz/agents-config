@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # init.sh - overlay project-init's templates onto a project directory.
 #
-# Usage: init.sh --stack <react-vite|next|nestjs|node-ts> --name <name>
+# Usage: init.sh --stack <react-vite|next|nestjs|node-ts|python|java-spring|kotlin-spring> --name <name>
 #                 [--dir <path>] [--owner <owner>] [--project-number N]
-#                 [--force] [--install]
+#                 [--force] [--install] [--manifest <file>]
 #
 # Also installs the stack's skills/rules/MCP into .claude/ via
 # scripts/project-agents.sh; --with adds extra stacks (rn,aws,python,kotlin,
@@ -19,11 +19,13 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: init.sh --stack <react-vite|next|nestjs|node-ts> --name <name>
+Usage: init.sh --stack <react-vite|next|nestjs|node-ts|python|java-spring|kotlin-spring> --name <name>
                [--dir <path>] [--owner <owner>] [--project-number N]
                [--force] [--install]
 
-  --stack            react-vite | next | nestjs | node-ts (required)
+  --stack            react-vite | next | nestjs | node-ts | python | java-spring |
+                     kotlin-spring (required). JVM stacks: generate the project first
+                     (pom.xml or build.gradle[.kts] decides Maven/Gradle)
   --name             project name, used as {{PROJECT}} (required)
   --dir              target directory (default: cwd)
   --owner            GitHub owner, used as {{OWNER}} (default: `gh api user
@@ -32,7 +34,11 @@ Usage: init.sh --stack <react-vite|next|nestjs|node-ts> --name <name>
   --project-number   GitHub Project number, used as {{PROJECT_NUMBER}} (default: TBD)
   --with             extra stacks for skills/rules/MCP, comma-separated
                      (rn,aws,python,kotlin,apex,docker,llm,supabase,jira)
-  --force            overwrite files that already exist
+  --manifest         interview result (.agents/project.json schema, see
+                     references/interview.md): fills --name/--stack/--with
+                     when not given, writes project.json, ADRs and pending
+                     decisions. --stack and --name become optional
+  --force           overwrite files that already exist
   --install          actually install the missing devDependencies (ESLint plus
                      any prettier/vitest/tsx the scripts use), write missing
                      package.json scripts, create package.json for node-ts,
@@ -59,6 +65,9 @@ DIR="$(pwd)"
 OWNER=""
 PROJECT_NUMBER="TBD"
 WITH=""
+MANIFEST=""
+ORG=""
+ORG_MISMATCH_OK=0
 FORCE=0
 INSTALL=0
 
@@ -70,6 +79,9 @@ while [ $# -gt 0 ]; do
     --owner) OWNER="$2"; shift 2 ;;
     --project-number) PROJECT_NUMBER="$2"; shift 2 ;;
     --with) WITH="$2"; shift 2 ;;
+    --manifest) MANIFEST="$2"; shift 2 ;;
+    --org) ORG="$2"; shift 2 ;;
+    --allow-org-mismatch) ORG_MISMATCH_OK=1; shift ;;
     --force) FORCE=1; shift ;;
     --install) INSTALL=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -77,9 +89,23 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+if [ -n "$MANIFEST" ]; then
+  # Flags win; the manifest fills what is missing. Extra stacks are passed to
+  # project-agents.sh only if config/scopes.json knows them.
+  _sd="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  bash "$_sd/scripts/manifest.sh" validate "$MANIFEST" >/dev/null || exit 1
+  NAME="${NAME:-$(jq -r '.name' "$MANIFEST")}"
+  ORG="${ORG:-$(jq -r '.org // empty' "$MANIFEST")}"
+  STACK="${STACK:-$(jq -r '.stacks[0]' "$MANIFEST")}"
+  if [ -z "$WITH" ]; then
+    WITH="$(jq -r --slurpfile sc "$_sd/../../config/scopes.json" \
+      '[(.stacks[1:][]?), (.extras[]?)] | map(select($sc[0].stacks[.] != null)) | join(",")' "$MANIFEST")"
+  fi
+fi
+
 case "$STACK" in
-  react-vite|next|nestjs|node-ts) ;;
-  *) echo "Error: --stack must be one of react-vite|next|nestjs|node-ts" >&2; exit 1 ;;
+  react-vite|next|nestjs|node-ts|python|java-spring|kotlin-spring) ;;
+  *) echo "Error: --stack must be one of react-vite|next|nestjs|node-ts|python|java-spring|kotlin-spring" >&2; exit 1 ;;
 esac
 [ -n "$NAME" ] || { echo "Error: --name is required" >&2; exit 1; }
 
@@ -93,15 +119,72 @@ COMMON_DIR="$SKILL_DIR/templates/common"
 STACK_DIR="$SKILL_DIR/templates/$STACK"
 DATE="$(date +%Y-%m-%d)"
 
+# The org's POLICIES.md is private: never copy it into a repo owned by someone else by accident.
+if [ -n "$ORG" ]; then
+  [[ "$ORG" =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "Error: invalid organization name '$ORG'" >&2; exit 1; }
+  _oj="$SKILL_DIR/../../organizations/$ORG/org.json"
+  if [ -f "$_oj" ] && ! jq -e --arg o "$OWNER" '(.match.gh_owners // []) | any(ascii_downcase == ($o | ascii_downcase))' "$_oj" >/dev/null; then
+    echo "warning: project owner '$OWNER' is not one of organization '$ORG' GitHub owners ($(jq -r '(.match.gh_owners // []) | join(", ")' "$_oj"))." >&2
+    echo "         Its private POLICIES.md would be copied into this project." >&2
+    if [ "$ORG_MISMATCH_OK" != 1 ]; then
+      if [ -t 0 ]; then read -r -p "Continue? [y/N] " _a; [ "${_a:-}" = y ] || { echo "aborted" >&2; exit 1; }
+      else echo "Error: refusing in non-interactive mode; pass --allow-org-mismatch to proceed" >&2; exit 1; fi
+    fi
+  fi
+fi
+
 mkdir -p "$DIR"
 
-substitute() {
-  sed -e "s/{{PROJECT}}/$NAME/g" \
-      -e "s/{{OWNER}}/$OWNER/g" \
-      -e "s/{{PROJECT_NUMBER}}/$PROJECT_NUMBER/g" \
-      -e "s/{{STACK}}/$STACK/g" \
-      -e "s/{{DATE}}/$DATE/g"
+# --- stack profile -----------------------------------------------------------
+# Node stacks use these defaults (pnpm). Other stacks ship templates/<stack>/stack.env
+# (sourced below) and may ship @<variant>/ overlays (java-spring: @maven, @gradle),
+# each with its own stack.env, files and setup.sh. The variant is detected from the
+# project the generator already created (pom.xml / build.gradle[.kts]).
+RUNTIME=node
+PKG_MANAGER="pnpm"
+CMD_INSTALL="pnpm install --frozen-lockfile"
+CMD_DEV="pnpm dev"; CMD_TEST="pnpm test"; CMD_LINT="pnpm lint"; CMD_TYPECHECK="pnpm typecheck"
+CMD_FORMAT="pnpm format"; CMD_FORMAT_CHECK="pnpm format:check"; CMD_BUILD="pnpm build"
+LINT_DESC='Lint (`--max-warnings 0` in CI)'
+LINT_NOTE=' with `--max-warnings 0`'
+ENFORCEMENT_FILES='`eslint.config.*`, `tsconfig*.json`, and `.github/workflows/ci.yml`'
+LANG_STANDARD='- **TypeScript**: strict mode, no `any` (`unknown` + narrow at untrusted boundaries); discriminated unions for state/result variants; keep DTOs separate from domain types. Deeper: `typescript-code-quality`.'
+LINT_HOOK_DESC='ESLint on every edited `.ts`/`.tsx`/`.js`/`.jsx` file'
+ALLOW_CMDS=$'"Bash(pnpm lint)",\n      "Bash(pnpm typecheck)",\n      "Bash(pnpm test)",\n      "Bash(pnpm test *)",'
+SKIP_COMMON=""   # common-template files this stack does not want (space-separated)
+PY_PACKAGE=""    # python: importable package name (used by the smoke test template)
+VARIANT=""
+
+# shellcheck disable=SC1091
+[ -f "$STACK_DIR/stack.env" ] && . "$STACK_DIR/stack.env"
+
+variants=()
+for _v in maven gradle; do [ -d "$STACK_DIR/@$_v" ] && variants+=("$_v"); done
+if [ ${#variants[@]} -gt 0 ]; then
+  if [ -f "$DIR/pom.xml" ]; then VARIANT=maven
+  elif [ -f "$DIR/build.gradle" ] || [ -f "$DIR/build.gradle.kts" ]; then VARIANT=gradle
+  else echo "Error: no pom.xml or build.gradle[.kts] in $DIR: generate the project first (SKILL step 2)" >&2; exit 1; fi
+  case " ${variants[*]} " in
+    *" $VARIANT "*) ;;
+    *) echo "Error: $STACK supports only: ${variants[*]} (found $VARIANT)" >&2; exit 1 ;;
+  esac
+  # shellcheck disable=SC1091
+  [ -f "$STACK_DIR/@$VARIANT/stack.env" ] && . "$STACK_DIR/@$VARIANT/stack.env"
+  echo "variant: $VARIANT"
+fi
+
+# sed-safe replacement text: escape \ & and the | delimiter, newlines -> \n
+sed_esc() { # escape \ & and the | delimiter, newlines -> \n (pure bash: a one-line sed with N exits before the s///)
+  local v="$1"; v="${v//\\/\\\\}"; v="${v//&/\\&}"; v="${v//|/\\|}"; v="${v//$'\n'/\\n}"; printf '%s' "$v"
 }
+SUBS=()
+PROJECT="$NAME"
+for _k in PROJECT OWNER PROJECT_NUMBER STACK DATE PKG_MANAGER CMD_DEV CMD_TEST CMD_LINT CMD_TYPECHECK CMD_FORMAT CMD_FORMAT_CHECK CMD_BUILD \
+          LINT_DESC LINT_NOTE ENFORCEMENT_FILES LANG_STANDARD LINT_HOOK_DESC ALLOW_CMDS PY_PACKAGE; do
+  SUBS+=(-e "s|{{$_k}}|$(sed_esc "${!_k}")|g")
+done
+
+substitute() { sed "${SUBS[@]}"; }
 
 # Copy every file under $1 (templates/common or templates/<stack>) into $DIR,
 # substituting placeholders. Skips AGENTS.md and AGENTS.stack.md - those are
@@ -140,13 +223,16 @@ merge_gitignore() {
 }
 
 copy_template_tree() {
-  local src_root="$1"
+  local src_root="$1" skip="${2:-}"
   [ -d "$src_root" ] || return 0
   local file rel dest
   while IFS= read -r -d '' file; do
     rel="${file#"$src_root"/}"
     [ "$rel" = "AGENTS.md" ] && continue
     [ "$rel" = "AGENTS.stack.md" ] && continue
+    # stack-profile files are consumed by init.sh itself, never copied as-is
+    case "$rel" in stack.env|setup.sh|@*) continue ;; esac
+    case " $skip " in *" $rel "*) continue ;; esac
     dest="$DIR/$rel"
     if [ -e "$dest" ] && [ "$FORCE" != 1 ]; then
       if [ "$rel" = ".gitignore" ]; then
@@ -411,18 +497,65 @@ run_format() {
   (cd "$DIR" && pnpm run format)
 }
 
-ensure_node_ts_package
-copy_template_tree "$COMMON_DIR"
-generate_agents_md
-copy_template_tree "$STACK_DIR"
-report_scripts
-ensure_package_manager
-print_or_install_deps
-ensure_tsconfig_strict
-run_format
+# Interview result (references/interview.md): project.json, ADRs, pending decisions.
+# Runs before run_format so the generated files get formatted with the rest.
+apply_manifest() {
+  [ -n "$MANIFEST" ] || return 0
+  bash "$SKILL_DIR/scripts/manifest.sh" apply "$MANIFEST" "$DIR"
+}
+
+# Non-node stacks: the commands scripts/gh-flow.sh pr and verify-ci.sh run, kept in
+# one place inside the project (.agents/stack.env). Node projects use package.json.
+write_stack_env() {
+  local dest="$DIR/.agents/stack.env"
+  if [ -e "$dest" ] && [ "$FORCE" != 1 ]; then echo "skip .agents/stack.env (exists)"; return; fi
+  mkdir -p "$DIR/.agents"
+  {
+    echo "# Written by project-init. Commands for scripts/gh-flow.sh pr and verify-ci.sh."
+    for k in RUNTIME CMD_INSTALL CMD_FORMAT_CHECK CMD_LINT CMD_TYPECHECK CMD_TEST CMD_BUILD; do
+      printf '%s=%q\n' "$k" "${!k}"
+    done
+  } > "$dest"
+  echo "wrote .agents/stack.env"
+}
+
+# Stack-specific build-file patching (formatter/linter config): setup.sh at the stack
+# level, then the variant's. They get DIR and INSTALL; without --install they only print.
+run_stack_setup() {
+  local s
+  for s in "$STACK_DIR/setup.sh" "${VARIANT:+$STACK_DIR/@$VARIANT/setup.sh}"; do
+    [ -n "$s" ] && [ -f "$s" ] && DIR="$DIR" INSTALL="$INSTALL" SKILL_DIR="$SKILL_DIR" bash "$s"
+  done
+  return 0
+}
+
+run_stack_format() {
+  [ "$INSTALL" = 1 ] || { echo "Run with --install to finish with '$CMD_FORMAT' (so CI's format check passes)."; return 0; }
+  (cd "$DIR" && bash -c "$CMD_FORMAT")
+}
+
+# Skills, rules, MCP and packs (commands, keyword table, critical.json) from the hub.
+# Runs before the formatters so the copied markdown gets formatted with the rest.
 install_agent_scope() {
   local hub; hub="$(cd "$SKILL_DIR/../.." && pwd)"
   [ -x "$hub/scripts/project-agents.sh" ] || return 0
-  bash "$hub/scripts/project-agents.sh" --stack "$STACK${WITH:+,$WITH}" --dir "$DIR"
+  bash "$hub/scripts/project-agents.sh" --stack "$STACK${WITH:+,$WITH}" ${MANIFEST:+--manifest "$MANIFEST"} ${ORG:+--org "$ORG"} --dir "$DIR"
 }
+
+[ "$RUNTIME" = node ] && ensure_node_ts_package
+[ -n "$VARIANT" ] && copy_template_tree "$STACK_DIR/@$VARIANT"
+copy_template_tree "$STACK_DIR"
+copy_template_tree "$COMMON_DIR" "$SKIP_COMMON"
+generate_agents_md
+if [ "$RUNTIME" = node ]; then
+  report_scripts
+  ensure_package_manager
+  print_or_install_deps
+  ensure_tsconfig_strict
+else
+  write_stack_env
+  run_stack_setup
+fi
 install_agent_scope
+apply_manifest
+if [ "$RUNTIME" = node ]; then run_format; else run_stack_format; fi

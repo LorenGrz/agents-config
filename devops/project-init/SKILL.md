@@ -9,19 +9,23 @@ Scaffold a new repo once, correctly, instead of re-deciding workflow per project
 
 ## Workflow
 
-1. **Ask**: stack (`react-vite` | `next` | `nestjs` | `node-ts`), project name, visibility (default `public`). Remind the user: never commit secrets.
+1. **Interview**: follow `references/interview.md` (org, stack, backend/frontend architecture, data and auth, testing and deploy, SDD), plus project name and visibility (default `public`). Critical answers are never defaulted: "no sé" goes to `pending`. Write the answers as a manifest (schema in that file) outside the target dir, e.g. in the session scratchpad, and check it with `bash scripts/manifest.sh validate <manifest>`. Remind the user: never commit secrets.
 
 2. **Generate the app, if the target dir is empty**, with the stack's own official generator in its non-interactive form, then overlay this skill's templates. The dir/package name must be lowercase (npm rule) and may differ from the GitHub repo name (repo `Disfrazate`, dir/package `disfrazate`); `--name` below is the **GitHub repo name**:
    - react-vite: `pnpm create vite@latest <dir> --template react-ts --no-interactive --no-immediate`, then `pnpm -C <dir> install` (run from the parent dir; vite resolves `<dir>` relative to cwd)
    - next: `pnpm create next-app@latest <dir> --yes --use-pnpm --disable-git`
    - nestjs: `pnpm dlx @nestjs/cli new <dir> --directory <dir> --package-manager pnpm --skip-git --no-observe`
    - node-ts: just `mkdir <dir>`; `init.sh --install` creates `package.json` and `src/index.ts`
+   - python: `uv init --package --vcs none <dir>`
+   - java-spring / kotlin-spring: Spring Initializr (`curl -fsS https://start.spring.io/starter.zip -d type=<t> -d language=<l> -d javaVersion=21 -d groupId=<g> -d artifactId=<dir> -d name=<dir> -d packageName=<g>.<pkg> -d dependencies=<deps> -o x.zip && unzip -q x.zip -d <dir>`). `type`: `maven-project` or `gradle-project` (Java), `gradle-project-kotlin` with `language=kotlin` (Kotlin supports Gradle only). `dependencies` comes from the interview (e.g. `web,validation,actuator`; `data-jpa,postgresql,flyway` for Postgres + Flyway). `init.sh` picks Maven or Gradle from the generated project (`pom.xml` / `build.gradle[.kts]`) and adds Spotless.
    Then run:
    ```
-   bash scripts/init.sh --stack <stack> --name <repo-name> --dir <path> [--owner <owner>] [--project-number N] --install [--with aws,llm,supabase,...]
+   bash scripts/init.sh --manifest <manifest> --dir <path> [--owner <owner>] [--project-number N] --install
    ```
+   `--manifest` supplies `--name`, `--stack` (its first stack) and `--with`, and writes `.agents/project.json`, one ADR per decision and the pending decisions into `.agents/CONTEXT.md`. Without a manifest, pass `--stack <stack> --name <repo-name> [--with aws,llm,supabase,...]` as before.
    `--owner` defaults to `gh api user --jq .login` (if `gh` is authenticated), then `git config github.user`; pass it explicitly if neither resolves.
    Without `--install`, `init.sh` only prints the commands needed (devDependencies, missing package.json scripts); nothing is installed or written to `package.json` scripts.
+   **Stack profiles.** Node stacks use pnpm defaults inside `init.sh`. Other stacks ship `templates/<stack>/stack.env` (commands, lint/format text, allowed commands), optional `@maven/` / `@gradle/` variant overlays and a `setup.sh` that patches the build file (Spotless, ruff/mypy/pytest). Stack files win over `templates/common` (`SKIP_COMMON` drops the ones that don't apply). For non-node stacks `init.sh` writes `.agents/stack.env`, which `scripts/gh-flow.sh pr` and `verify-ci.sh` use instead of `package.json` scripts.
 
 3. **Local git setup** (do this, do not delegate it):
    - `git init -b main` if the directory is not already a repo.
@@ -93,6 +97,8 @@ Use `scripts/adopt.sh` instead of `init.sh` when the repo was **not** generated 
 - `bootstrap-github.sh` and `gh-flow.sh` export `CLICOLOR_FORCE=0 NO_COLOR=1`: a shell with `CLICOLOR_FORCE=1`/`FORCE_COLOR=1` makes `gh --format json | jq` fail on ANSI codes, and only `CLICOLOR_FORCE=0` turns it off. `gh-flow.sh start` uses `git pull --autostash` so a dirty tree survives pull.rebase.
 - The project's `guard-branch.sh` hook blocks `git commit`/`git push` on dev/main, except the initial commit (no HEAD yet). It judges the repo the command targets (`git -C <dir>` or a leading `cd <dir> &&`), not the session cwd.
 - node-ts's ESLint config is `eslint.config.mjs` so it loads regardless of the package `"type"`.
-- After editing anything in this skill, run `bash scripts/e2e.sh --stack all` (generates all four stacks in temp dirs, runs `init.sh --install`, `verify-ci.sh`, and an idempotency re-run; never touches GitHub). It must end with every stack PASS.
+- After editing the manifest/interview parts, run `bash scripts/test-manifest.sh` (offline, no network).
+- After editing anything in this skill, run `bash scripts/e2e.sh --stack all` (generates every stack, including `java-spring`, `java-spring-gradle`, `kotlin-spring` and `python`, in temp dirs, runs `init.sh --install`, `verify-ci.sh`, and an idempotency re-run; never touches GitHub). It must end with every stack PASS.
 
+- **Packs** (`packs/<name>/` in the hub: `pack.json`, `skills/`, `commands/`) bundle skills and slash commands by architecture. `init.sh --manifest` passes the manifest to `project-agents.sh`, which installs the `always` packs (`workflow`) plus those whose `when` matches the stacks and decisions (e.g. `backend-hexagonal-spring` for a Java/Kotlin backend with `backend-style: hexagonal`). It also writes `.agents/critical.json` (keyword/path -> skill, read by the `critical-reasoning.sh` hook), a keyword table in `AGENTS.md` and `.agents/skills.lock`. Check with `bash ~/.agents/skills/scripts/test-packs.sh`.
 - `init.sh` also installs the stack's skills/rules/MCP into `.claude/` and `.mcp.json` via `scripts/project-agents.sh` (stacks in `config/scopes.json`; `--with` adds extra ones). Stack skills are NOT global anymore.

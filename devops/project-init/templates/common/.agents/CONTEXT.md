@@ -8,7 +8,7 @@
 
 ## Stack
 
-{{STACK}}, pnpm.
+{{STACK}}, {{PKG_MANAGER}}.
 
 ## Commands
 

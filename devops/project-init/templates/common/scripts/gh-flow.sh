@@ -109,11 +109,20 @@ cmd_pr() {
     dev|main) echo "pr: refusing to open a PR from $branch" >&2; exit 1 ;;
   esac
 
-  for script in lint typecheck test; do
-    if pkg_has_script "$script"; then
-      run pnpm "$script"
-    fi
-  done
+  if [ -f .agents/stack.env ]; then
+    # Non-node stack: commands live in .agents/stack.env (written by project-init).
+    # shellcheck disable=SC1091
+    . .agents/stack.env
+    for c in "$CMD_LINT" "$CMD_TYPECHECK" "$CMD_TEST"; do
+      [ -n "$c" ] && run bash -c "$c"
+    done
+  else
+    for script in lint typecheck test; do
+      if pkg_has_script "$script"; then
+        run pnpm "$script"
+      fi
+    done
+  fi
 
   run git push -u origin "$branch"
 
