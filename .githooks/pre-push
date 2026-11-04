@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Scan what is about to become public: the whole tree and the commits being pushed (CI only
+# notices a leak after it is already public). Enable with: git config core.hooksPath .githooks
+ROOT="$(git rev-parse --show-toplevel)"
+"$ROOT/scripts/leak-guard.sh" --all || exit 1
+zero=0000000000000000000000000000000000000000
+while read -r _lref lsha _rref rsha; do
+  [ "$lsha" = "$zero" ] && continue
+  if [ "$rsha" = "$zero" ]; then "$ROOT/scripts/leak-guard.sh" --log "$lsha" --not --remotes || exit 1
+  else "$ROOT/scripts/leak-guard.sh" --log "$rsha..$lsha" || exit 1; fi
+done
+exit 0
