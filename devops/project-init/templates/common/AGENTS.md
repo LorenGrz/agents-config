@@ -21,18 +21,18 @@ A new agent session should understand this project from these files alone, in th
 ## Stack
 
 - Type: {{STACK}}
-- Package manager: pnpm
+- Package manager: {{PKG_MANAGER}}
 
 ## Commands
 
 | Command | Purpose |
 |---|---|
-| `pnpm dev` | Run the app locally |
-| `pnpm test` | Run the test suite |
-| `pnpm lint` | Lint (`--max-warnings 0` in CI) |
-| `pnpm typecheck` | Type-check without emitting |
-| `pnpm format` | Auto-format |
-| `pnpm format:check` | Check formatting without writing |
+| `{{CMD_DEV}}` | Run the app locally |
+| `{{CMD_TEST}}` | Run the test suite |
+| `{{CMD_LINT}}` | {{LINT_DESC}} |
+| `{{CMD_TYPECHECK}}` | Type-check without emitting |
+| `{{CMD_FORMAT}}` | Auto-format |
+| `{{CMD_FORMAT_CHECK}}` | Check formatting without writing |
 
 ## How we work (spec-driven, with superpowers)
 
@@ -69,9 +69,9 @@ GitHub-side settings (branch protection, merge strategy) are not in the repo: ch
 
 ## Engineering standards
 
-Mechanical rules live in `eslint.config.*`, `tsconfig*.json`, and `.github/workflows/ci.yml` - this section is what no linter catches.
+Mechanical rules live in {{ENFORCEMENT_FILES}} - this section is what no linter catches.
 
-- **TypeScript**: strict mode, no `any` (`unknown` + narrow at untrusted boundaries); discriminated unions for state/result variants; keep DTOs separate from domain types. Deeper: `typescript-code-quality`.
+{{LANG_STANDARD}}
 - **Validation**: validate every external input (HTTP, env, storage, third-party) at the boundary before it reaches business logic; never trust a shared type as runtime validation.
 - **Errors**: typed result objects or domain-specific error classes; preserve cause when wrapping; never leak stack traces or internals through a public API.
 - **API contracts**: request/response DTOs at the boundary, consistent machine-readable error shapes, backward-compatible changes. Deeper: `api-contract-design`.
@@ -97,10 +97,10 @@ Mechanical rules live in `eslint.config.*`, `tsconfig*.json`, and `.github/workf
 
 ## Definition of done
 
-- [ ] `pnpm lint` passes with `--max-warnings 0`
-- [ ] `pnpm typecheck` passes
-- [ ] `pnpm test` passes, and new behavior shipped with a test
-- [ ] `pnpm build` passes
+- [ ] `{{CMD_LINT}}` passes{{LINT_NOTE}}
+- [ ] `{{CMD_TYPECHECK}}` passes
+- [ ] `{{CMD_TEST}}` passes, and new behavior shipped with a test
+- [ ] `{{CMD_BUILD}}` passes
 - [ ] `AGENTS.md` / `.agents/CONTEXT.md` / `docs/architecture.md` updated if stack, scripts, or architecture changed
 - [ ] No secrets, keys, or credentials in the diff
 

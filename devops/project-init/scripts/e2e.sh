@@ -5,11 +5,11 @@
 # re-runs init.sh and asserts the tree stays clean (idempotency). Run it after
 # editing anything under this skill. Never touches GitHub.
 #
-# Usage: e2e.sh [--stack <react-vite|next|nestjs|node-ts|all>] [--keep]
+# Usage: e2e.sh [--stack <react-vite|next|nestjs|node-ts|python|all>] [--keep]
 #   --keep   keep the temp dirs (and print their path) for inspection
 set -euo pipefail
 
-usage() { echo "Usage: e2e.sh [--stack <react-vite|next|nestjs|node-ts|all>] [--keep]"; }
+usage() { echo "Usage: e2e.sh [--stack <react-vite|next|nestjs|node-ts|python|all>] [--keep]"; }
 
 STACK="all"
 KEEP=0
@@ -22,10 +22,10 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-ALL_STACKS=(react-vite next nestjs node-ts)
+ALL_STACKS=(react-vite next nestjs node-ts python)
 case "$STACK" in
   all) STACKS=("${ALL_STACKS[@]}") ;;
-  react-vite|next|nestjs|node-ts) STACKS=("$STACK") ;;
+  react-vite|next|nestjs|node-ts|python) STACKS=("$STACK") ;;
   *) echo "Error: --stack must be one of react-vite|next|nestjs|node-ts|all" >&2; exit 1 ;;
 esac
 
@@ -55,6 +55,8 @@ generate() { # generate <stack> <dir>
         --package-manager pnpm --skip-git --no-observe) ;;
     node-ts)
       mkdir -p "$dir" ;;
+    python)
+      uv init --package --vcs none "$dir" ;;
   esac
 }
 

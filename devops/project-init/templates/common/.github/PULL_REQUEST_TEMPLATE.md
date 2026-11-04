@@ -16,9 +16,9 @@ Closes #<issue-number>
 
 ## Checklist
 
-- [ ] `pnpm lint` passes
-- [ ] `pnpm typecheck` passes
-- [ ] `pnpm test` passes
+- [ ] `{{CMD_LINT}}` passes
+- [ ] `{{CMD_TYPECHECK}}` passes
+- [ ] `{{CMD_TEST}}` passes
 - [ ] `AGENTS.md` updated if this changes commands, architecture, or conventions
 - [ ] Spec/plan saved in docs/superpowers
 - [ ] ADR added if a trade-off was made

@@ -97,10 +97,10 @@ if [ -n "$MANIFEST" ]; then
 fi
 
 case "$STACK" in
-  react-vite|next|nestjs|node-ts) ;;
-  java-spring|kotlin-spring|python)
+  react-vite|next|nestjs|node-ts|python) ;;
+  java-spring|kotlin-spring)
     echo "Error: no project template for '$STACK' yet; scaffold it by hand and use scripts/adopt.sh for the docs layer" >&2; exit 1 ;;
-  *) echo "Error: --stack must be one of react-vite|next|nestjs|node-ts" >&2; exit 1 ;;
+  *) echo "Error: --stack must be one of react-vite|next|nestjs|node-ts|python" >&2; exit 1 ;;
 esac
 [ -n "$NAME" ] || { echo "Error: --name is required" >&2; exit 1; }
 
@@ -116,12 +116,59 @@ DATE="$(date +%Y-%m-%d)"
 
 mkdir -p "$DIR"
 
+# --- stack profile -----------------------------------------------------------
+# Node stacks use these defaults (pnpm). Other stacks ship templates/<stack>/stack.env
+# (sourced below) and may ship @<variant>/ overlays (java-spring: @maven, @gradle),
+# each with its own stack.env, files and setup.sh. The variant is detected from the
+# project the generator already created (pom.xml / build.gradle[.kts]).
+RUNTIME=node
+PKG_MANAGER="pnpm"
+CMD_INSTALL="pnpm install --frozen-lockfile"
+CMD_DEV="pnpm dev"; CMD_TEST="pnpm test"; CMD_LINT="pnpm lint"; CMD_TYPECHECK="pnpm typecheck"
+CMD_FORMAT="pnpm format"; CMD_FORMAT_CHECK="pnpm format:check"; CMD_BUILD="pnpm build"
+LINT_DESC='Lint (`--max-warnings 0` in CI)'
+LINT_NOTE=' with `--max-warnings 0`'
+ENFORCEMENT_FILES='`eslint.config.*`, `tsconfig*.json`, and `.github/workflows/ci.yml`'
+LANG_STANDARD='- **TypeScript**: strict mode, no `any` (`unknown` + narrow at untrusted boundaries); discriminated unions for state/result variants; keep DTOs separate from domain types. Deeper: `typescript-code-quality`.'
+LINT_HOOK_DESC='ESLint on every edited `.ts`/`.tsx`/`.js`/`.jsx` file'
+ALLOW_CMDS=$'"Bash(pnpm lint)",\n      "Bash(pnpm typecheck)",\n      "Bash(pnpm test)",\n      "Bash(pnpm test *)",'
+SKIP_COMMON=""   # common-template files this stack does not want (space-separated)
+PY_PACKAGE=""    # python: importable package name (used by the smoke test template)
+VARIANT=""
+
+# shellcheck disable=SC1091
+[ -f "$STACK_DIR/stack.env" ] && . "$STACK_DIR/stack.env"
+
+variants=()
+for _v in maven gradle; do [ -d "$STACK_DIR/@$_v" ] && variants+=("$_v"); done
+if [ ${#variants[@]} -gt 0 ]; then
+  if [ -f "$DIR/pom.xml" ]; then VARIANT=maven
+  elif [ -f "$DIR/build.gradle" ] || [ -f "$DIR/build.gradle.kts" ]; then VARIANT=gradle
+  else echo "Error: no pom.xml or build.gradle[.kts] in $DIR: generate the project first (SKILL step 2)" >&2; exit 1; fi
+  case " ${variants[*]} " in
+    *" $VARIANT "*) ;;
+    *) echo "Error: $STACK supports only: ${variants[*]} (found $VARIANT)" >&2; exit 1 ;;
+  esac
+  # shellcheck disable=SC1091
+  [ -f "$STACK_DIR/@$VARIANT/stack.env" ] && . "$STACK_DIR/@$VARIANT/stack.env"
+  echo "variant: $VARIANT"
+fi
+
+# sed-safe replacement text: escape \ & and the | delimiter, newlines -> \n
+sed_esc() { printf '%s' "$1" | sed -e ':a;N;$!ba;s/[\\&|]/\\&/g;s/\n/\\n/g'; }
+SUBS=()
+for _k in PKG_MANAGER CMD_DEV CMD_TEST CMD_LINT CMD_TYPECHECK CMD_FORMAT CMD_FORMAT_CHECK CMD_BUILD \
+          LINT_DESC LINT_NOTE ENFORCEMENT_FILES LANG_STANDARD LINT_HOOK_DESC ALLOW_CMDS PY_PACKAGE; do
+  SUBS+=(-e "s|{{$_k}}|$(sed_esc "${!_k}")|g")
+done
+
 substitute() {
   sed -e "s/{{PROJECT}}/$NAME/g" \
       -e "s/{{OWNER}}/$OWNER/g" \
       -e "s/{{PROJECT_NUMBER}}/$PROJECT_NUMBER/g" \
       -e "s/{{STACK}}/$STACK/g" \
-      -e "s/{{DATE}}/$DATE/g"
+      -e "s/{{DATE}}/$DATE/g" \
+      "${SUBS[@]}"
 }
 
 # Copy every file under $1 (templates/common or templates/<stack>) into $DIR,
@@ -161,13 +208,16 @@ merge_gitignore() {
 }
 
 copy_template_tree() {
-  local src_root="$1"
+  local src_root="$1" skip="${2:-}"
   [ -d "$src_root" ] || return 0
   local file rel dest
   while IFS= read -r -d '' file; do
     rel="${file#"$src_root"/}"
     [ "$rel" = "AGENTS.md" ] && continue
     [ "$rel" = "AGENTS.stack.md" ] && continue
+    # stack-profile files are consumed by init.sh itself, never copied as-is
+    case "$rel" in stack.env|setup.sh|@*) continue ;; esac
+    case " $skip " in *" $rel "*) continue ;; esac
     dest="$DIR/$rel"
     if [ -e "$dest" ] && [ "$FORCE" != 1 ]; then
       if [ "$rel" = ".gitignore" ]; then
@@ -439,16 +489,52 @@ apply_manifest() {
   bash "$SKILL_DIR/scripts/manifest.sh" apply "$MANIFEST" "$DIR"
 }
 
-ensure_node_ts_package
-copy_template_tree "$COMMON_DIR"
-generate_agents_md
+# Non-node stacks: the commands scripts/gh-flow.sh pr and verify-ci.sh run, kept in
+# one place inside the project (.agents/stack.env). Node projects use package.json.
+write_stack_env() {
+  local dest="$DIR/.agents/stack.env"
+  if [ -e "$dest" ] && [ "$FORCE" != 1 ]; then echo "skip .agents/stack.env (exists)"; return; fi
+  mkdir -p "$DIR/.agents"
+  {
+    echo "# Written by project-init. Commands for scripts/gh-flow.sh pr and verify-ci.sh."
+    for k in RUNTIME CMD_INSTALL CMD_FORMAT_CHECK CMD_LINT CMD_TYPECHECK CMD_TEST CMD_BUILD; do
+      printf '%s=%q\n' "$k" "${!k}"
+    done
+  } > "$dest"
+  echo "wrote .agents/stack.env"
+}
+
+# Stack-specific build-file patching (formatter/linter config): setup.sh at the stack
+# level, then the variant's. They get DIR and INSTALL; without --install they only print.
+run_stack_setup() {
+  local s
+  for s in "$STACK_DIR/setup.sh" "${VARIANT:+$STACK_DIR/@$VARIANT/setup.sh}"; do
+    [ -n "$s" ] && [ -f "$s" ] && DIR="$DIR" INSTALL="$INSTALL" bash "$s"
+  done
+  return 0
+}
+
+run_stack_format() {
+  [ "$INSTALL" = 1 ] || { echo "Run with --install to finish with '$CMD_FORMAT' (so CI's format check passes)."; return 0; }
+  (cd "$DIR" && bash -c "$CMD_FORMAT")
+}
+
+[ "$RUNTIME" = node ] && ensure_node_ts_package
+[ -n "$VARIANT" ] && copy_template_tree "$STACK_DIR/@$VARIANT"
 copy_template_tree "$STACK_DIR"
-report_scripts
-ensure_package_manager
-print_or_install_deps
-ensure_tsconfig_strict
+copy_template_tree "$COMMON_DIR" "$SKIP_COMMON"
+generate_agents_md
+if [ "$RUNTIME" = node ]; then
+  report_scripts
+  ensure_package_manager
+  print_or_install_deps
+  ensure_tsconfig_strict
+else
+  write_stack_env
+  run_stack_setup
+fi
 apply_manifest
-run_format
+if [ "$RUNTIME" = node ]; then run_format; else run_stack_format; fi
 install_agent_scope() {
   local hub; hub="$(cd "$SKILL_DIR/../.." && pwd)"
   [ -x "$hub/scripts/project-agents.sh" ] || return 0
