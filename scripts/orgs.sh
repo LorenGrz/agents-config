@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # orgs.sh - manage private organization repos under organizations/ (see organizations/README.md).
 #
-# Usage: orgs.sh add <name> <git-url>   clone into organizations/<name> and register
+# Usage: orgs.sh add <name> <git-url>   clone into organizations/<name>, validate and register
 #        orgs.sh add <name> --init      create a local org from organizations/_template
-#        orgs.sh list | status | pull | index
-#        orgs.sh push [<name>] [--yes]  push one org repo (asks first)
-#        orgs.sh validate <name|path>   check org.json / POLICIES.md
+#        orgs.sh list | status | index
+#        orgs.sh pull                   fast-forward every org, then validate it
+#        orgs.sh push <name> [--yes]    push one org repo (asks first)
+#        orgs.sh validate <name|path>   check the org contract (advisory, see README)
 #        orgs.sh detect <owner|remote>  print the org that matches
 #        orgs.sh remove <name> [--force]  refuses a dirty or unpushed repo without --force
 #
@@ -24,11 +25,15 @@ die() { echo "orgs: $*" >&2; exit 1; }
 mkdir -p "$STATE"
 [ -f "$REG" ] || echo '{"orgs":[]}' > "$REG"
 
+valid_name() { [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]]; }
 names() { jq -r '.orgs[].name' "$REG"; }
+registered() { names | grep -qxF -- "$1"; }
 org_dir() { printf '%s/%s' "$ORGS" "$1"; }
+need_name() { valid_name "${1:-}" || die "invalid org name '${1:-}' (lowercase letters, digits and dashes)"; }
 
 resolve() { # resolve <name|path> -> directory
-  if [ -d "$1" ] && [ -f "$1/org.json" ]; then (cd "$1" && pwd); elif [ -d "$(org_dir "$1")" ]; then org_dir "$1"; else die "no such org: $1"; fi
+  if [ -d "$1" ] && [ -f "$1/org.json" ]; then (cd "$1" && pwd)
+  else need_name "$1"; [ -d "$(org_dir "$1")" ] || die "no such org: $1"; org_dir "$1"; fi
 }
 
 register() { # register <name> <remote>
@@ -39,7 +44,7 @@ register() { # register <name> <remote>
 sync_blocklist() { # rebuild the local blocklist from every registered org
   local n; : > "$BL.tmp"
   for n in $(names); do
-    [ -f "$(org_dir "$n")/org.json" ] && jq -r '.blocklist_terms[]?, .name' "$(org_dir "$n")/org.json" >> "$BL.tmp"
+    [ -f "$(org_dir "$n")/org.json" ] && jq -r '.blocklist_terms[]?, .name, (.match.gh_owners[]?)' "$(org_dir "$n")/org.json" >> "$BL.tmp"
   done
   sort -u "$BL.tmp" | sed '/^$/d' > "$BL"; rm -f "$BL.tmp"
 }
@@ -64,39 +69,64 @@ cmd_index() {
   fi
 }
 
+# Contract check. Advisory: it catches mistakes and the obvious baseline-weakening phrases,
+# it is not a security boundary. Every check runs; the exit status is the OR of all of them.
+BASELINE_RE='skip (the )?(tests|verification)|commit (the )?\.env|force.push to (main|dev|master)'
+NEGATION_RE="never|don't|do not|must not|not |nunca|jamás|prohibid"
 cmd_validate() {
-  local d bad=0; d="$(resolve "$1")"
-  chk() { if ! eval "$2"; then echo "orgs: $1" >&2; bad=1; fi; }
-  chk "org.json is not valid JSON" 'jq -e . "$d/org.json" >/dev/null 2>&1'
-  chk "org.json needs name, version and match" 'jq -e ".name and .version and .match" "$d/org.json" >/dev/null 2>&1'
-  chk "org.json match needs gh_owners or remote_patterns" 'jq -e "((.match.gh_owners // []) + (.match.remote_patterns // [])) | length > 0" "$d/org.json" >/dev/null 2>&1'
-  chk "POLICIES.md is missing" '[ -f "$d/POLICIES.md" ]'
-  chk "POLICIES.md must start with a summary of 15 lines or fewer before the first ## section" '[ -f "$d/POLICIES.md" ] && [ "$(awk "/^## /{exit} END{print NR}" "$d/POLICIES.md")" -le 17 ] || [ "$(grep -c "^## " "$d/POLICIES.md" 2>/dev/null)" -eq 0 ]'
-  chk "every skill needs SKILL.md with name and description" 'for s in "$d"/skills/*/; do [ -d "$s" ] || continue; [ -f "$s/SKILL.md" ] && grep -q "^name: " "$s/SKILL.md" && grep -q "^description: " "$s/SKILL.md" || exit 1; done'
-  chk "every command needs a description" 'for c in "$d"/commands/*.md; do [ -f "$c" ] || continue; grep -q "^description: " "$c" || exit 1; done'
-  chk "a baseline weakening is not allowed: POLICIES.md must not tell agents to skip verification or commit secrets" '! grep -qiE "skip (the )?(tests|verification)|commit (the )?\.env|force.push to (main|dev|master)" "$d/POLICIES.md" 2>/dev/null'
-  [ "$bad" -eq 0 ] && echo "orgs: $(jq -r .name "$d/org.json") ok"
+  local d bad=0 name s c; d="$(resolve "$1")"
+  fail() { echo "orgs: $1" >&2; bad=1; }
+  if ! jq -e . "$d/org.json" >/dev/null 2>&1; then fail "org.json is not valid JSON"; return 1; fi
+  name="$(jq -r '.name // empty' "$d/org.json")"
+  jq -e '.name and .version and .match' "$d/org.json" >/dev/null 2>&1 || fail "org.json needs name, version and match"
+  valid_name "$name" || fail "org.json name '$name' is not a valid name"
+  jq -e '((.match.gh_owners // []) + (.match.remote_patterns // [])) | length > 0' "$d/org.json" >/dev/null 2>&1 \
+    || fail "org.json match needs gh_owners or remote_patterns"
+  if [ "$name" != acme ] && jq -e '(.blocklist_terms // []) | index("acme") != null' "$d/org.json" >/dev/null 2>&1; then
+    fail "blocklist_terms still has the template placeholder 'acme'"
+  fi
+  [ -f "$d/POLICIES.md" ] || fail "POLICIES.md is missing"
+  if [ -f "$d/POLICIES.md" ] && grep -q '^## ' "$d/POLICIES.md" && [ "$(awk '/^## /{print NR - 1; exit}' "$d/POLICIES.md")" -gt 17 ]; then
+    fail "POLICIES.md must start with a summary of 15 lines or fewer before the first ## section"
+  fi
+  for s in "$d"/skills/*/; do
+    [ -d "$s" ] || continue
+    { [ -f "$s/SKILL.md" ] && grep -q '^name: ' "$s/SKILL.md" && grep -q '^description: ' "$s/SKILL.md"; } \
+      || fail "skill $(basename "$s") needs SKILL.md with name and description"
+  done
+  for c in "$d"/commands/*.md; do
+    [ -f "$c" ] || continue
+    grep -q '^description: ' "$c" || fail "command $(basename "$c") needs a description"
+  done
+  local files=() f
+  for f in "$d/POLICIES.md" "$d"/commands/*.md "$d"/skills/*/SKILL.md; do [ -f "$f" ] && files+=("$f"); done
+  if [ "${#files[@]}" -gt 0 ] && { grep -hiE "$BASELINE_RE" "${files[@]}" || true; } | { grep -viE "$NEGATION_RE" || true; } | grep -q .; then
+    fail "policies, skills or commands appear to weaken the baseline (skip verification, commit .env, force-push)"
+  fi
+  [ "$bad" -eq 0 ] && echo "orgs: $name ok"
   return "$bad"
 }
 
 cmd_add() {
-  local name="$1" src="${2:-}" d; d="$(org_dir "$name")"
+  local name="$1" src="${2:-}" d
   [ -n "$src" ] || die "usage: orgs.sh add <name> <git-url|--init>"
-  case "$name" in *[!a-z0-9-]*|"") die "name must be lowercase letters, digits and dashes" ;; esac
+  need_name "$name"; d="$(org_dir "$name")"
   if [ "$src" = "--init" ]; then
     [ ! -e "$d" ] || die "$d already exists"
-    cp -r "$ORGS/_template" "$d"; sed -i "s/\"name\": \"acme\"/\"name\": \"$name\"/" "$d/org.json"
+    cp -r "$ORGS/_template" "$d"
+    jq --arg n "$name" '.name = $n' "$d/org.json" > "$d/org.json.tmp" && mv "$d/org.json.tmp" "$d/org.json"
     git -C "$d" init -q -b main; register "$name" ""
     echo "created $d (local only: edit org.json/POLICIES.md, validate, commit, then create its private remote)"
   else
     [ -e "$d" ] && echo "skip clone: $d exists" || git clone -q "$src" "$d"
     register "$name" "$src"
+    cmd_validate "$name" || echo "orgs: $name registered but does not validate yet" >&2
   fi
   cmd_index; echo "registered $name"
 }
 
 cmd_status() {
-  local n d ver ext cur dirty ahead
+  local n d ver ext cur dirty ahead warn
   cur="$(cat "$HUB/VERSION" 2>/dev/null || echo 0)"
   echo "base: $cur ($(git -C "$HUB" rev-parse --short HEAD 2>/dev/null || echo unknown))"
   for n in $(names); do
@@ -109,11 +139,19 @@ cmd_status() {
   done
 }
 
-cmd_pull() { local n; for n in $(names); do [ -d "$(org_dir "$n")/.git" ] && git -C "$(org_dir "$n")" pull --ff-only 2>&1 | sed "s/^/$n: /" || true; done; cmd_index; }
+cmd_pull() {
+  local n rc=0
+  for n in $(names); do
+    [ -d "$(org_dir "$n")/.git" ] || continue
+    git -C "$(org_dir "$n")" pull --ff-only 2>&1 | sed "s/^/$n: /" || true
+    cmd_validate "$n" || { echo "orgs: $n does not validate after pull" >&2; rc=1; }
+  done
+  cmd_index; return "$rc"
+}
 
 cmd_push() {
   local n="" yes=0 a; for a in "$@"; do [ "$a" = "--yes" ] && yes=1 || n="$a"; done
-  [ -n "$n" ] || die "usage: orgs.sh push <name> [--yes]"
+  need_name "$n"; registered "$n" || die "$n is not a registered org"
   local d; d="$(org_dir "$n")"; [ -d "$d/.git" ] || die "$n is not a git repo"
   git -C "$d" remote get-url origin >/dev/null 2>&1 || die "$n has no remote yet (create the private repo first)"
   if [ "$yes" -ne 1 ]; then
@@ -132,7 +170,10 @@ cmd_detect() { # detect <owner|remote-url>
 }
 
 cmd_remove() {
-  local n="$1" force="${2:-}" d; d="$(org_dir "$n")"
+  local n="$1" force="${2:-}" d
+  need_name "$n"; registered "$n" || die "$n is not a registered org"
+  d="$(org_dir "$n")"
+  case "$d" in "$ORGS"/*) ;; *) die "refusing to remove '$d'" ;; esac
   if [ -d "$d/.git" ] && [ "$force" != "--force" ]; then
     [ -z "$(git -C "$d" status --porcelain)" ] || die "$n has uncommitted changes (use --force)"
     if git -C "$d" rev-parse '@{u}' >/dev/null 2>&1; then
@@ -153,5 +194,5 @@ case "${1:-}" in
   validate) [ $# -eq 2 ] || die "usage: orgs.sh validate <name|path>"; cmd_validate "$2" ;;
   detect) [ $# -eq 2 ] || die "usage: orgs.sh detect <owner|remote>"; cmd_detect "$2" ;;
   remove) [ $# -ge 2 ] || die "usage: orgs.sh remove <name> [--force]"; cmd_remove "$2" "${3:-}" ;;
-  *) sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  *) sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac

@@ -47,9 +47,9 @@ check "critical reasoning and skill hint combine" 'grep -q "reasoner" <<<"$out" 
 for d in "$HUB"/packs/*/; do
   n="$(basename "$d")"
   check "pack $n: pack.json valid with description and index" 'jq -e ".description and (.index | length > 0)" "$d/pack.json" >/dev/null'
-  check "pack $n: skills have matching name and a description" 'for s in "$d"/skills/*/; do [ -d "$s" ] || continue; [ "$(sed -n "s/^name: //p" "$s/SKILL.md" | head -1)" = "$(basename "$s")" ] && grep -q "^description: " "$s/SKILL.md" || exit 1; done'
-  check "pack $n: commands have a description" 'for c in "$d"/commands/*.md; do [ -f "$c" ] || continue; grep -q "^description: " "$c" || exit 1; done'
-  check "pack $n: critical entries point to a skill of the pack" 'for sk in $(jq -r ".critical[]?.skill" "$d/pack.json"); do [ -f "$d/skills/$sk/SKILL.md" ] || exit 1; done'
+  check "pack $n: skills have matching name and a description" '(for s in "$d"/skills/*/; do [ -d "$s" ] || continue; [ "$(sed -n "s/^name: //p" "$s/SKILL.md" | head -1)" = "$(basename "$s")" ] && grep -q "^description: " "$s/SKILL.md" || exit 1; done)'
+  check "pack $n: commands have a description" '(for c in "$d"/commands/*.md; do [ -f "$c" ] || continue; grep -q "^description: " "$c" || exit 1; done)'
+  check "pack $n: critical entries point to a skill of the pack" '(for sk in $(jq -r ".critical[]?.skill" "$d/pack.json"); do [ -f "$d/skills/$sk/SKILL.md" ] || exit 1; done)'
 done
 
 # --- selection per stack/decision

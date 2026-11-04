@@ -44,6 +44,36 @@ done
 command -v jq >/dev/null || { echo "Error: jq is required" >&2; exit 1; }
 
 run() { if [ "$DRY" -eq 1 ]; then echo "  [dry-run] $*"; else "$@"; fi; }
+die() { echo "Error: $*" >&2; exit 1; }
+valid_name() { [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]]; }
+valid_file() { [[ "$1" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; }
+# literal (non-regex) replacement of every occurrence of $1 by $2 in stdin
+replace_literal() { F="$1" T="$2" awk '{ out = ""; line = $0; f = ENVIRON["F"]; t = ENVIRON["T"]
+  while ((i = index(line, f)) > 0) { out = out substr(line, 1, i - 1) t; line = substr(line, i + length(f)) } print out line }'; }
+replace_file() { local tmp; tmp="$(mktemp)"; replace_literal "$2" "$3" < "$1" > "$tmp" && cat "$tmp" > "$1"; rm -f "$tmp"; }
+
+# ---------------------------------------------------------------- preflight
+# Everything that comes from outside (org name, org.json keys, asset names, symlinks) is checked
+# before a single file is touched: a bad org fails closed and installs nothing.
+if [ -n "$PACKS" ]; then
+  for _p in ${PACKS//,/ }; do valid_name "$_p" || die "invalid pack name '$_p'"; done
+fi
+if [ -n "$ORG" ]; then
+  valid_name "$ORG" || die "invalid organization name '$ORG'"
+  OD="$HUB/organizations/$ORG"; OJ="$OD/org.json"
+  [ -f "$OJ" ] || die "organization '$ORG' is not installed (scripts/orgs.sh add)"
+  bash "$HUB/scripts/orgs.sh" validate "$ORG" >/dev/null || die "organization '$ORG' does not validate (scripts/orgs.sh validate $ORG)"
+  [ -z "$(find "$OD" -path "$OD/.git" -prune -o -type l -print -quit)" ] || die "organization '$ORG' contains symlinks"
+  while IFS=$'\t' read -r from to; do
+    [ -n "$from" ] || continue
+    valid_name "${from#/}" && valid_name "${to#/}" || die "invalid replaces entry '$from' -> '$to' in organization '$ORG'"
+    # a command ("/name") can only be replaced by a command, a skill by a skill
+    [ "${from#/}" = "$from" ] && [ "${to#/}" = "$to" ] || { [ "${from#/}" != "$from" ] && [ "${to#/}" != "$to" ]; } \
+      || die "replaces entry '$from' -> '$to' mixes a skill and a command in organization '$ORG'"
+  done < <(jq -r '(.replaces // {}) | to_entries[] | [.key, .value] | @tsv' "$OJ")
+  for _s in "$OD"/skills/*/; do [ -d "$_s" ] && { valid_name "$(basename "$_s")" || die "invalid skill name '$(basename "$_s")' in '$ORG'"; }; done
+  for _c in "$OD"/commands/*.md; do [ -f "$_c" ] && { valid_file "$(basename "$_c")" || die "invalid command name '$(basename "$_c")' in '$ORG'"; }; done
+fi
 
 find_skill() {
   local name="$1" d
@@ -117,7 +147,7 @@ for pack in "${SELECTED[@]}"; do
     echo "skill:   .claude/skills/$(basename "$sk")"
     run mkdir -p "$DIR/.claude/skills"
     run rm -rf "$DIR/.claude/skills/$(basename "$sk")"
-    run cp -rL "${sk%/}" "$DIR/.claude/skills/$(basename "$sk")"
+    run cp -r "${sk%/}" "$DIR/.claude/skills/$(basename "$sk")"
   done
   for cmd in "$src"/commands/*.md; do
     [ -f "$cmd" ] || continue
@@ -132,11 +162,11 @@ done
 # ---------------------------------------------------------------- organization
 ORG_VER="" ORG_SHA=""
 if [ -n "$ORG" ]; then
-  OD="$HUB/organizations/$ORG"; OJ="$OD/org.json"
-  [ -f "$OJ" ] || { echo "Error: organization '$ORG' is not installed (scripts/orgs.sh add)" >&2; exit 1; }
   ORG_VER="$(jq -r .version "$OJ")"; ORG_SHA="$(git -C "$OD" rev-parse --short HEAD 2>/dev/null || echo unknown)"
   echo "== org: $ORG $ORG_VER =="
-  ALL="$( { printf '%s\n' "${LIST[@]:-}"; [ -n "$MANIFEST" ] && jq -r '.stacks[]?' "$MANIFEST"; } | sed '/^$/d')"
+  ALL=""
+  [ "${#LIST[@]}" -gt 0 ] && ALL="$(printf '%s\n' "${LIST[@]}")"
+  if [ -n "$MANIFEST" ]; then ALL="$(printf '%s\n%s' "$ALL" "$(jq -r '.stacks[]?' "$MANIFEST")" | sed '/^$/d')"; fi
   wanted() { # wanted <asset-key>: installed unless org.json restricts it to other stacks
     local st; st="$(jq -c --arg k "$1" '.assets[$k].stacks // empty' "$OJ")"
     [ -z "$st" ] && return 0
@@ -151,16 +181,16 @@ if [ -n "$ORG" ]; then
       /*) run rm -f "$DIR/.claude/commands/${from#/}.md" ;;
       *) run rm -rf "$DIR/.claude/skills/$from"
          # commands installed from packs may point at the replaced skill
-         [ "$DRY" -eq 1 ] || for c in "$DIR"/.claude/commands/*.md; do [ -f "$c" ] && sed -i "s|\.claude/skills/$from/|.claude/skills/$to/|g" "$c"; done ;;
+         [ "$DRY" -eq 1 ] || for c in "$DIR"/.claude/commands/*.md; do [ -f "$c" ] && replace_file "$c" ".claude/skills/$from/" ".claude/skills/$to/"; done ;;
     esac
-    ROWS="$(sed "s|\`$from\`|\`$to\`|g" <<<"$ROWS")"
+    ROWS="$(replace_literal "\`$from\`" "\`$to\`" <<<"$ROWS")"
     CRITICAL="$(jq -c --arg f "${from#/}" --arg t "${to#/}" 'map(if .skill == $f then .skill = $t else . end)' <<<"$CRITICAL")"
   done < <(jq -r '(.replaces // {}) | to_entries[] | [.key, .value] | @tsv' "$OJ")
   for sk in "$OD"/skills/*/; do
     [ -f "$sk/SKILL.md" ] || continue
     n="$(basename "$sk")"; wanted "skills/$n" || continue
     echo "skill:   .claude/skills/$n (org)"
-    run mkdir -p "$DIR/.claude/skills"; run rm -rf "$DIR/.claude/skills/$n"; run cp -rL "${sk%/}" "$DIR/.claude/skills/$n"
+    run mkdir -p "$DIR/.claude/skills"; run rm -rf "$DIR/.claude/skills/$n"; run cp -r "${sk%/}" "$DIR/.claude/skills/$n"
   done
   for cmd in "$OD"/commands/*.md; do
     [ -f "$cmd" ] || continue
@@ -169,9 +199,9 @@ if [ -n "$ORG" ]; then
     run mkdir -p "$DIR/.claude/commands"; run cp "$cmd" "$DIR/.claude/commands/$(basename "$cmd")"
   done
   # rows may carry "stacks": [...]; without it they apply to every stack of the project
-  FILTER='select((.stacks // null) == null or any(.stacks[]; . as $s | ($all | split("\n") | index($s)) != null))'
-  CRITICAL="$(jq -c --slurpfile o "$OJ" --arg all "$ALL" "(\$o[0].critical // [] | map($FILTER) | map(del(.stacks))) + ." <<<"$CRITICAL")"
-  ORG_ROWS="$(jq -r --arg all "$ALL" ".index[]? | $FILTER | \"| \\(.when) | \`\\(.use)\`  |\"" "$OJ" | sed 's/  |$/ |/')"
+  APPLIES='def applies: select((.stacks // null) == null or any(.stacks[]; . as $s | ($all | split("\n") | index($s)) != null));'
+  CRITICAL="$(jq -c --slurpfile o "$OJ" --arg all "$ALL" "$APPLIES"' ($o[0].critical // [] | map(applies) | map(del(.stacks))) + .' <<<"$CRITICAL")"
+  ORG_ROWS="$(jq -r --arg all "$ALL" --arg bt '`' "$APPLIES"' .index[]? | applies | "| " + .when + " | " + $bt + .use + $bt + " |"' "$OJ")"
   ROWS="| Org policies ($ORG): workflow, architecture, UI, integrations | \`.agents/POLICIES.md\` |"$'\n'"${ORG_ROWS:+$ORG_ROWS$'\n'}$ROWS"
   if [ "$DRY" -eq 0 ] && [ -f "$OD/POLICIES.md" ]; then mkdir -p "$DIR/.agents"; cp "$OD/POLICIES.md" "$DIR/.agents/POLICIES.md"; echo "wrote .agents/POLICIES.md"; fi
 fi
