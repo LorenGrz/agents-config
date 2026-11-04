@@ -39,6 +39,13 @@
 - Current learning stage / roadmap pointer: <stage, or link to your own roadmap repo>
 - Long-term project(s) in progress: <name + one line>
 
+## Model routing
+
+<!-- Which model backs each role in config/CLAUDE.md "Agent Routing". -->
+
+- Main session: <model / mode>
+- `worker` (implementation): <model>. `reasoner` (decisions): <model>. `scout` (lookups): <model>.
+
 ## Local tool paths
 
 <!-- Paths to tools you've installed locally that skills should reference,

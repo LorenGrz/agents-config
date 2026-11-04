@@ -1,0 +1,16 @@
+name: guard
+on:
+  push:
+  pull_request:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Leak guard
+        env:
+          LEAK_BLOCKLIST: ${{ secrets.LEAK_BLOCKLIST }}
+        run: scripts/leak-guard.sh --all
+      - name: Derived plugin files are up to date
+        run: scripts/gen-plugin.sh --check

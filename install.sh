@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Install / repair the Claude + Codex integration for this hub.
 #
-# - Generates ~/.claude/CLAUDE.md (imports config/AGENTS.md + your profile +
-#   config/CLAUDE.md) and ~/.codex/AGENTS.md (config/AGENTS.md + your profile,
-#   concatenated — Codex has no @-import) from this repo.
+# - Generates ~/.claude/CLAUDE.md (imports config/AGENTS.md + config/baseline.md +
+#   your profile + config/CLAUDE.md) and ~/.codex/AGENTS.md (config/AGENTS.md +
+#   baseline + your profile, concatenated — Codex has no @-import) from this repo.
 # - Symlinks ~/.claude/{rules,hooks,agents} into this repo.
 # - Runs sync.sh to (re)build the flat ~/.claude/skills mirror.
 # - Merges config/settings.base.json into ~/.claude/settings.json (jq):
@@ -272,6 +272,7 @@ fi
 claude_md_content="$(cat <<EOF
 <!-- $GENERATED_MARK — edit the repo, not this file. -->
 @$HUB/config/AGENTS.md
+@$HUB/config/baseline.md
 @$HUB/config/profiles/$PROFILE.md
 @$HUB/config/CLAUDE.md
 EOF
@@ -281,6 +282,8 @@ write_generated "$CLAUDE_DIR/CLAUDE.md" "$claude_md_content"
 codex_agents_content="$(
   printf '<!-- %s — edit the repo, not this file. -->\n\n' "$GENERATED_MARK"
   cat "$HUB/config/AGENTS.md"
+  printf '\n\n'
+  cat "$HUB/config/baseline.md"
   printf '\n\n'
   cat "$PROFILE_FILE"
 )"
