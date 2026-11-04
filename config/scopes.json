@@ -1,9 +1,9 @@
 {
   "_comment": "Anything NOT listed under a stack is global (installed in ~/.claude by install.sh/sync.sh). Listed skills/rules are installed per project by scripts/project-agents.sh.",
   "stacks": {
-    "react-vite": { "skills": ["react-scalable-frontend", "react-component-validator"], "rules": ["react"] },
+    "react-vite": { "skills": ["react-component-validator"], "rules": ["react"] },
     "next": {
-      "skills": ["nextjs-ssr-frontend", "react-scalable-frontend", "react-component-validator", "api-contract-design"],
+      "skills": ["nextjs-ssr-frontend", "react-component-validator", "api-contract-design"],
       "rules": ["next", "react"]
     },
     "nestjs": {
@@ -12,7 +12,7 @@
     },
     "node-ts": { "skills": [], "rules": [] },
     "rn": {
-      "skills": ["react-native-mobile", "react-scalable-frontend", "react-component-validator", "api-contract-design"],
+      "skills": ["react-native-mobile", "react-component-validator", "api-contract-design"],
       "rules": ["react"]
     },
     "aws": {

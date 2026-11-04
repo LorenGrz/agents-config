@@ -20,7 +20,7 @@ Use rulesync, sourced from `config/rulesync/build.sh`, which rebuilds a throwawa
 - `config/AGENTS.md` → `.rulesync/rules/overview.md` (root rule; frontmatter added).
 - Each `config/rules/*.md` → `.rulesync/rules/<name>.md` (its `paths:` list becomes
   rulesync's `globs:`; frontmatter added, body copied through unchanged).
-- A handful of skills (`project-init`, `typescript-code-quality`, `react-scalable-frontend`
+- A handful of skills (`project-init`, `typescript-code-quality`, `react-component-validator`
   as the proof set) are **symlinked**, not copied, into `.rulesync/skills/` — rulesync
   follows symlinks when discovering source files and their frontmatter already matches
   what it expects, so no transform is needed.

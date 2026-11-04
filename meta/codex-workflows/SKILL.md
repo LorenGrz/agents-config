@@ -22,7 +22,7 @@ extra roots listed under "Codex workflow adapter" in your profile
 
 - New JS/TS project or standard scripts: `typescript-project-starter` skill in this hub.
 - Roadmap planning or learning project scope: `roadmap-coach` skill in this hub.
-- React frontend implementation/refactor: `react-scalable-frontend` skill in this hub.
+- React UI build/review: `ui-builder` / `ui-review` (frontend-ui pack in this hub).
 - React component lifecycle review: `react-component-validator` skill in this hub.
 - TypeScript quality: `typescript-code-quality` skill in this hub.
 - API contracts: `api-contract-design` skill in this hub.

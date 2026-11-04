@@ -16,7 +16,7 @@ Path-scoped rules in `~/.claude/rules/` load automatically when Claude touches a
 
 Routing (by skill name). Stack skills (React, Next, Nest, persistence, API, auth, AWS) exist only in repos set up with `project-agents.sh`: check the repo's `.claude/skills` and AGENTS.md first.
 
-- React build/refactor: `react-scalable-frontend`. React review: `react-component-validator`.
+- React: effects and lifecycle review `react-component-validator`; UI build/review `ui-builder`/`ui-review` (frontend-ui pack, installed per project).
 - TypeScript quality: `typescript-code-quality`. New repo: `project-init` (interviews org + architecture first); new company/client: `org-creator`. Tooling upgrade of an existing project: `typescript-project-starter`.
 - Roadmap planning: `roadmap-coach`. NestJS modules: `nest-module-generator`. Next.js SSR: `nextjs-ssr-frontend`.
 - Persistence: `database-persistence-patterns`. API contracts: `api-contract-design`.

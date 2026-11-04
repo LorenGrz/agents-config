@@ -12,4 +12,4 @@ Skills triggered only by their `description`, which is probabilistic, and stack 
 - Model routing moved out of the base into the profile; the base names roles (scout, reasoner, worker) and says to recommend subagents and ask when planning.
 
 ## Consequences
-Skill content is written from scratch (inspired by real projects, no domain). Org skills replace pack skills through `replaces`, and pack commands are rewritten to point at the replacement.
+Packs that only list `when.stacks` (frontend-ui, spring-testing, python-testing) also install without a manifest. `react-scalable-frontend` was removed (its rules live in `ui-builder`, `ui-review` and `feature-architecture`); `react-component-validator` stays because the `useEffect` doctrine exists nowhere else. Skill content is written from scratch (inspired by real projects, no domain). Org skills replace pack skills through `replaces`, and pack commands are rewritten to point at the replacement.

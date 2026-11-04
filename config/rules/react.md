@@ -37,4 +37,4 @@ violation — don't disable the rule.
 Reference implementation (one example pattern, not the only valid one):
 `~/projects/booklibre/frontend` — `useOnInit` + a hook per screen + domain classes.
 
-For scalable structure use `react-scalable-frontend`; for component review `react-component-validator`.
+For effects and lifecycle use `react-component-validator`; for building and reviewing UI use the project's `ui-builder` / `ui-review` skills when installed.
