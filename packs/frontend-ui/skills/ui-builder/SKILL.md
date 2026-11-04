@@ -1,6 +1,6 @@
 ---
 name: ui-builder
-description: Workflow to build pages and components from a design (Figma, screenshot, description) without drift from the project's tokens, component library and architecture. Use for "crea una page", "nueva pantalla", "componente", "implementá este Figma", "replicá esta imagen", "pixel perfect", "maqueta", "formulario", "modal", "dashboard", "create a page", "new screen", "implement this design", "build the UI". Auto-triggers on UI images, design links or visual implementation requests.
+description: Workflow to build pages and components from a design (Figma, screenshot, description) without drift from the project's tokens, component library and architecture. Use for "crea una page", "nueva pantalla", "componente", "implementá este Figma", "replicá esta imagen", "pixel perfect", "maqueta", "formulario", "modal", "dashboard", "create a page", "new screen", "implement this design", "build the UI".
 ---
 
 # UI builder

@@ -1,6 +1,6 @@
 ---
 name: new-use-case
-description: Workflow to add a new use case or module to a hexagonal Python backend - entity, command, ports, use case, adapters, tests. Use for "nuevo caso de uso", "nuevo módulo", "crear el modelo de", "new use case", "new module", "new aggregate". Auto-triggers when a new capability starts.
+description: Workflow to add a new use case or module to a hexagonal Python backend - entity, command, ports, use case, adapters, tests. Use for "nuevo caso de uso", "nuevo módulo", "crear el modelo de", "new use case", "new module", "new aggregate".
 ---
 
 # New use case / module

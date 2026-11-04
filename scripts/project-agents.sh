@@ -50,6 +50,11 @@ valid_file() { [[ "$1" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; }
 # literal (non-regex) replacement of every occurrence of $1 by $2 in stdin
 replace_literal() { F="$1" T="$2" awk '{ out = ""; line = $0; f = ENVIRON["F"]; t = ENVIRON["T"]
   while ((i = index(line, f)) > 0) { out = out substr(line, 1, i - 1) t; line = substr(line, i + length(f)) } print out line }'; }
+INST_S="" INST_C="" STACK_S=""   # skills/commands installed from packs and the org (tracked in skills.lock); stack skills
+rec_s() { INST_S+="$1"$'\n'; }
+rec_c() { INST_C+="$1"$'\n'; }
+unrec_s() { INST_S="$(grep -vxF -- "$1" <<<"$INST_S" || true)"; }
+unrec_c() { INST_C="$(grep -vxF -- "$1" <<<"$INST_C" || true)"; }
 replace_file() { local tmp; tmp="$(mktemp)"; replace_literal "$2" "$3" < "$1" > "$tmp" && cat "$tmp" > "$1"; rm -f "$tmp"; }
 
 # ---------------------------------------------------------------- preflight
@@ -94,6 +99,7 @@ for stack in "${LIST[@]}"; do
     src="$(find_skill "$skill")"
     if [ -z "$src" ]; then echo "skip skill $skill (not found in hub)" >&2; continue; fi
     echo "skill:   .claude/skills/$skill"
+    STACK_S+="$skill"$'\n'
     run mkdir -p "$DIR/.claude/skills"
     run rm -rf "$DIR/.claude/skills/$skill"
     run cp -rL "$src" "$DIR/.claude/skills/$skill"
@@ -138,6 +144,16 @@ select_packs() {
 }
 
 mapfile -t SELECTED < <(select_packs | sort -u)
+# an architecture decision with no matching pack is not an error, but say it (free-text values never match)
+if [ -n "$MANIFEST" ]; then
+  for _k in backend-style frontend-style; do
+    _v="$(jq -r --arg k "$_k" '[.decisions[]? | select(.key == $k) | .value][0] // empty' "$MANIFEST")"
+    [ -n "$_v" ] || continue
+    _hit=0
+    for _p in "${SELECTED[@]}"; do jq -e --arg k "$_k" --arg v "$_v" '.when.decisions[$k] == $v' "$HUB/packs/$_p/pack.json" >/dev/null 2>&1 && _hit=1; done
+    [ "$_hit" = 1 ] || echo "note: no pack matches $_k=$_v for these stacks (packs/*/pack.json)" >&2
+  done
+fi
 CRITICAL="[]" ROWS=""
 for pack in "${SELECTED[@]}"; do
   src="$HUB/packs/$pack"
@@ -148,12 +164,14 @@ for pack in "${SELECTED[@]}"; do
     run mkdir -p "$DIR/.claude/skills"
     run rm -rf "$DIR/.claude/skills/$(basename "$sk")"
     run cp -r "${sk%/}" "$DIR/.claude/skills/$(basename "$sk")"
+    rec_s "$(basename "$sk")"
   done
   for cmd in "$src"/commands/*.md; do
     [ -f "$cmd" ] || continue
     echo "command: .claude/commands/$(basename "$cmd")"
     run mkdir -p "$DIR/.claude/commands"
     run cp "$cmd" "$DIR/.claude/commands/$(basename "$cmd")"
+    rec_c "$(basename "$cmd")"
   done
   CRITICAL="$(jq -c --slurpfile c "$src/pack.json" '. + ($c[0].critical // [])' <<<"$CRITICAL")"
   ROWS+="$(jq -r '.index[]? | "| \(.when) | `\(.use)` |"' "$src/pack.json")"$'\n'
@@ -178,10 +196,16 @@ if [ -n "$ORG" ]; then
     [ -n "$from" ] || continue
     wanted "$(asset_key "$to")" || continue
     case "$from" in
-      /*) run rm -f "$DIR/.claude/commands/${from#/}.md" ;;
-      *) run rm -rf "$DIR/.claude/skills/$from"
-         # commands installed from packs may point at the replaced skill
-         [ "$DRY" -eq 1 ] || for c in "$DIR"/.claude/commands/*.md; do [ -f "$c" ] && replace_file "$c" ".claude/skills/$from/" ".claude/skills/$to/"; done ;;
+      /*) run rm -f "$DIR/.claude/commands/${from#/}.md"; unrec_c "${from#/}.md" ;;
+      *) run rm -rf "$DIR/.claude/skills/$from"; unrec_s "$from"
+         # commands and skills installed so far (packs, stacks) may point at the replaced skill
+         if [ "$DRY" -eq 0 ]; then
+           for c in "$DIR"/.claude/commands/*.md "$DIR"/.claude/skills/*/SKILL.md; do
+             [ -f "$c" ] || continue
+             replace_file "$c" ".claude/skills/$from/" ".claude/skills/$to/"
+             replace_file "$c" "\`$from\`" "\`$to\`"
+           done
+         fi ;;
     esac
     ROWS="$(replace_literal "\`$from\`" "\`$to\`" <<<"$ROWS")"
     CRITICAL="$(jq -c --arg f "${from#/}" --arg t "${to#/}" 'map(if .skill == $f then .skill = $t else . end)' <<<"$CRITICAL")"
@@ -190,13 +214,13 @@ if [ -n "$ORG" ]; then
     [ -f "$sk/SKILL.md" ] || continue
     n="$(basename "$sk")"; wanted "skills/$n" || continue
     echo "skill:   .claude/skills/$n (org)"
-    run mkdir -p "$DIR/.claude/skills"; run rm -rf "$DIR/.claude/skills/$n"; run cp -r "${sk%/}" "$DIR/.claude/skills/$n"
+    run mkdir -p "$DIR/.claude/skills"; run rm -rf "$DIR/.claude/skills/$n"; run cp -r "${sk%/}" "$DIR/.claude/skills/$n"; rec_s "$n"
   done
   for cmd in "$OD"/commands/*.md; do
     [ -f "$cmd" ] || continue
     wanted "commands/$(basename "$cmd")" || continue
     echo "command: .claude/commands/$(basename "$cmd") (org)"
-    run mkdir -p "$DIR/.claude/commands"; run cp "$cmd" "$DIR/.claude/commands/$(basename "$cmd")"
+    run mkdir -p "$DIR/.claude/commands"; run cp "$cmd" "$DIR/.claude/commands/$(basename "$cmd")"; rec_c "$(basename "$cmd")"
   done
   # rows may carry "stacks": [...]; without it they apply to every stack of the project
   APPLIES='def applies: select((.stacks // null) == null or any(.stacks[]; . as $s | ($all | split("\n") | index($s)) != null));'
@@ -208,8 +232,22 @@ fi
 
 if [ "${#SELECTED[@]}" -gt 0 ] && [ "$DRY" -eq 0 ]; then
   mkdir -p "$DIR/.agents"
+  # Stale cleanup (only with a manifest, which defines the full pack selection): remove what an earlier
+  # run installed from packs or the org and is no longer selected. Only names listed in skills.lock
+  # are touched, never a stack skill installed in this run, never anything else in .claude/.
+  if [ -n "$MANIFEST" ] && [ -f "$DIR/.agents/skills.lock" ]; then
+    while IFS= read -r n; do
+      [ -n "$n" ] && valid_name "$n" && ! grep -qxF -- "$n" <<<"$INST_S" && ! grep -qxF -- "$n" <<<"$STACK_S" \
+        && { echo "removed stale skill: $n"; rm -rf "$DIR/.claude/skills/$n"; }
+    done < <(jq -r '.installed.skills[]?' "$DIR/.agents/skills.lock")
+    while IFS= read -r n; do
+      [ -n "$n" ] && valid_file "$n" && ! grep -qxF -- "$n" <<<"$INST_C" \
+        && { echo "removed stale command: $n"; rm -f "$DIR/.claude/commands/$n"; }
+    done < <(jq -r '.installed.commands[]?' "$DIR/.agents/skills.lock")
+  fi
   # critical.json: read by the critical-reasoning hook (keywords/paths -> skill hint).
-  if [ "$CRITICAL" != "[]" ]; then jq . <<<"$CRITICAL" > "$DIR/.agents/critical.json"; echo "wrote .agents/critical.json"; fi
+  if [ "$CRITICAL" != "[]" ]; then jq . <<<"$CRITICAL" > "$DIR/.agents/critical.json"; echo "wrote .agents/critical.json"
+  elif [ -n "$MANIFEST" ] && [ -f "$DIR/.agents/critical.json" ]; then rm -f "$DIR/.agents/critical.json"; echo "removed stale .agents/critical.json"; fi
   # AGENTS.md keyword table: replace the marked block, else insert it before "## How we work", else append.
   if [ -f "$DIR/AGENTS.md" ] && [ -n "${ROWS//[$'\n']/}" ]; then
     [ "$(grep -c . <<<"$ROWS")" -gt 14 ] && echo "warning: more than 14 keyword rows; AGENTS.md table keeps the first 14" >&2
@@ -227,9 +265,10 @@ if [ "${#SELECTED[@]}" -gt 0 ] && [ "$DRY" -eq 0 ]; then
   # skills.lock: what was installed from which hub revision (updates are always explicit).
   jq -n --arg hub "$(git -C "$HUB" rev-parse --short HEAD 2>/dev/null || echo unknown)" --arg ver "$(cat "$HUB/VERSION" 2>/dev/null || echo 0)" \
         --arg packs "$(IFS=,; echo "${SELECTED[*]}")" --arg stacks "$STACKS" \
-        --arg org "$ORG" --arg orgver "$ORG_VER" --arg orgsha "$ORG_SHA" \
+        --arg org "$ORG" --arg orgver "$ORG_VER" --arg orgsha "$ORG_SHA" --arg is "$INST_S" --arg ic "$INST_C" \
     '{base: {version: $ver, sha: $hub}, stacks: ($stacks | split(",") | map(select(. != ""))), packs: ($packs | split(",") | map(select(. != ""))),
-      org: (if $org == "" then null else {name: $org, version: $orgver, sha: $orgsha} end)}' > "$DIR/.agents/skills.lock"
+      org: (if $org == "" then null else {name: $org, version: $orgver, sha: $orgsha} end),
+      installed: {skills: ($is | split("\n") | map(select(. != "")) | unique), commands: ($ic | split("\n") | map(select(. != "")) | unique)}}' > "$DIR/.agents/skills.lock"
   echo "wrote .agents/skills.lock"
 fi
 echo "done. Commit .claude/, .agents/ and .mcp.json; MCP servers still need /mcp auth on first use."

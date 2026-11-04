@@ -1,6 +1,6 @@
 ---
 name: list-endpoint
-description: Paginated GET list endpoints on a hexagonal Spring backend - two-step query to avoid N+1 and broken pagination, repository port with Pageable, query service, controller, response DTO, test. Use for "endpoint de listado", "agregar paginación", "filtrar por", "list endpoint", "paginated endpoint", "listar todos los X", "endpoint con filtros". Auto-triggers when a paginated or filtered query endpoint is requested or extended.
+description: Paginated GET list endpoints on a hexagonal Spring backend - two-step query to avoid N+1 and broken pagination, repository port with Pageable, query service, controller, response DTO, test. Use for "endpoint de listado", "agregar paginación", "filtrar por", "list endpoint", "paginated endpoint", "listar todos los X", "endpoint con filtros".
 ---
 
 # Paginated list endpoint

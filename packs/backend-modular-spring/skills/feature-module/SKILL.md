@@ -1,6 +1,6 @@
 ---
 name: feature-module
-description: Modular monolith by feature on Spring - one package per business capability with a small public API, hidden internals, and events or facades between modules. Use for "nuevo módulo", "nueva feature", "límites entre módulos", "cómo se comunican los módulos", "new module", "module boundaries", "cross-module call". Auto-triggers when a module is added or modules start talking to each other.
+description: Modular monolith by feature on Spring - one package per business capability with a small public API, hidden internals, and events or facades between modules. Use for "nuevo módulo", "nueva feature", "límites entre módulos", "cómo se comunican los módulos", "new module", "module boundaries", "cross-module call".
 ---
 
 # Feature module (modular monolith)

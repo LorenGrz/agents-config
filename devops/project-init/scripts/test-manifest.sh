@@ -63,5 +63,16 @@ bash "$SD/init.sh" --manifest "$W/zig.json" --dir "$Z" --owner e2e-owner >"$W/zi
 check "unknown extra stacks are filtered out" '[ -f "$Z/AGENTS.md" ] && ! grep -q "unknown stack" "$W/zig.log"'
 check "JVM stack needs the generated project first" 'out="$(bash "$SD/init.sh" --stack java-spring --name x --dir "$W/j" --owner o 2>&1)"; grep -q "generate the project first" <<<"$out"'
 
+# review regressions: enums, keys and special characters in names
+jq '.decisions |= map(if .key == "backend-style" then .value = "hexagonal + DDD" else . end)' "$W/ok.json" > "$W/enum.json"
+check "free-text backend-style is rejected (enum)" 'rejects "$W/enum.json" "backend-style must be one of"'
+jq '.stacks = ["react-vite"] | .decisions += [{"key":"frontend-style","value":"feature sliced"}]' "$W/ok.json" > "$W/enum2.json"
+check "free-text frontend-style is rejected (enum)" 'rejects "$W/enum2.json" "frontend-style must be one of"'
+jq '.decisions += [{"key":"../x","value":"v"}]' "$W/ok.json" > "$W/key.json"
+check "a decision key with path characters is rejected" 'rejects "$W/key.json" "invalid key"'
+N="$W/special"; mkdir -p "$N"
+bash "$SD/init.sh" --stack node-ts --name 'A&B|c/d' --dir "$N" --owner 'o&w|n' >"$W/sp.log" 2>&1
+check "names with & | / are substituted literally" 'grep -q "A&B|c/d" "$N/AGENTS.md" && grep -q "o&w|n" "$N/.agents/CONTEXT.md"'
+
 echo; echo "$pass passed, $failn failed"
 [ "$failn" -eq 0 ]

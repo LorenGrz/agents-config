@@ -1,6 +1,6 @@
 ---
 name: hexagonal-architecture-py
-description: Layer rules and design guidance for hexagonal (ports and adapters) backends in Python - pure domain, use cases, Protocol ports, adapters, wiring. Use when deciding where logic goes or modelling a domain - "arquitectura hexagonal", "dónde va la lógica", "puertos y adaptadores", "cómo modelar", "where does this logic go", "ports and adapters", "domain model". Auto-triggers when design, structure or layering comes up.
+description: Layer rules and design guidance for hexagonal (ports and adapters) backends in Python - pure domain, use cases, Protocol ports, adapters, wiring. Use when deciding where logic goes or modelling a domain - "arquitectura hexagonal", "dónde va la lógica", "puertos y adaptadores", "cómo modelar", "where does this logic go", "ports and adapters", "domain model".
 ---
 
 # Hexagonal architecture (Python)

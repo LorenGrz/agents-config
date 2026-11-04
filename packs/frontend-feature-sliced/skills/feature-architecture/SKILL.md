@@ -1,6 +1,6 @@
 ---
 name: feature-architecture
-description: Feature-sliced frontend architecture - per-feature folder structure, barrel files as the only cross-feature contract, shared layer rules, and the lint/cycle checks that enforce them. Use for "nueva feature", "dónde va este archivo", "estructura del feature", "imports entre features", "new feature", "where do files go", "cross-feature import". Auto-triggers when a feature is added or modules start importing each other.
+description: Feature-sliced frontend architecture - per-feature folder structure, barrel files as the only cross-feature contract, shared layer rules, and the lint/cycle checks that enforce them. Use for "nueva feature", "dónde va este archivo", "estructura del feature", "imports entre features", "new feature", "where do files go", "cross-feature import".
 ---
 
 # Feature architecture

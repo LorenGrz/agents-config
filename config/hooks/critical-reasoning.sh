@@ -27,7 +27,7 @@ case "$event" in
     if grep -Eq "$re" <<<"$prompt"; then
       reason="el pedido toca una decisión crítica (arquitectura, seguridad, migración, causa desconocida o prod)"
     fi
-    [ -f "$map" ] && skills="$(jq -r --arg p "$prompt" '[.[] | . as $e | select($e.keywords != null and ($p | test($e.keywords; "i"))) | $e.skill] | unique | .[]' "$map" 2>/dev/null || true)"
+    [ -f "$map" ] && skills="$(jq -r --arg p "$prompt" '[.[] | . as $e | select($e.keywords != null and (try ($p | test($e.keywords; "i")) catch false)) | $e.skill] | unique | .[]' "$map" 2>/dev/null || true)"
     ;;
   PreToolUse)
     f="$(jq -r '.tool_input.file_path // .tool_input.path // empty' <<<"$input" 2>/dev/null)"
@@ -36,7 +36,7 @@ case "$event" in
         reason="se edita un archivo sensible ($f): migración, auth, IAM, infra o CI"
         ;;
     esac
-    [ -f "$map" ] && [ -n "$f" ] && skills="$(jq -r --arg f "$f" '[.[] | select(any(.paths[]?; . as $r | $f | test($r))) | .skill] | unique | .[]' "$map" 2>/dev/null || true)"
+    [ -f "$map" ] && [ -n "$f" ] && skills="$(jq -r --arg f "$f" '[.[] | select(any(.paths[]?; . as $r | try ($f | test($r)) catch false)) | .skill] | unique | .[]' "$map" 2>/dev/null || true)"
     ;;
 esac
 

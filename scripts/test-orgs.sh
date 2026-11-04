@@ -104,6 +104,16 @@ check "a fresh --init org has no placeholder blocklist term" '[ "$(jq ".blocklis
 bash "$ORGS" index >/dev/null 2>&1
 check "blocklist includes the match owners" 'grep -qx "fresh-inc" "$W/state/blocklist"'
 
+# --- replaced skills are also rewritten inside installed skills; a personal project has no org terms
+mkorg rw; mkdir -p "$H/organizations/rw/skills/rw-hex"; printf -- '---\nname: rw-hex\ndescription: x\n---\n' > "$H/organizations/rw/skills/rw-hex/SKILL.md"
+setj rw '.replaces = {"hexagonal-architecture":"rw-hex"}'
+P7="$W/rw"; mkp "$P7"; man "$W/rw.json" '["java-spring"]' '[{"key":"backend-style","value":"hexagonal"}]'
+bash "$PA" --stack java-spring --manifest "$W/rw.json" --org rw --dir "$P7" >/dev/null 2>&1
+check "mentions of a replaced skill are rewritten inside installed skills" 'grep -q "\`rw-hex\`" "$P7/.claude/skills/new-bounded-context/SKILL.md" && ! grep -q "\`hexagonal-architecture\`" "$P7/.claude/skills/new-bounded-context/SKILL.md"'
+P8="$W/personal"; mkp "$P8"
+bash "$PA" --stack java-spring --manifest "$W/rw.json" --dir "$P8" >/dev/null 2>&1
+check "a project without an org carries no org terms" '! grep -rqiE "acme|rw-hex|evil" "$P8"'
+
 # org / owner mismatch
 Q2="$W/app2"; mkdir -p "$Q2"
 bash "$H/devops/project-init/scripts/init.sh" --manifest "$W/init.json" --dir "$Q2" --owner someone-else </dev/null >"$W/mm.log" 2>&1; rc=$?

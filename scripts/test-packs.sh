@@ -70,5 +70,26 @@ check "ui-library absent without project-kind; run-app always present" '[ ! -d "
 sel '["java-spring"]' '[{"key":"backend-style","value":"hexagonal"}]'
 check "AGENTS.md keyword table stays within 14 rows" '[ "$(sed -n "/agents-index:start/,/agents-index:end/p" "$d/AGENTS.md" | grep -c "^| .* | .* |$")" -le 15 ]'
 
+# --- re-running with other decisions: stale pack items go, user items stay
+P5="$W/stale"; mkp "$P5"; man "$W/st.json" hexagonal
+bash "$HUB/scripts/project-agents.sh" --stack java-spring --manifest "$W/st.json" --dir "$P5" >/dev/null 2>&1
+mkdir -p "$P5/.claude/skills/mine" "$P5/.claude/commands"; echo x > "$P5/.claude/skills/mine/SKILL.md"; echo x > "$P5/.claude/commands/mine.md"
+man "$W/st.json" modular
+out="$(bash "$HUB/scripts/project-agents.sh" --stack java-spring --manifest "$W/st.json" --dir "$P5" 2>&1)"
+check "stale pack skills and commands are removed on a new selection" '[ ! -d "$P5/.claude/skills/hexagonal-architecture" ] && [ ! -f "$P5/.claude/commands/new-bc.md" ] && [ -d "$P5/.claude/skills/feature-module" ] && grep -q "removed stale" <<<"$out"'
+check "stale critical entries are dropped, user files stay" '! jq -e "map(.skill) | index(\"new-bounded-context\") != null" "$P5/.agents/critical.json" >/dev/null 2>&1 && [ -f "$P5/.claude/skills/mine/SKILL.md" ] && [ -f "$P5/.claude/commands/mine.md" ]'
+check "skills.lock lists what was installed" 'jq -e ".installed.skills | index(\"feature-module\") != null" "$P5/.agents/skills.lock" >/dev/null'
+
+# --- an architecture decision with no pack is announced
+jq -n '{version:1,name:"x",org:null,stacks:["java-spring"],decisions:[{key:"backend-style",value:"hexagonal + DDD"}],pending:[]}' > "$W/free.json"
+P6="$W/free"; mkp "$P6"
+out="$(bash "$HUB/scripts/project-agents.sh" --stack java-spring --manifest "$W/free.json" --dir "$P6" 2>&1)"
+check "free-text style gets a note that no pack matched" 'grep -q "note: no pack matches backend-style" <<<"$out"'
+
+# --- hook: an invalid regex in critical.json must not silence the other entries
+jq '. = [{"skill":"hexagonal-architecture","keywords":"(unclosed"}] + .' "$P/.agents/critical.json" > "$W/crit.json" && cp "$W/crit.json" "$P/.agents/critical.json"
+out="$(hook "$P" '{"hook_event_name":"UserPromptSubmit","prompt":"nuevo bounded context"}')"
+check "an invalid regex entry does not silence valid ones" 'grep -q "new-bounded-context/SKILL.md" <<<"$out"'
+
 echo; echo "$pass passed, $failn failed"
 [ "$failn" -eq 0 ]

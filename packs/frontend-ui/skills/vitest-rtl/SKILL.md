@@ -1,6 +1,6 @@
 ---
 name: vitest-rtl
-description: Conventions for unit tests of React + TypeScript with Vitest and React Testing Library - behavior over implementation, accessible queries, hooks, stores, mocking. Use for "escribir tests", "tests del componente/hook", "cobertura", "write tests", "test this component", "RTL". Auto-triggers when UI tests are written, completed or reviewed. Not for e2e. React Native projects: same principles with the project's runner (Jest + @testing-library/react-native).
+description: Conventions for unit tests of React + TypeScript with Vitest and React Testing Library - behavior over implementation, accessible queries, hooks, stores, mocking. Use for "escribir tests", "tests del componente/hook", "cobertura", "write tests", "test this component", "RTL". Not for e2e. React Native projects: same principles with the project's runner (Jest + @testing-library/react-native).
 ---
 
 # Vitest + React Testing Library

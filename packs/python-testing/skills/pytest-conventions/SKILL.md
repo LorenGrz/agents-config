@@ -1,6 +1,6 @@
 ---
 name: pytest-conventions
-description: pytest conventions for Python projects - layout, naming, fixtures, parametrization, fakes over mocks, coverage gap analysis. Use for "escribir tests", "agregar tests", "cobertura", "fixtures", "write tests", "add tests", "pytest", "what tests are missing". Auto-triggers when tests are written, reviewed or completed.
+description: pytest conventions for Python projects - layout, naming, fixtures, parametrization, fakes over mocks, coverage gap analysis. Use for "escribir tests", "agregar tests", "cobertura", "fixtures", "write tests", "add tests", "pytest", "what tests are missing".
 ---
 
 # pytest conventions

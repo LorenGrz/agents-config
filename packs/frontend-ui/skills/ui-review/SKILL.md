@@ -1,6 +1,6 @@
 ---
 name: ui-review
-description: Review pages and components already built - design-system compliance, accessibility, responsive behavior, dark mode, component-library use, architecture and React/TypeScript practices - returning prioritized findings with concrete fixes. Use for "revisá", "auditá", "está bien?", "feedback", "qué mejorarías", "responsive check", "review this UI", "audit", "best practices". Auto-triggers when the user asks for an opinion on finished UI.
+description: Review pages and components already built - design-system compliance, accessibility, responsive behavior, dark mode, component-library use, architecture and React/TypeScript practices - returning prioritized findings with concrete fixes. Use for "revisá", "auditá", "está bien?", "feedback", "qué mejorarías", "responsive check", "review this UI", "audit", "best practices".
 ---
 
 # UI review

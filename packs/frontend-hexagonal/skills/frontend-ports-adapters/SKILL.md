@@ -1,6 +1,6 @@
 ---
 name: frontend-ports-adapters
-description: Hexagonal frontend architecture - pure domain, use cases over ports (API, storage, clock), adapters, UI as an inbound adapter, composition root, tests with fake adapters. Use for "nueva feature", "puertos y adaptadores", "dónde va la lógica", "new feature", "ports and adapters", "where does this logic go". Auto-triggers when a feature is added or logic placement is discussed.
+description: Hexagonal frontend architecture - pure domain, use cases over ports (API, storage, clock), adapters, UI as an inbound adapter, composition root, tests with fake adapters. Use for "nueva feature", "puertos y adaptadores", "dónde va la lógica", "new feature", "ports and adapters", "where does this logic go".
 ---
 
 # Hexagonal frontend

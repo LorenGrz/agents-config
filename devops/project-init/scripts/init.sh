@@ -174,21 +174,17 @@ if [ ${#variants[@]} -gt 0 ]; then
 fi
 
 # sed-safe replacement text: escape \ & and the | delimiter, newlines -> \n
-sed_esc() { printf '%s' "$1" | sed -e ':a;N;$!ba;s/[\\&|]/\\&/g;s/\n/\\n/g'; }
+sed_esc() { # escape \ & and the | delimiter, newlines -> \n (pure bash: a one-line sed with N exits before the s///)
+  local v="$1"; v="${v//\\/\\\\}"; v="${v//&/\\&}"; v="${v//|/\\|}"; v="${v//$'\n'/\\n}"; printf '%s' "$v"
+}
 SUBS=()
-for _k in PKG_MANAGER CMD_DEV CMD_TEST CMD_LINT CMD_TYPECHECK CMD_FORMAT CMD_FORMAT_CHECK CMD_BUILD \
+PROJECT="$NAME"
+for _k in PROJECT OWNER PROJECT_NUMBER STACK DATE PKG_MANAGER CMD_DEV CMD_TEST CMD_LINT CMD_TYPECHECK CMD_FORMAT CMD_FORMAT_CHECK CMD_BUILD \
           LINT_DESC LINT_NOTE ENFORCEMENT_FILES LANG_STANDARD LINT_HOOK_DESC ALLOW_CMDS PY_PACKAGE; do
   SUBS+=(-e "s|{{$_k}}|$(sed_esc "${!_k}")|g")
 done
 
-substitute() {
-  sed -e "s/{{PROJECT}}/$NAME/g" \
-      -e "s/{{OWNER}}/$OWNER/g" \
-      -e "s/{{PROJECT_NUMBER}}/$PROJECT_NUMBER/g" \
-      -e "s/{{STACK}}/$STACK/g" \
-      -e "s/{{DATE}}/$DATE/g" \
-      "${SUBS[@]}"
-}
+substitute() { sed "${SUBS[@]}"; }
 
 # Copy every file under $1 (templates/common or templates/<stack>) into $DIR,
 # substituting placeholders. Skips AGENTS.md and AGENTS.stack.md - those are

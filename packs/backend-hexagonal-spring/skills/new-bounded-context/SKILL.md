@@ -1,6 +1,6 @@
 ---
 name: new-bounded-context
-description: Workflow to add a new bounded context (module/aggregate) to a hexagonal Spring backend - folder structure, domain model with create()/restore(), commands, snapshots, repository port and adapter, mapper, REST controller, exceptions. Use for "nuevo bounded context", "nuevo dominio", "nuevo módulo", "crear el modelo de", "new bounded context", "new module", "new aggregate". Auto-triggers when a new domain or module starts.
+description: Workflow to add a new bounded context (module/aggregate) to a hexagonal Spring backend - folder structure, domain model with create()/restore(), commands, snapshots, repository port and adapter, mapper, REST controller, exceptions. Use for "nuevo bounded context", "nuevo dominio", "nuevo módulo", "crear el modelo de", "new bounded context", "new module", "new aggregate".
 ---
 
 # New bounded context

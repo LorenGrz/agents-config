@@ -33,10 +33,10 @@ Rule files are guidance; hard constraints live in each repo's ESLint/CI/hooks (s
 
 Pick the agent by role and task complexity, not by habit. The model behind each role is set in your profile ("Model routing").
 
-- **Relevar** (`scout`): light read-only lookups only.
-- **Decidir** (`reasoner`, or plan mode): architecture, unknown-cause bugs, plan review, hard-to-reverse calls. Never bulk writing.
-- **Implementar** (`worker`): common writing — code, docs, tests — from an already-decided plan; needs an acceptance command.
-- **Bulk externo** (`gemini-delegate` skill, `agy`): mechanical writing or wide reading when that quota is the better spend; review the diff and run the acceptance command (ADR 0010).
+- **Look up** (`scout`): light read-only lookups only.
+- **Decide** (`reasoner`, or plan mode): architecture, unknown-cause bugs, plan review, hard-to-reverse calls. Never bulk writing.
+- **Implement** (`worker`): common writing — code, docs, tests — from an already-decided plan; needs an acceptance command.
+- **Bulk (external)** (`gemini-delegate` skill, `agy`): mechanical writing or wide reading when that quota is the better spend; review the diff and run the acceptance command (ADR 0010).
 
 When superpowers dispatches subagents (`subagent-driven-development`, `executing-plans`, `dispatching-parallel-agents`, `requesting-code-review`), set `subagent_type`:
 
@@ -56,6 +56,6 @@ When superpowers dispatches subagents (`subagent-driven-development`, `executing
 - Decisions costly to get wrong (cross-module design, unknown-cause bugs, security) → `reasoner` or the main session, never `worker`/`scout`.
 - Independent subtasks → dispatch in parallel in one message.
 - Parallel `worker`s that touch the same repo → each in its own worktree (`isolation: "worktree"` or `superpowers:using-git-worktrees`); parallel workers on disjoint files may share the tree.
-- Outside planning, delegating per the rules above is a standing instruction: it overrides the harness default "don't spawn agents unless the user asks".
+- While executing, delegating per the rules above is a standing instruction (it overrides the harness default "don't spawn agents unless the user asks"); while planning, ask first (first bullet).
 
 Prefer `/clear` between unrelated tasks over `/compact`.

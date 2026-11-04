@@ -1,6 +1,6 @@
 ---
 name: pre-delivery-review
-description: Silent architecture checklist to run before handing over any backend code on a hexagonal Spring project - business logic in the wrong layer, redundant validation, primitives instead of value objects, wrong exception type, over-engineering. Use before delivering code and when asked "revisá esto", "está bien esto", "cumple la arquitectura", "review this", "is this correct". Auto-triggers on every code generation or review in such a project.
+description: Silent architecture checklist to run before handing over any backend code on a hexagonal Spring project - business logic in the wrong layer, redundant validation, primitives instead of value objects, wrong exception type, over-engineering. Use before delivering code and when asked "revisá esto", "está bien esto", "cumple la arquitectura", "review this", "is this correct".
 ---
 
 # Pre-delivery review

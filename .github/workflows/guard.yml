@@ -28,3 +28,9 @@ jobs:
           scripts/leak-guard.sh --log $range
       - name: Derived plugin files are up to date
         run: scripts/gen-plugin.sh --check
+      - name: Offline test suites
+        run: |
+          bash scripts/test-leak-guard.sh
+          bash scripts/test-packs.sh
+          bash scripts/test-orgs.sh
+          bash devops/project-init/scripts/test-manifest.sh

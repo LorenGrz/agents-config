@@ -122,7 +122,8 @@ base (this repo, public) -> organization (private repo in organizations/) -> pro
 - Add a company or client: `scripts/orgs.sh add <name> <git-url>` or `--init`, or the `org-creator` skill. Details: `organizations/README.md`.
 - Packs: `packs/<name>/pack.json` says when it applies; `scripts/project-agents.sh --manifest <file> [--org <name>]` installs it.
 - Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `devops/project-init/scripts/test-manifest.sh`, and `e2e.sh` per stack.
-- Guards: `scripts/leak-guard.sh` (blocklist stays local) and `scripts/gen-plugin.sh --check`; enable with `git config core.hooksPath .githooks`.
+- Guards: `scripts/leak-guard.sh` (blocklist stays local; hooks pre-commit, commit-msg, pre-push) and `scripts/gen-plugin.sh --check`; enable with `git config core.hooksPath .githooks`. Tests: add `scripts/test-leak-guard.sh`.
+- Requirements: bash 4+, `jq`, GNU sed/awk/xargs/tar (Linux; on macOS `brew install bash gnu-sed gawk findutils gnu-tar`).
 
 ## Categories
 

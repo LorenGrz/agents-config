@@ -1,6 +1,6 @@
 ---
 name: hexagonal-architecture
-description: Layer rules and design guidance for hexagonal (ports and adapters) + DDD backends on Spring (Java/Kotlin). Use when deciding where logic goes, modelling a domain, naming ports or refactoring layers - "arquitectura hexagonal", "dónde va la lógica", "qué capa", "cómo modelar", "invariantes", "puertos y adaptadores", "SOLID", "where does this logic go", "domain model", "ports and adapters". Auto-triggers when design, structure or layering comes up.
+description: Layer rules and design guidance for hexagonal (ports and adapters) + DDD backends on Spring (Java/Kotlin). Use when deciding where logic goes, modelling a domain, naming ports or refactoring layers - "arquitectura hexagonal", "dónde va la lógica", "qué capa", "cómo modelar", "invariantes", "puertos y adaptadores", "SOLID", "where does this logic go", "domain model", "ports and adapters".
 ---
 
 # Hexagonal architecture (Spring)
@@ -20,7 +20,7 @@ The package layout comes from the project's architecture ADR (`docs/decisions/`)
 - All business rules and invariants live in the model, not in services or controllers.
 - Rich model: behavior on the object, named in business language (`formalize()`, `cancel()`), never `setStatus()`. No public setters.
 - Every mutating method checks its precondition first (`ensureStatus`, `ensureEditable`).
-- Two factories: `create()` enforces invariants; `restore()` rebuilds from storage and tests without re-checking.
+- Two factories: `create()` enforces invariants; `restore()` rebuilds from storage and tests without re-checking (a common convention: follow the project's architecture ADR if it differs).
 - Expose collections unmodifiable. Use value objects (`Money`, `Quantity`, enums) instead of raw `BigDecimal`/`String` for validated concepts; validate in the constructor.
 - No framework annotations in the model.
 

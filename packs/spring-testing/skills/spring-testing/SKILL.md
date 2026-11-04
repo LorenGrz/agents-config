@@ -1,6 +1,6 @@
 ---
 name: spring-testing
-description: Testing conventions for Spring Boot services and controllers - Mockito unit tests for application services, @WebMvcTest for controllers, domain helpers, naming, coverage gap analysis. Use for "escribir tests", "agregar tests", "cubrir con tests", "cobertura", "tests del servicio/controller", "write tests", "add tests", "WebMvcTest", "what tests are missing". Auto-triggers when tests are written, reviewed or completed.
+description: Testing conventions for Spring Boot services and controllers - Mockito unit tests for application services, @WebMvcTest for controllers, domain helpers, naming, coverage gap analysis. Use for "escribir tests", "agregar tests", "cubrir con tests", "cobertura", "tests del servicio/controller", "write tests", "add tests", "WebMvcTest", "what tests are missing".
 ---
 
 # Spring testing
