@@ -31,6 +31,7 @@ problems() { # problems <manifest> : one line per problem, none when valid
       (.pending[]? | select((.key // "") == "") | "pending item needs a key"),
       ((.decisions[]?, .pending[]?) | select((.key // "") != "" and ((.key | test("^[a-z0-9][a-z0-9-]*$")) | not)) | "invalid key (lowercase letters, digits, dashes): \(.key)"),
       (.decisions[]? | select(.key == "backend-style" and ((.value // "") | IN("hexagonal", "modular", "layered") | not)) | "backend-style must be one of hexagonal|modular|layered"),
+      (.decisions[]? | select(.key == "sdd" and ((.value // "") | IN("required", "light", "off") | not)) | "sdd must be one of required|light|off"),
       (.decisions[]? | select(.key == "frontend-style" and ((.value // "") | IN("feature-sliced", "hexagonal", "simple") | not)) | "frontend-style must be one of feature-sliced|hexagonal|simple"),
       (ks | group_by(.)[] | select(length > 1) | "duplicate key: \(.[0])"),
       ($always[] as $k | select((ks | index($k)) == null) | "missing decision or pending: \($k)"),

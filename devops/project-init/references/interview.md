@@ -20,7 +20,7 @@ Run before generating anything. Output: a manifest (`.agents/project.json`, sche
 | 4 | `frontend-style` | Frontend architecture (only if a frontend stack) | `feature-sliced` (barrels + lint boundaries) / `hexagonal` (ports for API) / `simple`; exactly one of these tokens |
 | 5 | `data`, `auth` | Database, persistence and migrations; auth strategy | Ask each separately. Never assume |
 | 6 | `testing`, `deploy` | Test pyramid and e2e; deploy target | Deploy: none / Docker / AWS / Vercel. Respect `feedback-frugal-personal-projects`: nothing that costs money without asking |
-| 7 | `sdd` | Specs before features? | `required` (spec + plan for every feat/refactor) / `light` (only big features) / `off` |
+| 7 | `sdd` | Specs before features? | exactly one of `required` (spec + plan for every non-trivial feat/refactor, the template default) / `light` (only big features; small changes go straight to implementation) / `off` (no spec requirement). `init.sh` rewrites step 2 of the generated `AGENTS.md` accordingly |
 
 Optional, only when it applies: a component/UI library project gets the decision `project-kind: ui-library` (installs the `ui-library` pack).
 
