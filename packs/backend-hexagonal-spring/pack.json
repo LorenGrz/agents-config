@@ -1,0 +1,13 @@
+{
+  "description": "Hexagonal (ports and adapters) + DDD backend on Spring Boot, Java or Kotlin.",
+  "when": { "stacks": ["java-spring", "kotlin-spring"], "decisions": { "backend-style": "hexagonal" } },
+  "index": [
+    { "when": "Where does this logic go, layers, domain model, ports, SOLID", "use": "hexagonal-architecture" },
+    { "when": "New bounded context / module / aggregate", "use": "new-bounded-context" },
+    { "when": "Before handing over any code (checklist)", "use": "pre-delivery-review" }
+  ],
+  "critical": [
+    { "skill": "new-bounded-context", "keywords": "bounded context|nuevo dominio|nuevo m(o|ó)dulo|new module|new aggregate|nuevo agregado" },
+    { "skill": "hexagonal-architecture", "paths": ["/domain/.*\\.(java|kt)$", "/application/.*\\.(java|kt)$"] }
+  ]
+}

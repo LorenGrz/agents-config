@@ -519,6 +519,14 @@ run_stack_format() {
   (cd "$DIR" && bash -c "$CMD_FORMAT")
 }
 
+# Skills, rules, MCP and packs (commands, keyword table, critical.json) from the hub.
+# Runs before the formatters so the copied markdown gets formatted with the rest.
+install_agent_scope() {
+  local hub; hub="$(cd "$SKILL_DIR/../.." && pwd)"
+  [ -x "$hub/scripts/project-agents.sh" ] || return 0
+  bash "$hub/scripts/project-agents.sh" --stack "$STACK${WITH:+,$WITH}" ${MANIFEST:+--manifest "$MANIFEST"} --dir "$DIR"
+}
+
 [ "$RUNTIME" = node ] && ensure_node_ts_package
 [ -n "$VARIANT" ] && copy_template_tree "$STACK_DIR/@$VARIANT"
 copy_template_tree "$STACK_DIR"
@@ -533,11 +541,6 @@ else
   write_stack_env
   run_stack_setup
 fi
+install_agent_scope
 apply_manifest
 if [ "$RUNTIME" = node ]; then run_format; else run_stack_format; fi
-install_agent_scope() {
-  local hub; hub="$(cd "$SKILL_DIR/../.." && pwd)"
-  [ -x "$hub/scripts/project-agents.sh" ] || return 0
-  bash "$hub/scripts/project-agents.sh" --stack "$STACK${WITH:+,$WITH}" --dir "$DIR"
-}
-install_agent_scope
