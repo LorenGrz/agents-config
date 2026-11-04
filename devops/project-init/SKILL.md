@@ -9,7 +9,7 @@ Scaffold a new repo once, correctly, instead of re-deciding workflow per project
 
 ## Workflow
 
-1. **Ask**: stack (`react-vite` | `next` | `nestjs` | `node-ts`), project name, visibility (default `public`). Remind the user: never commit secrets.
+1. **Interview**: follow `references/interview.md` (org, stack, backend/frontend architecture, data and auth, testing and deploy, SDD), plus project name and visibility (default `public`). Critical answers are never defaulted: "no sé" goes to `pending`. Write the answers as a manifest (schema in that file) outside the target dir, e.g. in the session scratchpad, and check it with `bash scripts/manifest.sh validate <manifest>`. Remind the user: never commit secrets.
 
 2. **Generate the app, if the target dir is empty**, with the stack's own official generator in its non-interactive form, then overlay this skill's templates. The dir/package name must be lowercase (npm rule) and may differ from the GitHub repo name (repo `Disfrazate`, dir/package `disfrazate`); `--name` below is the **GitHub repo name**:
    - react-vite: `pnpm create vite@latest <dir> --template react-ts --no-interactive --no-immediate`, then `pnpm -C <dir> install` (run from the parent dir; vite resolves `<dir>` relative to cwd)
@@ -18,8 +18,9 @@ Scaffold a new repo once, correctly, instead of re-deciding workflow per project
    - node-ts: just `mkdir <dir>`; `init.sh --install` creates `package.json` and `src/index.ts`
    Then run:
    ```
-   bash scripts/init.sh --stack <stack> --name <repo-name> --dir <path> [--owner <owner>] [--project-number N] --install [--with aws,llm,supabase,...]
+   bash scripts/init.sh --manifest <manifest> --dir <path> [--owner <owner>] [--project-number N] --install
    ```
+   `--manifest` supplies `--name`, `--stack` (its first stack) and `--with`, and writes `.agents/project.json`, one ADR per decision and the pending decisions into `.agents/CONTEXT.md`. Without a manifest, pass `--stack <stack> --name <repo-name> [--with aws,llm,supabase,...]` as before. Stacks without a template (`java-spring`, `kotlin-spring`, `python`) are refused for now.
    `--owner` defaults to `gh api user --jq .login` (if `gh` is authenticated), then `git config github.user`; pass it explicitly if neither resolves.
    Without `--install`, `init.sh` only prints the commands needed (devDependencies, missing package.json scripts); nothing is installed or written to `package.json` scripts.
 
@@ -93,6 +94,7 @@ Use `scripts/adopt.sh` instead of `init.sh` when the repo was **not** generated 
 - `bootstrap-github.sh` and `gh-flow.sh` export `CLICOLOR_FORCE=0 NO_COLOR=1`: a shell with `CLICOLOR_FORCE=1`/`FORCE_COLOR=1` makes `gh --format json | jq` fail on ANSI codes, and only `CLICOLOR_FORCE=0` turns it off. `gh-flow.sh start` uses `git pull --autostash` so a dirty tree survives pull.rebase.
 - The project's `guard-branch.sh` hook blocks `git commit`/`git push` on dev/main, except the initial commit (no HEAD yet). It judges the repo the command targets (`git -C <dir>` or a leading `cd <dir> &&`), not the session cwd.
 - node-ts's ESLint config is `eslint.config.mjs` so it loads regardless of the package `"type"`.
+- After editing the manifest/interview parts, run `bash scripts/test-manifest.sh` (offline, no network).
 - After editing anything in this skill, run `bash scripts/e2e.sh --stack all` (generates all four stacks in temp dirs, runs `init.sh --install`, `verify-ci.sh`, and an idempotency re-run; never touches GitHub). It must end with every stack PASS.
 
 - `init.sh` also installs the stack's skills/rules/MCP into `.claude/` and `.mcp.json` via `scripts/project-agents.sh` (stacks in `config/scopes.json`; `--with` adds extra ones). Stack skills are NOT global anymore.

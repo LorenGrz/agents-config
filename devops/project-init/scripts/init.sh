@@ -3,7 +3,7 @@
 #
 # Usage: init.sh --stack <react-vite|next|nestjs|node-ts> --name <name>
 #                 [--dir <path>] [--owner <owner>] [--project-number N]
-#                 [--force] [--install]
+#                 [--force] [--install] [--manifest <file>]
 #
 # Also installs the stack's skills/rules/MCP into .claude/ via
 # scripts/project-agents.sh; --with adds extra stacks (rn,aws,python,kotlin,
@@ -32,7 +32,11 @@ Usage: init.sh --stack <react-vite|next|nestjs|node-ts> --name <name>
   --project-number   GitHub Project number, used as {{PROJECT_NUMBER}} (default: TBD)
   --with             extra stacks for skills/rules/MCP, comma-separated
                      (rn,aws,python,kotlin,apex,docker,llm,supabase,jira)
-  --force            overwrite files that already exist
+  --manifest         interview result (.agents/project.json schema, see
+                     references/interview.md): fills --name/--stack/--with
+                     when not given, writes project.json, ADRs and pending
+                     decisions. --stack and --name become optional
+  --force           overwrite files that already exist
   --install          actually install the missing devDependencies (ESLint plus
                      any prettier/vitest/tsx the scripts use), write missing
                      package.json scripts, create package.json for node-ts,
@@ -59,6 +63,7 @@ DIR="$(pwd)"
 OWNER=""
 PROJECT_NUMBER="TBD"
 WITH=""
+MANIFEST=""
 FORCE=0
 INSTALL=0
 
@@ -70,6 +75,7 @@ while [ $# -gt 0 ]; do
     --owner) OWNER="$2"; shift 2 ;;
     --project-number) PROJECT_NUMBER="$2"; shift 2 ;;
     --with) WITH="$2"; shift 2 ;;
+    --manifest) MANIFEST="$2"; shift 2 ;;
     --force) FORCE=1; shift ;;
     --install) INSTALL=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -77,8 +83,23 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+if [ -n "$MANIFEST" ]; then
+  # Flags win; the manifest fills what is missing. Extra stacks are passed to
+  # project-agents.sh only if config/scopes.json knows them.
+  _sd="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  bash "$_sd/scripts/manifest.sh" validate "$MANIFEST" >/dev/null || exit 1
+  NAME="${NAME:-$(jq -r '.name' "$MANIFEST")}"
+  STACK="${STACK:-$(jq -r '.stacks[0]' "$MANIFEST")}"
+  if [ -z "$WITH" ]; then
+    WITH="$(jq -r --slurpfile sc "$_sd/../../config/scopes.json" \
+      '[(.stacks[1:][]?), (.extras[]?)] | map(select($sc[0].stacks[.] != null)) | join(",")' "$MANIFEST")"
+  fi
+fi
+
 case "$STACK" in
   react-vite|next|nestjs|node-ts) ;;
+  java-spring|kotlin-spring|python)
+    echo "Error: no project template for '$STACK' yet; scaffold it by hand and use scripts/adopt.sh for the docs layer" >&2; exit 1 ;;
   *) echo "Error: --stack must be one of react-vite|next|nestjs|node-ts" >&2; exit 1 ;;
 esac
 [ -n "$NAME" ] || { echo "Error: --name is required" >&2; exit 1; }
@@ -411,6 +432,13 @@ run_format() {
   (cd "$DIR" && pnpm run format)
 }
 
+# Interview result (references/interview.md): project.json, ADRs, pending decisions.
+# Runs before run_format so the generated files get formatted with the rest.
+apply_manifest() {
+  [ -n "$MANIFEST" ] || return 0
+  bash "$SKILL_DIR/scripts/manifest.sh" apply "$MANIFEST" "$DIR"
+}
+
 ensure_node_ts_package
 copy_template_tree "$COMMON_DIR"
 generate_agents_md
@@ -419,6 +447,7 @@ report_scripts
 ensure_package_manager
 print_or_install_deps
 ensure_tsconfig_strict
+apply_manifest
 run_format
 install_agent_scope() {
   local hub; hub="$(cd "$SKILL_DIR/../.." && pwd)"
