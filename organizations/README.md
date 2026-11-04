@@ -36,7 +36,8 @@ organizations/<name>/
 - `blocklist_terms`: words that must never appear in the public repo; `orgs.sh` merges them into the local leak-guard blocklist.
 - `replaces`: base pack skills (`name`) or commands (`/name`) that the org replaces with its own, so both do not trigger.
 - `assets`: optional per-file filter by stack; a file without an entry is installed for every stack.
-- `index` / `critical`: rows for the project's keyword table and `.agents/critical.json`, merged before the packs' own.
+- `index` / `critical`: rows for the project's keyword table and `.agents/critical.json`, merged before the packs' own. A row may carry `"stacks": [...]` to apply only to projects of those stacks.
+- Commands installed from packs that point at a replaced skill are rewritten to point at the org's replacement.
 
 ## Use
 

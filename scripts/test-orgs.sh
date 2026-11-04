@@ -32,7 +32,7 @@ printf -- '---\ndescription: Acme commit flow.\n---\nx\n' > "$A/commands/acme-co
 printf -- '---\ndescription: Web only.\n---\nx\n' > "$A/commands/acme-web-only.md"
 jq '.replaces = {"ui-builder":"acme-ui-builder","/smart-commit":"/acme-commit"}
     | .assets = {"commands/acme-commit.md":{"stacks":["react-vite"]},"commands/acme-web-only.md":{"stacks":["react-vite"]}}
-    | .index = [{"when":"Acme ticket","use":"acme-ticket"}]
+    | .index = [{"when":"Acme ticket","use":"acme-ticket"},{"when":"Acme backend only","use":"acme-erp","stacks":["java-spring"]}]
     | .critical = [{"skill":"acme-ui-builder","keywords":"acme screen"}]' "$A/org.json" > "$W/o.json" && mv "$W/o.json" "$A/org.json"
 check "org with assets still validates" 'bash "$ORGS" validate acme >/dev/null 2>&1'
 
@@ -54,6 +54,8 @@ bash "$PA" --stack java-spring --manifest "$W/api.json" --org acme --dir "$P2" >
 check "stack filter: base command kept, org web-only command skipped" '[ -f "$P2/.claude/commands/smart-commit.md" ] && [ ! -f "$P2/.claude/commands/acme-commit.md" ] && [ ! -f "$P2/.claude/commands/acme-web-only.md" ]'
 before="$(find "$P" -type f -exec sha1sum {} + | grep -v skills.lock | sort)"
 bash "$PA" --stack react-vite --manifest "$W/web.json" --org acme --dir "$P" >/dev/null 2>&1
+check "org rows honor their stack filter" 'grep -q "acme-ticket" "$P/AGENTS.md" && ! grep -q "acme-erp" "$P/AGENTS.md" && grep -q "acme-erp" "$P2/AGENTS.md"'
+check "pack commands are rewritten to the replacing skill" 'grep -q ".claude/skills/acme-ui-builder/" "$P/.claude/commands/ui-build.md" && ! grep -q ".claude/skills/ui-builder/" "$P/.claude/commands/ui-build.md"'
 check "second run changes nothing" '[ "$before" = "$(find "$P" -type f -exec sha1sum {} + | grep -v skills.lock | sort)" ]'
 check "unknown org is an error" '! bash "$PA" --stack react-vite --org nope --dir "$P" >/dev/null 2>&1'
 

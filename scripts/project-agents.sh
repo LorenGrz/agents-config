@@ -147,7 +147,12 @@ if [ -n "$ORG" ]; then
   while IFS=$'\t' read -r from to; do
     [ -n "$from" ] || continue
     wanted "$(asset_key "$to")" || continue
-    case "$from" in /*) run rm -f "$DIR/.claude/commands/${from#/}.md" ;; *) run rm -rf "$DIR/.claude/skills/$from" ;; esac
+    case "$from" in
+      /*) run rm -f "$DIR/.claude/commands/${from#/}.md" ;;
+      *) run rm -rf "$DIR/.claude/skills/$from"
+         # commands installed from packs may point at the replaced skill
+         [ "$DRY" -eq 1 ] || for c in "$DIR"/.claude/commands/*.md; do [ -f "$c" ] && sed -i "s|\.claude/skills/$from/|.claude/skills/$to/|g" "$c"; done ;;
+    esac
     ROWS="$(sed "s|\`$from\`|\`$to\`|g" <<<"$ROWS")"
     CRITICAL="$(jq -c --arg f "${from#/}" --arg t "${to#/}" 'map(if .skill == $f then .skill = $t else . end)' <<<"$CRITICAL")"
   done < <(jq -r '(.replaces // {}) | to_entries[] | [.key, .value] | @tsv' "$OJ")
@@ -163,8 +168,10 @@ if [ -n "$ORG" ]; then
     echo "command: .claude/commands/$(basename "$cmd") (org)"
     run mkdir -p "$DIR/.claude/commands"; run cp "$cmd" "$DIR/.claude/commands/$(basename "$cmd")"
   done
-  CRITICAL="$(jq -c --slurpfile o "$OJ" '($o[0].critical // []) + .' <<<"$CRITICAL")"
-  ORG_ROWS="$(jq -r '.index[]? | "| \(.when) | `\(.use)` |"' "$OJ")"
+  # rows may carry "stacks": [...]; without it they apply to every stack of the project
+  FILTER='select((.stacks // null) == null or any(.stacks[]; . as $s | ($all | split("\n") | index($s)) != null))'
+  CRITICAL="$(jq -c --slurpfile o "$OJ" --arg all "$ALL" "(\$o[0].critical // [] | map($FILTER) | map(del(.stacks))) + ." <<<"$CRITICAL")"
+  ORG_ROWS="$(jq -r --arg all "$ALL" ".index[]? | $FILTER | \"| \\(.when) | \`\\(.use)\`  |\"" "$OJ" | sed 's/  |$/ |/')"
   ROWS="| Org policies ($ORG): workflow, architecture, UI, integrations | \`.agents/POLICIES.md\` |"$'\n'"${ORG_ROWS:+$ORG_ROWS$'\n'}$ROWS"
   if [ "$DRY" -eq 0 ] && [ -f "$OD/POLICIES.md" ]; then mkdir -p "$DIR/.agents"; cp "$OD/POLICIES.md" "$DIR/.agents/POLICIES.md"; echo "wrote .agents/POLICIES.md"; fi
 fi
@@ -175,8 +182,8 @@ if [ "${#SELECTED[@]}" -gt 0 ] && [ "$DRY" -eq 0 ]; then
   if [ "$CRITICAL" != "[]" ]; then jq . <<<"$CRITICAL" > "$DIR/.agents/critical.json"; echo "wrote .agents/critical.json"; fi
   # AGENTS.md keyword table: replace the marked block, else insert it before "## How we work", else append.
   if [ -f "$DIR/AGENTS.md" ] && [ -n "${ROWS//[$'\n']/}" ]; then
-    [ "$(grep -c . <<<"$ROWS")" -gt 10 ] && echo "warning: more than 10 keyword rows; AGENTS.md table keeps the first 10" >&2
-    block="$(printf '<!-- agents-index:start -->\n## Skills and commands by keyword\n\nBefore implementing, read the skill for what you are touching.\n\n| When | Use |\n|---|---|\n%s<!-- agents-index:end -->\n' "$(head -n 10 <<<"$ROWS")"$'\n')"
+    [ "$(grep -c . <<<"$ROWS")" -gt 14 ] && echo "warning: more than 14 keyword rows; AGENTS.md table keeps the first 14" >&2
+    block="$(printf '<!-- agents-index:start -->\n## Skills and commands by keyword\n\nBefore implementing, read the skill for what you are touching.\n\n| When | Use |\n|---|---|\n%s<!-- agents-index:end -->\n' "$(head -n 14 <<<"$ROWS")"$'\n')"
     tmp="$(mktemp)"
     if grep -q 'agents-index:start' "$DIR/AGENTS.md"; then
       B="$block" awk '/agents-index:start/ {print ENVIRON["B"]; skip=1} !skip {print} /agents-index:end/ {skip=0}' "$DIR/AGENTS.md" > "$tmp"

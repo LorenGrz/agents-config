@@ -68,7 +68,7 @@ check "ui-library is opt-in via project-kind" '[ -d "$d/.claude/skills/component
 sel '["react-vite"]' '[{"key":"frontend-style","value":"simple"}]'
 check "ui-library absent without project-kind; run-app always present" '[ ! -d "$d/.claude/skills/component-a11y-guard" ] && [ -d "$d/.claude/skills/run-app" ]'
 sel '["java-spring"]' '[{"key":"backend-style","value":"hexagonal"}]'
-check "AGENTS.md keyword table stays within 10 rows" '[ "$(sed -n "/agents-index:start/,/agents-index:end/p" "$d/AGENTS.md" | grep -c "^| .* | .* |$")" -le 11 ]'
+check "AGENTS.md keyword table stays within 14 rows" '[ "$(sed -n "/agents-index:start/,/agents-index:end/p" "$d/AGENTS.md" | grep -c "^| .* | .* |$")" -le 15 ]'
 
 echo; echo "$pass passed, $failn failed"
 [ "$failn" -eq 0 ]
