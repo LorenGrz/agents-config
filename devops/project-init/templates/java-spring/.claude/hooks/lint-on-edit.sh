@@ -17,6 +17,8 @@ re="$(printf '%s' "$f" | sed 's/[][\.*^$+?(){}|]/\\&/g')"
 if [ -x ./mvnw ]; then
   ./mvnw -q -B spotless:apply "-DspotlessFiles=$re" >/dev/null 2>&1 || true
 elif [ -x ./gradlew ]; then
-  ./gradlew -q spotlessApply "-PspotlessFiles=$re" >/dev/null 2>&1 || true
+  # -PspotlessIdeHook formats only this file; -PspotlessFiles is ignored by Gradle and would
+  # reformat the whole project on every edit (verified in e2e.sh).
+  ./gradlew -q spotlessApply "-PspotlessIdeHook=$f" >/dev/null 2>&1 || true
 fi
 exit 0

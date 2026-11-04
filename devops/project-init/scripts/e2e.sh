@@ -70,6 +70,26 @@ generate() { # generate <stack> <dir>
   esac
 }
 
+# JVM edit hook: formatting the edited file must not touch any other file (Gradle once ignored
+# the per-file flag and reformatted the whole project). Leaves the tree as it found it.
+hook_check() { # hook_check <stack> <dir>
+  local stack="$1" dir="$2" d ext
+  case "$stack" in java-spring|java-spring-gradle|kotlin-spring) ;; *) return 0 ;; esac
+  ext=java; [ "$stack" = kotlin-spring ] && ext=kt
+  d="$(dirname "$(find "$dir/src/main" -name "*Application.$ext" | head -1)")"
+  for n in One Two; do
+    if [ "$ext" = java ]; then printf 'package x;\npublic class %s   {  int   a=1;\n\n\n void  m( ){ }  }\n' "$n" > "$d/$n.java"
+    else printf 'package x\nclass %s(  val a:Int ){fun   m( ) =   1}\n' "$n" > "$d/$n.kt"; fi
+  done
+  local before; before="$(sha1sum "$d/Two.$ext")"
+  printf '{"tool_input":{"file_path":"%s"}}' "$d/One.$ext" | bash "$dir/.claude/hooks/lint-on-edit.sh" || return 1
+  local ok=1
+  if [ "$ext" = java ]; then grep -q 'int a = 1;' "$d/One.java" || ok=0; else grep -q 'val a: Int' "$d/One.kt" || ok=0; fi
+  [ "$(sha1sum "$d/Two.$ext")" = "$before" ] || ok=0
+  rm -f "$d/One.$ext" "$d/Two.$ext"
+  [ "$ok" = 1 ] || { echo "hook_check failed: the edit hook must format One and leave Two untouched" >&2; return 1; }
+}
+
 run_stack() { # run_stack <stack> <dir>
   local stack="$1" dir="$2"
   local -a init_args=(--stack "${stack%-gradle}" --name "E2e-$stack" --dir "$dir" --owner e2e-owner --install)
@@ -84,6 +104,7 @@ run_stack() { # run_stack <stack> <dir>
   git -C "$dir" -c user.name=e2e -c user.email=e2e@example.invalid commit -q -m "chore: initial project setup" || return 1
 
   bash "$SCRIPTS_DIR/verify-ci.sh" --dir "$dir" || return 1
+  hook_check "$stack" "$dir" || return 1
 
   # Idempotency: a second run must change nothing.
   bash "$SCRIPTS_DIR/init.sh" "${init_args[@]}" || return 1

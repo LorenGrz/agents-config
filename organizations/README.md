@@ -51,4 +51,6 @@ scripts/orgs.sh status | pull | push     one repo at a time, push asks first
 
 project-init asks which org a project belongs to (proposing the detected one), then `project-agents.sh --org <name>` copies the org's skills and commands, merges its index and critical entries, and copies `POLICIES.md` to `.agents/POLICIES.md`. The project freezes the base and org versions in `.agents/skills.lock`; updates are always explicit.
 
+`orgs.sh validate` runs automatically on `add`, `pull` and before `project-agents.sh --org` installs anything (fail closed). It is advisory: it catches mistakes and obvious phrases that weaken the baseline, it does not make an untrusted org safe. `init.sh` asks before copying an org's `POLICIES.md` into a project whose owner is not one of the org's `gh_owners` (`--allow-org-mismatch` to proceed).
+
 To create an org for a new client, use the `org-creator` skill.

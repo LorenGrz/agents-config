@@ -62,7 +62,7 @@ check "unknown org is an error" '! bash "$PA" --stack react-vite --org nope --di
 
 # init.sh --manifest picks the org from the manifest
 Q="$W/app"; mkdir -p "$Q"; jq -n '{version:1,name:"Web",org:"acme",stacks:["node-ts"],decisions:[{key:"data",value:"none"},{key:"auth",value:"none"},{key:"testing",value:"vitest"},{key:"deploy",value:"none"},{key:"sdd",value:"light"}],pending:[]}' > "$W/init.json"
-bash "$H/devops/project-init/scripts/init.sh" --manifest "$W/init.json" --dir "$Q" --owner o >"$W/init.log" 2>&1
+bash "$H/devops/project-init/scripts/init.sh" --manifest "$W/init.json" --dir "$Q" --owner acme-inc >"$W/init.log" 2>&1
 check "init.sh installs the manifest's org" '[ -f "$Q/.agents/POLICIES.md" ] && jq -e ".org.name == \"acme\"" "$Q/.agents/skills.lock" >/dev/null'
 
 
@@ -103,6 +103,14 @@ mkorg fresh
 check "a fresh --init org has no placeholder blocklist term" '[ "$(jq ".blocklist_terms | length" "$H/organizations/fresh/org.json")" -eq 0 ]'
 bash "$ORGS" index >/dev/null 2>&1
 check "blocklist includes the match owners" 'grep -qx "fresh-inc" "$W/state/blocklist"'
+
+# org / owner mismatch
+Q2="$W/app2"; mkdir -p "$Q2"
+bash "$H/devops/project-init/scripts/init.sh" --manifest "$W/init.json" --dir "$Q2" --owner someone-else </dev/null >"$W/mm.log" 2>&1; rc=$?
+check "init.sh refuses an org/owner mismatch when non-interactive" '[ $rc -ne 0 ] && [ ! -f "$Q2/.agents/POLICIES.md" ]'
+Q3="$W/app3"; mkdir -p "$Q3"
+bash "$H/devops/project-init/scripts/init.sh" --manifest "$W/init.json" --dir "$Q3" --owner someone-else --allow-org-mismatch </dev/null >/dev/null 2>&1
+check "--allow-org-mismatch proceeds" '[ -f "$Q3/.agents/POLICIES.md" ]'
 
 # status / remove / push safety
 st="$(bash "$ORGS" status 2>&1)"

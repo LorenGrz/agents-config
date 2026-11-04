@@ -67,6 +67,7 @@ PROJECT_NUMBER="TBD"
 WITH=""
 MANIFEST=""
 ORG=""
+ORG_MISMATCH_OK=0
 FORCE=0
 INSTALL=0
 
@@ -80,6 +81,7 @@ while [ $# -gt 0 ]; do
     --with) WITH="$2"; shift 2 ;;
     --manifest) MANIFEST="$2"; shift 2 ;;
     --org) ORG="$2"; shift 2 ;;
+    --allow-org-mismatch) ORG_MISMATCH_OK=1; shift ;;
     --force) FORCE=1; shift ;;
     --install) INSTALL=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -116,6 +118,20 @@ SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMMON_DIR="$SKILL_DIR/templates/common"
 STACK_DIR="$SKILL_DIR/templates/$STACK"
 DATE="$(date +%Y-%m-%d)"
+
+# The org's POLICIES.md is private: never copy it into a repo owned by someone else by accident.
+if [ -n "$ORG" ]; then
+  [[ "$ORG" =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "Error: invalid organization name '$ORG'" >&2; exit 1; }
+  _oj="$SKILL_DIR/../../organizations/$ORG/org.json"
+  if [ -f "$_oj" ] && ! jq -e --arg o "$OWNER" '(.match.gh_owners // []) | any(ascii_downcase == ($o | ascii_downcase))' "$_oj" >/dev/null; then
+    echo "warning: project owner '$OWNER' is not one of organization '$ORG' GitHub owners ($(jq -r '(.match.gh_owners // []) | join(", ")' "$_oj"))." >&2
+    echo "         Its private POLICIES.md would be copied into this project." >&2
+    if [ "$ORG_MISMATCH_OK" != 1 ]; then
+      if [ -t 0 ]; then read -r -p "Continue? [y/N] " _a; [ "${_a:-}" = y ] || { echo "aborted" >&2; exit 1; }
+      else echo "Error: refusing in non-interactive mode; pass --allow-org-mismatch to proceed" >&2; exit 1; fi
+    fi
+  fi
+fi
 
 mkdir -p "$DIR"
 

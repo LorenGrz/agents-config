@@ -12,4 +12,4 @@ Status: accepted (2026-11-04)
 - New stacks: `python`, `java-spring` (Maven and Gradle), `kotlin-spring` (Gradle). `kotlin.md` is not attached to `kotlin-spring`: it prescribes a layered architecture that the interview decides.
 
 ## Consequences
-TS output stayed byte-identical (checked against a baseline). Every stack has an e2e (`e2e.sh`); `test-manifest.sh` covers the manifest offline.
+For the TS stacks the generated files are unchanged except `scripts/gh-flow.sh` (a `stack.env` branch) and what packs add on purpose: the keyword table in `AGENTS.md`, the `workflow` commands and the `run-app` skill (checked by diffing against a baseline). Every stack has an e2e (`e2e.sh`); `test-manifest.sh` covers the manifest offline.

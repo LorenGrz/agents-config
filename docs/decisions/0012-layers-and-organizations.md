@@ -12,4 +12,6 @@ Three layers: the public **base** (this repo, with `config/baseline.md` as the f
 - Pushes are per repo; the public repo never sees org commits. Versions are independent, frozen per project in `.agents/skills.lock`; updating is explicit.
 - Recognition by GitHub owner via the local, untracked `organizations/INDEX.md` (imported by `install.sh`); `project-init` proposes the org and always asks.
 - A policy that replaces a base practice is recorded as an ADR in the project.
+- The baseline floor is **advisory**. `orgs.sh validate` (run on `add`, `pull` and before `--org` installs, failing closed) catches contract mistakes and obvious weakening phrases in policies, skills and commands; it is not a security boundary. An org repo is trusted code: install only orgs you control.
+- `project-agents.sh --org` validates the org, its names, `replaces` keys and symlinks before writing anything; `init.sh` asks before copying an org's private policies into a project whose owner is not one of the org's GitHub owners.
 - `meta/org-creator` is the entry point for a new company or client.
