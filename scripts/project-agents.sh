@@ -3,7 +3,11 @@
 # of one or more stacks into a project's .claude/ and .mcp.json.
 #
 # Usage: project-agents.sh --stack <name>[,<name>...] [--pack <name>[,...]] [--manifest <file>]
-#                           [--dir <path>] [--dry-run]
+#                           [--org <name>] [--dir <path>] [--dry-run]
+#
+# --org installs an organization (organizations/<name>, see organizations/README.md) on top of the
+# packs: its skills and commands (per-stack filters and "replaces" from org.json), its index and
+# critical entries, and POLICIES.md as .agents/POLICIES.md. Same-name org files win over packs.
 #
 # Packs (packs/<name>/: pack.json, skills/, commands/) bundle skills and slash commands by
 # architecture. "always" packs are installed with any run; others when the project manifest
@@ -22,20 +26,21 @@ set -euo pipefail
 
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCOPES="$HUB/config/scopes.json"
-STACKS="" PACKS="" MANIFEST="" DIR="$(pwd)" DRY=0
+STACKS="" PACKS="" MANIFEST="" ORG="" DIR="$(pwd)" DRY=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --stack) STACKS="$2"; shift 2 ;;
     --pack) PACKS="$2"; shift 2 ;;
     --manifest) MANIFEST="$2"; shift 2 ;;
+    --org) ORG="$2"; shift 2 ;;
     --dir) DIR="$2"; shift 2 ;;
     --dry-run) DRY=1; shift ;;
-    -h|--help) sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,24p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown flag: $1" >&2; exit 1 ;;
   esac
 done
-[ -n "$STACKS$PACKS$MANIFEST" ] || { echo "Error: --stack, --pack or --manifest is required" >&2; exit 1; }
+[ -n "$STACKS$PACKS$MANIFEST$ORG" ] || { echo "Error: --stack, --pack or --manifest is required" >&2; exit 1; }
 command -v jq >/dev/null || { echo "Error: jq is required" >&2; exit 1; }
 
 run() { if [ "$DRY" -eq 1 ]; then echo "  [dry-run] $*"; else "$@"; fi; }
@@ -124,6 +129,46 @@ for pack in "${SELECTED[@]}"; do
   ROWS+="$(jq -r '.index[]? | "| \(.when) | `\(.use)` |"' "$src/pack.json")"$'\n'
 done
 
+# ---------------------------------------------------------------- organization
+ORG_VER="" ORG_SHA=""
+if [ -n "$ORG" ]; then
+  OD="$HUB/organizations/$ORG"; OJ="$OD/org.json"
+  [ -f "$OJ" ] || { echo "Error: organization '$ORG' is not installed (scripts/orgs.sh add)" >&2; exit 1; }
+  ORG_VER="$(jq -r .version "$OJ")"; ORG_SHA="$(git -C "$OD" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  echo "== org: $ORG $ORG_VER =="
+  ALL="$( { printf '%s\n' "${LIST[@]:-}"; [ -n "$MANIFEST" ] && jq -r '.stacks[]?' "$MANIFEST"; } | sed '/^$/d')"
+  wanted() { # wanted <asset-key>: installed unless org.json restricts it to other stacks
+    local st; st="$(jq -c --arg k "$1" '.assets[$k].stacks // empty' "$OJ")"
+    [ -z "$st" ] && return 0
+    jq -e --argjson st "$st" --arg all "$ALL" '$all | split("\n") | any(. as $s | $st | index($s) != null)' <<<null >/dev/null
+  }
+  asset_key() { case "$1" in /*) echo "commands/${1#/}.md" ;; *) echo "skills/$1" ;; esac; }
+  # replaced base items are removed only when the org's replacement applies to this project
+  while IFS=$'\t' read -r from to; do
+    [ -n "$from" ] || continue
+    wanted "$(asset_key "$to")" || continue
+    case "$from" in /*) run rm -f "$DIR/.claude/commands/${from#/}.md" ;; *) run rm -rf "$DIR/.claude/skills/$from" ;; esac
+    ROWS="$(sed "s|\`$from\`|\`$to\`|g" <<<"$ROWS")"
+    CRITICAL="$(jq -c --arg f "${from#/}" --arg t "${to#/}" 'map(if .skill == $f then .skill = $t else . end)' <<<"$CRITICAL")"
+  done < <(jq -r '(.replaces // {}) | to_entries[] | [.key, .value] | @tsv' "$OJ")
+  for sk in "$OD"/skills/*/; do
+    [ -f "$sk/SKILL.md" ] || continue
+    n="$(basename "$sk")"; wanted "skills/$n" || continue
+    echo "skill:   .claude/skills/$n (org)"
+    run mkdir -p "$DIR/.claude/skills"; run rm -rf "$DIR/.claude/skills/$n"; run cp -rL "${sk%/}" "$DIR/.claude/skills/$n"
+  done
+  for cmd in "$OD"/commands/*.md; do
+    [ -f "$cmd" ] || continue
+    wanted "commands/$(basename "$cmd")" || continue
+    echo "command: .claude/commands/$(basename "$cmd") (org)"
+    run mkdir -p "$DIR/.claude/commands"; run cp "$cmd" "$DIR/.claude/commands/$(basename "$cmd")"
+  done
+  CRITICAL="$(jq -c --slurpfile o "$OJ" '($o[0].critical // []) + .' <<<"$CRITICAL")"
+  ORG_ROWS="$(jq -r '.index[]? | "| \(.when) | `\(.use)` |"' "$OJ")"
+  ROWS="| Org policies ($ORG): workflow, architecture, UI, integrations | \`.agents/POLICIES.md\` |"$'\n'"${ORG_ROWS:+$ORG_ROWS$'\n'}$ROWS"
+  if [ "$DRY" -eq 0 ] && [ -f "$OD/POLICIES.md" ]; then mkdir -p "$DIR/.agents"; cp "$OD/POLICIES.md" "$DIR/.agents/POLICIES.md"; echo "wrote .agents/POLICIES.md"; fi
+fi
+
 if [ "${#SELECTED[@]}" -gt 0 ] && [ "$DRY" -eq 0 ]; then
   mkdir -p "$DIR/.agents"
   # critical.json: read by the critical-reasoning hook (keywords/paths -> skill hint).
@@ -143,9 +188,11 @@ if [ "${#SELECTED[@]}" -gt 0 ] && [ "$DRY" -eq 0 ]; then
     mv "$tmp" "$DIR/AGENTS.md"; echo "updated AGENTS.md keyword table"
   fi
   # skills.lock: what was installed from which hub revision (updates are always explicit).
-  jq -n --arg hub "$(git -C "$HUB" rev-parse --short HEAD 2>/dev/null || echo unknown)" \
+  jq -n --arg hub "$(git -C "$HUB" rev-parse --short HEAD 2>/dev/null || echo unknown)" --arg ver "$(cat "$HUB/VERSION" 2>/dev/null || echo 0)" \
         --arg packs "$(IFS=,; echo "${SELECTED[*]}")" --arg stacks "$STACKS" \
-    '{hub: $hub, stacks: ($stacks | split(",") | map(select(. != ""))), packs: ($packs | split(",") | map(select(. != "")))}' > "$DIR/.agents/skills.lock"
+        --arg org "$ORG" --arg orgver "$ORG_VER" --arg orgsha "$ORG_SHA" \
+    '{base: {version: $ver, sha: $hub}, stacks: ($stacks | split(",") | map(select(. != ""))), packs: ($packs | split(",") | map(select(. != ""))),
+      org: (if $org == "" then null else {name: $org, version: $orgver, sha: $orgsha} end)}' > "$DIR/.agents/skills.lock"
   echo "wrote .agents/skills.lock"
 fi
 echo "done. Commit .claude/, .agents/ and .mcp.json; MCP servers still need /mcp auth on first use."

@@ -66,6 +66,7 @@ OWNER=""
 PROJECT_NUMBER="TBD"
 WITH=""
 MANIFEST=""
+ORG=""
 FORCE=0
 INSTALL=0
 
@@ -78,6 +79,7 @@ while [ $# -gt 0 ]; do
     --project-number) PROJECT_NUMBER="$2"; shift 2 ;;
     --with) WITH="$2"; shift 2 ;;
     --manifest) MANIFEST="$2"; shift 2 ;;
+    --org) ORG="$2"; shift 2 ;;
     --force) FORCE=1; shift ;;
     --install) INSTALL=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -91,6 +93,7 @@ if [ -n "$MANIFEST" ]; then
   _sd="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   bash "$_sd/scripts/manifest.sh" validate "$MANIFEST" >/dev/null || exit 1
   NAME="${NAME:-$(jq -r '.name' "$MANIFEST")}"
+  ORG="${ORG:-$(jq -r '.org // empty' "$MANIFEST")}"
   STACK="${STACK:-$(jq -r '.stacks[0]' "$MANIFEST")}"
   if [ -z "$WITH" ]; then
     WITH="$(jq -r --slurpfile sc "$_sd/../../config/scopes.json" \
@@ -524,7 +527,7 @@ run_stack_format() {
 install_agent_scope() {
   local hub; hub="$(cd "$SKILL_DIR/../.." && pwd)"
   [ -x "$hub/scripts/project-agents.sh" ] || return 0
-  bash "$hub/scripts/project-agents.sh" --stack "$STACK${WITH:+,$WITH}" ${MANIFEST:+--manifest "$MANIFEST"} --dir "$DIR"
+  bash "$hub/scripts/project-agents.sh" --stack "$STACK${WITH:+,$WITH}" ${MANIFEST:+--manifest "$MANIFEST"} ${ORG:+--org "$ORG"} --dir "$DIR"
 }
 
 [ "$RUNTIME" = node ] && ensure_node_ts_package
