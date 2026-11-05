@@ -9,7 +9,7 @@
 ~/.claude/rules/*.md -> per-file symlinks: only the GLOBAL rules of <repo>/config/rules (see scopes.json)
 ~/.claude/hooks      -> symlink: <repo>/config/hooks
 ~/.claude/agents     -> symlink: <repo>/config/agents
-~/.claude/keybindings.json -> symlink: <repo>/config/keybindings.json (Alt+P plan, Alt+A cycle mode, Alt+M model picker)
+~/.claude/keybindings.json -> symlink: <repo>/config/keybindings.json (Alt+P plan, Alt+M model picker)
 ```
 
 `AGENTS.md` and `CLAUDE.md` here are **generic** — shareable with anyone who clones this
