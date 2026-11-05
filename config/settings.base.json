@@ -40,7 +40,8 @@
       "Bash(aws s3 cp*)",
       "Bash(aws s3 mv*)",
       "Bash(aws s3 sync*)"
-    ]
+    ],
+    "defaultMode": "auto"
   },
   "model": "opusplan",
   "hooks": {
@@ -138,8 +139,9 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash ~/.claude/hooks/statusline-costo.sh",
-    "padding": 0
+    "command": "bash ~/.claude/hooks/statusline.sh",
+    "padding": 0,
+    "refreshInterval": 60
   },
   "enabledPlugins": {
     "vercel@claude-plugins-official": false,
