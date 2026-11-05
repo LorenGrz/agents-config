@@ -5,7 +5,6 @@
       "bindings": {
         "ctrl+alt+g": "command:orca-agent-view",
         "meta+p": "command:plan",
-        "meta+a": "chat:cycleMode",
         "meta+m": "chat:modelPicker"
       }
     }
