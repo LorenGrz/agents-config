@@ -4,10 +4,11 @@
 # - Generates ~/.claude/CLAUDE.md (imports config/AGENTS.md + config/baseline.md +
 #   your profile + config/CLAUDE.md) and ~/.codex/AGENTS.md (config/AGENTS.md +
 #   baseline + your profile, concatenated — Codex has no @-import) from this repo.
-# - Symlinks ~/.claude/{rules,hooks,agents} into this repo.
+# - Symlinks ~/.claude/{rules,hooks,agents} and ~/.claude/keybindings.json into this repo.
 # - Runs sync.sh to (re)build the flat ~/.claude/skills mirror.
 # - Merges config/settings.base.json into ~/.claude/settings.json (jq):
 #     * hooks / statusLine / model / theme: base wins (full overwrite).
+#     * permissions.defaultMode: base wins when base sets it.
 #     * enabledPlugins / extraKnownMarketplaces: union of existing + base; base
 #       wins only on conflicting keys, user-added entries survive.
 #     * permissions.allow / permissions.ask: union of existing + base, deduped.
@@ -307,6 +308,7 @@ echo "== symlinks =="
 link_rules
 link "$HUB/config/hooks"     "$CLAUDE_DIR/hooks"
 link "$HUB/config/agents"    "$CLAUDE_DIR/agents"
+link "$HUB/config/keybindings.json" "$CLAUDE_DIR/keybindings.json"
 
 echo
 echo "== skills mirror (sync.sh) =="
@@ -339,6 +341,7 @@ else
     | .enabledPlugins = (($cur.enabledPlugins // {}) + ($base.enabledPlugins // {}))
     | .extraKnownMarketplaces = (($cur.extraKnownMarketplaces // {}) + ($base.extraKnownMarketplaces // {}))
     | .theme = $base.theme
+    | (if $base.permissions.defaultMode then .permissions.defaultMode = $base.permissions.defaultMode else . end)
     | .permissions.allow = ((($cur.permissions.allow // []) + ($base.permissions.allow // [])) | unique)
     | .permissions.ask   = ((($cur.permissions.ask   // []) + ($base.permissions.ask   // [])) | unique)
   ' "$SETTINGS" "$BASE")"

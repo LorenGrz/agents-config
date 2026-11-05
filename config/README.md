@@ -9,6 +9,7 @@
 ~/.claude/rules/*.md -> per-file symlinks: only the GLOBAL rules of <repo>/config/rules (see scopes.json)
 ~/.claude/hooks      -> symlink: <repo>/config/hooks
 ~/.claude/agents     -> symlink: <repo>/config/agents
+~/.claude/keybindings.json -> symlink: <repo>/config/keybindings.json (Alt+P plan, Alt+A cycle mode, Alt+M model picker)
 ```
 
 `AGENTS.md` and `CLAUDE.md` here are **generic** — shareable with anyone who clones this
@@ -27,6 +28,7 @@ tracked by this repo).
 
 **Also tracked:**
 
+- `hooks/statusline.sh` — status line (model, effort, session cost, context, 5h/7d usage with reset time; colored by threshold, ASCII only, responsive to terminal width; `NO_COLOR` disables color).
 - `agents/` — `scout.md`, `worker.md`, `reasoner.md`, the three model-pinned subagents (see root README).
 - `settings.base.json` — sanitized base merged into `~/.claude/settings.json` by `install.sh`
   (permissions, model, hooks, statusLine, enabledPlugins, extraKnownMarketplaces, theme). No secrets,
