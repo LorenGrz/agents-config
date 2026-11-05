@@ -84,26 +84,27 @@ if [[ -n "$tam" ]]; then
   if ((tam >= 1000000)); then tam_f="/$((tam / 1000000))M"; else tam_f="/$((tam / 1000))k"; fi
 fi
 
-# Linea 1: modelo | costo | contexto
-linea1() {
-  local largo=$1 m
-  reset_buf
-  m="$modelo"
-  if [[ -n "$esfuerzo" ]]; then
-    if ((largo)); then m="$modelo ($esfuerzo)"; else m="$modelo ${esfuerzo:0:3}"; fi
-  fi
-  put "$m"; sep
-  put "\$${costo_f}" "${cc}\$${costo_f}${Z}"
-  ((largo)) && put " sesion"
-  sep
-  put "ctx "
-  if [[ -n "$ctx_col" ]]; then put "$ctx_txt" "${ctx_col}${ctx_txt}${Z}"; else put "$ctx_txt"; fi
-  ((largo)) && put "$tam_f"
-}
+# --- Segmentos (cada uno es una unidad que no se parte) ---
+SEG_P=(); SEG_C=()
+add_seg() { SEG_P+=("$P"); SEG_C+=("$C"); }
 
-# Un bloque de uso: "5h 12% reset 2h13m"
+reset_buf
+m="$modelo"
+[[ -n "$esfuerzo" ]] && m="$modelo ($esfuerzo)"
+put "$m"; add_seg
+
+reset_buf
+put "\$${costo_f}" "${cc}\$${costo_f}${Z}"; put " sesion"; add_seg
+
+reset_buf
+put "ctx "
+if [[ -n "$ctx_col" ]]; then put "$ctx_txt" "${ctx_col}${ctx_txt}${Z}"; else put "$ctx_txt"; fi
+put "$tam_f"; add_seg
+
+# Uso: "5h 12% 2h13m" (porcentaje coloreado + tiempo que falta para el reset)
 bloque_uso() {
-  local etiqueta=$1 u=$2 r=$3 largo=$4 n t
+  local etiqueta=$1 u=$2 r=$3 n t
+  reset_buf
   put "$etiqueta "
   if [[ -n "$u" ]]; then
     n=$(redondear "$u")
@@ -112,47 +113,30 @@ bloque_uso() {
     put "--"
   fi
   t=$(resta "$r")
-  if ((largo)); then put " reset ${t}"; else put " ${t}"; fi
+  put " ${t}"
+  add_seg
 }
+[[ -n "$u5" ]] && bloque_uso "5h" "$u5" "$r5"
+[[ -n "$u7" ]] && bloque_uso "7d" "$u7" "$r7"
 
-# Linea de uso: 5h | 7d
-linea_uso() {
-  local largo=$1
-  reset_buf
-  bloque_uso "5h" "$u5" "$r5" "$largo"; sep
-  bloque_uso "7d" "$u7" "$r7" "$largo"
-}
-
-hay_uso=0
-[[ -n "$u5" || -n "$u7" ]] && hay_uso=1
-
+# --- Empaquetado: los segmentos se acomodan en las lineas que hagan falta ---
 imprimir() {
-  local plano=$P color=$C
+  local plano=$1 color=$2
   if ((${#plano} > max)); then
     plano="${plano:0:max}"; color="$plano"
   fi
   printf '%*s%s\n' "$((max - ${#plano}))" "" "$color"
 }
 
-# Todo en una linea (largo)
-linea1 1; l1_p=$P; l1_c=$C
-todo_p=$l1_p; todo_c=$l1_c
-if ((hay_uso)); then
-  linea_uso 1; u_p=$P; u_c=$C
-  todo_p="${l1_p} | ${u_p}"
-  todo_c="${l1_c}${D} | ${Z}${u_c}"
-fi
-
-if ((${#todo_p} <= max)); then
-  P=$todo_p; C=$todo_c; imprimir
-else
-  # Dos lineas; cada una cae a forma corta si no entra
-  linea1 1
-  if ((${#P} > max)); then linea1 0; fi
-  imprimir
-  if ((hay_uso)); then
-    linea_uso 1
-    if ((${#P} > max)); then linea_uso 0; fi
-    imprimir
+lp=""; lc=""
+for i in "${!SEG_P[@]}"; do
+  if [[ -z "$lp" ]]; then
+    lp="${SEG_P[i]}"; lc="${SEG_C[i]}"
+  elif ((${#lp} + 3 + ${#SEG_P[i]} <= max)); then
+    lp+=" | ${SEG_P[i]}"; lc+="${D} | ${Z}${SEG_C[i]}"
+  else
+    imprimir "$lp" "$lc"
+    lp="${SEG_P[i]}"; lc="${SEG_C[i]}"
   fi
-fi
+done
+[[ -n "$lp" ]] && imprimir "$lp" "$lc"
