@@ -2,7 +2,7 @@
 
 Each organization (employer, client) is **its own private git repo** cloned into `organizations/<name>/`. This public repo never tracks them (`.gitignore`), never stores their URL, and `scripts/leak-guard.sh` fails if one gets tracked. Manage them with `scripts/orgs.sh`.
 
-An org adds its policies, skills, commands and interview questions on top of the base. It may override conventions (base branch, PR format, language, tracker, design system) but never `config/baseline.md`; when it replaces a base practice, the project records an ADR.
+An org adds its policies, skills, commands and interview questions on top of the base. The working rules every org repo inherits (branch per task from the remote base, never commit on `main`/`dev`, ask before push/PR, approve tracker text, suggest issues) live in `config/AGENTS.md` § Organizations. It may override conventions (base branch, PR format, language, tracker, design system) but never `config/baseline.md`; when it replaces a base practice, the project records an ADR.
 
 ## Contract
 

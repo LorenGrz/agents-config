@@ -30,6 +30,28 @@ your profile (`config/profiles/<your-name>.md`, imported alongside this file) �
 - Per-repo context lives in `AGENTS.md` (single source of truth for every agent). `CLAUDE.md`, when present, contains only `@AGENTS.md` plus Claude-specific instructions. Never duplicate content between them; when a repo has both with overlapping content, merge into AGENTS.md.
 - Every repo keeps: (a) `AGENTS.md` as the map new sessions read instead of the code; (b) `.agents/CONTEXT.md` for current state; (c) `docs/superpowers/specs/` and `docs/superpowers/plans/` for every approved spec/plan created in a session — including subagent/worker specs and mid-session follow-up plans, not only the first one — copy an approved plan-mode plan into `docs/superpowers/plans/YYYY-MM-DD-<slug>.md` before implementing (plan mode saves outside the repo, in `~/.claude/plans`); (d) `docs/decisions/NNNN-<slug>.md` ADRs for decisions with trade-offs; (e) `docs/prompts.md` with every AI prompt the app sends to a model (verbatim copy, where it lives in code, and a short history of what was tried and why it changed) — update it in the same PR as any prompt change. Update these after merging.
 
+## Organizations (work repos)
+
+Applies to every repo that matches an organization (`organizations/INDEX.md`); personal repos keep the
+lighter flow of the sections above. An org's `POLICIES.md` may add to these rules, never relax them.
+
+- **Never commit on the base or release branches** (`main`, `master`, `dev`). Each task starts on a new branch
+  named after what it solves, cut from the remote base: `git fetch` then
+  `git checkout -b <type>/<scope>-<topic> origin/<base>`. If the org's base branch does not exist yet, cut
+  from `origin/main` and rebase onto the base when it appears. Check before the first commit with
+  `git merge-base --is-ancestor origin/<base> HEAD`. Never stack a task on an old working branch.
+- **Ask before every push or PR**, even when the plan already mentions it. A slash command the user invokes
+  for that run (e.g. a ship command) counts as asking.
+- **Nothing goes to the tracker without approving the text.** Comments, transitions, edits and new tickets
+  (Jira, Linear, GitHub issues) are shown first and published only after the user's explicit OK on that exact
+  text. An approved plan that contains the text does not count.
+- **Suggest issues, don't fix them in passing.** Anything found along the way that is out of scope but has
+  real impact (security, a user-visible bug, docs that mislead the next person) and is simple to explain is
+  proposed at the end of the task: title, impact in one line, proposal in one line, priority and evidence
+  (`path:line`). No lint warnings or style preferences, nothing unverified. Filed only with the user's OK.
+- **Say exactly where work landed.** Report the branch name; never write "committed to main" for work on a
+  branch cut from main.
+
 ## Roadmap
 
 Learning roadmap and current stage are personal — see your profile
