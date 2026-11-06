@@ -42,9 +42,13 @@ lighter flow of the sections above. An org's `POLICIES.md` may add to these rule
   `git merge-base --is-ancestor origin/<base> HEAD`. Never stack a task on an old working branch.
 - **Ask before every push or PR**, even when the plan already mentions it. A slash command the user invokes
   for that run (e.g. a ship command) counts as asking.
-- **Nothing goes to the tracker without approving the text.** Comments, transitions, edits and new tickets
-  (Jira, Linear, GitHub issues) are shown first and published only after the user's explicit OK on that exact
-  text. An approved plan that contains the text does not count.
+- **PR flow.** With the user's OK, the PR opens against the org's base branch with the explanation already
+  agreed. Opening it also, without asking again: posts a short closing comment on each ticket (PR link plus
+  one or two lines, only when it adds something the PR does not) and moves each ticket to the project's
+  review/test status.
+- **Everything else on the tracker is asked first.** Proposals, questions, new tickets, edits or any
+  transition outside the PR flow above are shown first and published only after the user's explicit OK on
+  that exact text. An approved plan that contains the text does not count.
 - **Suggest issues, don't fix them in passing.** Anything found along the way that is out of scope but has
   real impact (security, a user-visible bug, docs that mislead the next person) and is simple to explain is
   proposed at the end of the task: title, impact in one line, proposal in one line, priority and evidence
