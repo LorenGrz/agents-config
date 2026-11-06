@@ -43,8 +43,8 @@ lighter flow of the sections above. An org's `POLICIES.md` may add to these rule
 - **Ask before every push or PR**, even when the plan already mentions it. A slash command the user invokes
   for that run (e.g. a ship command) counts as asking.
 - **PR flow.** With the user's OK, the PR opens against the org's base branch with the explanation already
-  agreed. Opening it also, without asking again: posts a short closing comment on each ticket (PR link plus
-  one or two lines, only when it adds something the PR does not) and moves each ticket to the project's
+  agreed. Opening it also, without asking again: posts a short closing comment on each ticket (the cause and
+  what changed, as already explained in the PR, in one or two lines, plus the PR link) and moves each ticket to the project's
   review/test status.
 - **Everything else on the tracker is asked first.** Proposals, questions, new tickets, edits or any
   transition outside the PR flow above are shown first and published only after the user's explicit OK on
