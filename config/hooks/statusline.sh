@@ -40,11 +40,13 @@ if [[ -n "$u5$u7" ]]; then
     printf '%s' "$entrada" | jq -c '{ts: now, rate_limits}' >"$cache/rate-limits.json.tmp" 2>/dev/null &&
     mv -f "$cache/rate-limits.json.tmp" "$cache/rate-limits.json"
 fi
-# Agentes lanzados por CAO: % de contexto exacto de esta sesión, por terminal (lo lee la barra de caolg).
+# Agentes lanzados por CAO: % de contexto exacto y carpeta actual (sigue los `cd` del agente), por terminal
+# (lo leen la barra y los bordes de caolg).
 if [[ -n "${CAO_TERMINAL_ID:-}" && -n "$pct" ]]; then
   ctxd="${XDG_CACHE_HOME:-$HOME/.cache}/claude/ctx"
   mkdir -p "$ctxd" 2>/dev/null &&
-    printf '{"ts":%s,"used_percentage":%s,"size":%s}\n' "$(date +%s)" "$pct" "${tam:-null}" \
+    printf '%s' "$entrada" | jq -c '{ts: (now | floor), used_percentage: .context_window.used_percentage,
+      size: .context_window.context_window_size, cwd: (.workspace.current_dir // .cwd)}' \
       >"$ctxd/$CAO_TERMINAL_ID.json.tmp" 2>/dev/null &&
     mv -f "$ctxd/$CAO_TERMINAL_ID.json.tmp" "$ctxd/$CAO_TERMINAL_ID.json"
 fi
