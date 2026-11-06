@@ -26,6 +26,10 @@
     "apex": { "skills": ["apexlang"], "rules": [] },
     "docker": { "skills": ["run-docker-environment"], "rules": [] },
     "llm": { "skills": ["prompt-injection-defense"], "rules": [] },
+    "office": {
+      "skills": ["ats-resume-formatting", "cv-linkedin-optimizer", "meeting-notes-organizer", "presentation-prep", "professional-email-drafter"],
+      "rules": []
+    },
     "supabase": {
       "skills": ["database-persistence-patterns"],
       "rules": [],

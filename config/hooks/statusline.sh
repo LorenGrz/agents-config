@@ -32,6 +32,23 @@ IFS='|' read -r modelo esfuerzo costo pct tam u5 r5 u7 r7 < <(
   ] | join("|")' 2>/dev/null
 ) || exit 0
 
+# Copia de los límites 5h/7d para otras herramientas (p. ej. la barra de caolg): son de la cuenta, no
+# de la sesión, así que vale la última que llegue. Escritura atómica; nunca incluye tokens.
+if [[ -n "$u5$u7" ]]; then
+  cache="${XDG_CACHE_HOME:-$HOME/.cache}/claude"
+  mkdir -p "$cache" 2>/dev/null &&
+    printf '%s' "$entrada" | jq -c '{ts: now, rate_limits}' >"$cache/rate-limits.json.tmp" 2>/dev/null &&
+    mv -f "$cache/rate-limits.json.tmp" "$cache/rate-limits.json"
+fi
+# Agentes lanzados por CAO: % de contexto exacto de esta sesión, por terminal (lo lee la barra de caolg).
+if [[ -n "${CAO_TERMINAL_ID:-}" && -n "$pct" ]]; then
+  ctxd="${XDG_CACHE_HOME:-$HOME/.cache}/claude/ctx"
+  mkdir -p "$ctxd" 2>/dev/null &&
+    printf '{"ts":%s,"used_percentage":%s,"size":%s}\n' "$(date +%s)" "$pct" "${tam:-null}" \
+      >"$ctxd/$CAO_TERMINAL_ID.json.tmp" 2>/dev/null &&
+    mv -f "$ctxd/$CAO_TERMINAL_ID.json.tmp" "$ctxd/$CAO_TERMINAL_ID.json"
+fi
+
 cols=${COLUMNS:-80}
 max=$((cols - 2))
 ahora=$(date +%s)
