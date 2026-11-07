@@ -60,4 +60,4 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 
 ## Notes
 
-- All of Loren's repos are public — never commit secrets, API keys, or credentials.
+- All of Loren's repos are public except `omarchy-loren` (private: per-machine config and the new-PC setup). Never commit secrets, API keys, or credentials to any of them, private included.
