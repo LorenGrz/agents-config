@@ -37,6 +37,7 @@
     "./meta/team-architect-agent",
     "./meta/team-implementer-agent",
     "./meta/team-reviewer-agent",
+    "./productivity/image-annotations",
     "./quality/code-review-safety",
     "./quality/execute-test-suite",
     "./quality/unit-test-generator"
