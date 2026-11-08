@@ -12,13 +12,15 @@ Public hub of personal agent config, skills and project scaffolding. Detail: `RE
 
 - Install/repair: `./install.sh [--profile p] [--org name url] [--with-integrations]`; skills mirror: `./sync.sh`.
 - Integrations (ADR 0016): plugins in `config/settings.base.json`, user-scope MCP in `config/mcp.user.json`, paste-preview patch in `config/patches/`, Obsidian docs via `scripts/export-obsidian.sh` (vault from `$OBSIDIAN_VAULT`).
-- Derived files: `scripts/gen-plugin.sh` (`--check` in pre-commit/CI).
-- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `devops/project-init/scripts/test-manifest.sh`, `devops/project-init/scripts/test-docs-check.sh`, `devops/project-init/scripts/e2e.sh --stack <name|all>` (network).
+- Derived files: `scripts/gen-plugin.sh` and `scripts/gen-intents.sh` (`--check` in CI; `sync.sh` runs the latter).
+- Intent router (ADR 0017): `## Shortcuts` in each integration skill + `config/intents.plugins.md` -> `config/intents.json` -> `config/hooks/intent-router.sh`; project checks in `config/hooks/session-start.sh` + `scripts/detect-stack.sh`; plugins per stack in `config/scopes.json`; workspace mode `devops/project-init/scripts/workspace.sh`.
+- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `scripts/test-intents.sh`, `devops/project-init/scripts/test-manifest.sh`, `devops/project-init/scripts/test-docs-check.sh`, `devops/project-init/scripts/e2e.sh --stack <name|all>` (network).
 - Guard: `scripts/leak-guard.sh --staged|--all`; hooks via `git config core.hooksPath .githooks`.
 
 ## Known issues
 
 - `kotlin.md` rule (layered reference) is not attached to `kotlin-spring`.
+- Untested in a real session: `.claude` symlinked into a workspace folder (org mode) and plugin enable/disable at project scope.
 - Generated Gradle Java projects with a Kotlin DSL build were not exercised in e2e.
 
 Last validated: 2026-11-08

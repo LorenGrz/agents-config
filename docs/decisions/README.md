@@ -16,3 +16,4 @@
 - [0014 — Packs, keyword index and critical hooks](0014-packs-keyword-index-and-critical-hooks.md) — packs by architecture; table in `AGENTS.md`; `critical.json` hint hook.
 - [0015 — Leak guard and generated plugin files](0015-leak-guard-and-generated-plugin-files.md) — local blocklist, pre-commit + CI; `gen-plugin.sh`.
 - [0016 — Integrations: plugins, user-scope MCP and outbound guardrails](0016-integrations-plugins-mcp.md) — plugins in settings.base.json, `config/mcp.user.json`, `ask` rules, paste-preview patch.
+- [0017 — Intent router, per-project plugins and workspaces](0017-intent-router-and-workspaces.md) — `## Shortcuts` in skills -> `intent-router.sh`; plugins per stack; workspace mode in project-init.
