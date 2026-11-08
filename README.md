@@ -170,7 +170,7 @@ Hooks, concretely (event → script):
 | `PreToolUse` (Bash) | `scout-readonly.sh` | inside the `scout` subagent only: allows read-only commands, denies writes |
 | `PreToolUse` (Bash) | `rtk.sh` | routes read-only/verification commands through `rtk` to compress output; no-op if `rtk` is missing |
 | `PostToolUse` (Edit/Write/MultiEdit) | `format-file.sh` | runs the project's own formatter/linter on the edited file |
-| `SessionStart` | `session-start.sh` | re-injects the routing rule; in large repos (≥200 tracked files) nudges to create/refresh `.agents/CONTEXT.md` (≥30 commits stale); repo without `AGENTS.md` -> propose `project-init`; repo with `AGENTS.md` but no stack skills -> propose `project-agents.sh --stack <detected>`; workspace folder -> read its `AGENTS.md`; folder that is neither repo nor workspace -> one-line notice |
+| `SessionStart` | `session-start.sh` | re-injects the routing rule; in large repos (≥200 tracked files) nudges to create/refresh `.agents/CONTEXT.md` (≥30 commits stale); repo without `AGENTS.md` -> propose `project-init`; repo with `AGENTS.md` but no stack skills -> propose `project-agents.sh --stack <detected>`; workspace folder -> read its `AGENTS.md`; folder that is neither repo nor workspace -> one-line notice (if it holds 2+ git repos it names them and offers workspace mode "if they are one product") |
 | `Stop` | `stop-git-status.sh` | shows uncommitted changes when in a git repo |
 | `InstructionsLoaded` | `log-instructions.sh` | logs what got loaded to `~/.claude/logs/instructions-loaded.log` |
 

@@ -70,6 +70,11 @@ check "repo without stack skills -> propose project-agents.sh with the detected 
 check "configured repo -> no setup nudge" '! start "$W/ss/ready" | grep -qE "project-init|project-agents.sh"'
 check "workspace folder -> read its AGENTS.md" 'start "$W/ss/ws" | grep -q "Workspace folder"'
 check "loose folder -> one-line notice" 'start "$W/ss/loose" | grep -q "Not inside a git repo or workspace"'
+check "loose folder without repos does not mention workspace mode" '! start "$W/ss/loose" | grep -q "workspace mode"'
+mkdir -p "$W/ss/multi/front" "$W/ss/multi/back"; git -C "$W/ss/multi/front" init -q; git -C "$W/ss/multi/back" init -q
+check "folder with 2 repos names them and offers workspace mode" 'out="$(start "$W/ss/multi")"; grep -q "holds 2 git repos (back, front)" <<<"$out" && grep -q "workspace mode" <<<"$out" && grep -q "unrelated projects" <<<"$out"'
+mkdir -p "$W/fakehome/a" "$W/fakehome/b"; git -C "$W/fakehome/a" init -q; git -C "$W/fakehome/b" init -q
+check "HOME itself never gets the workspace offer" '! HOME="$W/fakehome" start "$W/fakehome" | grep -q "workspace mode"'
 
 # --- per-project plugins
 mkdir -p "$W/pl/next" "$W/pl/vite/.claude"

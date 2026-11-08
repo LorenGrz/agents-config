@@ -54,7 +54,17 @@ if [ -n "$root" ]; then
 elif [ -f "$cwd/AGENTS.md" ]; then
   msg="$msg"$'\n'"Workspace folder (not a git repo): read its AGENTS.md first. Each repo inside has its own AGENTS.md and stack skills; work inside the right repo for code changes."
 else
-  msg="$msg"$'\n'"Not inside a git repo or workspace: only global config is loaded (AGENTS.md, memory and stack skills are per repo). Open Claude inside the repo, or create a workspace AGENTS.md with project-init's workspace mode for a multi-repo project."
+  notice="Not inside a git repo or workspace: only global config is loaded (AGENTS.md, memory and stack skills are per repo). Open Claude inside the repo."
+  # A folder that holds 2+ repos may be one product (frontend + backend): say so, never assume it.
+  nrepos=0; names=""
+  if [ "$cwd" != "$HOME" ]; then
+    names="$(find "$cwd" -mindepth 2 -maxdepth 2 -name .git -printf '%h\n' 2>/dev/null | sort | xargs -r -n1 basename | head -n 6 | paste -sd, - | sed 's/,/, /g')"
+    [ -n "$names" ] && nrepos="$(find "$cwd" -mindepth 2 -maxdepth 2 -name .git 2>/dev/null | wc -l | tr -d ' ')"
+  fi
+  if [ "${nrepos:-0}" -ge 2 ] 2>/dev/null; then
+    notice="$notice This folder holds $nrepos git repos ($names). If they are one product, ask the user whether to create a workspace AGENTS.md with project-init's workspace mode (scripts/workspace.sh, dry-run first); if they are unrelated projects, ignore this."
+  fi
+  msg="$msg"$'\n'"$notice"
 fi
 
 jq -n --arg c "$msg" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$c}}'

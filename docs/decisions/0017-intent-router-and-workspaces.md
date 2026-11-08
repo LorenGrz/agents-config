@@ -34,7 +34,8 @@ backend) and so has no repo of its own to carry config.
 - **SessionStart checks the project state** and only proposes, never writes: repo without `AGENTS.md` ->
   `project-init`; repo with `AGENTS.md` and no `.agents/project.json` or `.claude/skills` -> the command
   `project-agents.sh --stack <detected> --dry-run` (`scripts/detect-stack.sh`); workspace folder -> read its
-  `AGENTS.md`; any other folder -> a one-line notice.
+  `AGENTS.md`; any other folder -> a one-line notice, which names the repos and offers workspace mode ("if they are
+  one product") when the folder holds 2 or more, except `$HOME`.
 - **Workspace** = a folder that is not a git repo and carries its own `AGENTS.md` whose first line is
   `<!-- workspace-init -->`. The marker is explicit on purpose: inferring it from "a folder with 2+ repos" would
   also catch `~/projects`, which holds unrelated projects. `project-init`'s workspace mode
