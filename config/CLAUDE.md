@@ -24,6 +24,10 @@ Routing (by skill name). Stack skills (React, Next, Nest, persistence, API, auth
 - Debugging: `debug-assistant`. Docs: `code-documenter`. Regex: `regex-builder-explainer`. Commits: `conventional-commit-generator`.
 - Security/auth: `auth-security-basics` only when relevant.
 - AWS (`aws/`): `sam-deploy`, `lambda-patterns`, `iam-least-privilege` (always least privilege), `cost-optimizer`, `serverless-scanner` (migration analysis).
+- Integrations (ADR 0016): Slack `slack-usage`; Jira/Confluence `jira-usage`; GitHub remote `github-usage`
+  (local git flow stays `git-workflow`); Gmail/Calendar/Drive `google-workspace-usage`; Obsidian notes
+  `obsidian-vault`; NotebookLM ↔ Obsidian `notebooklm-obsidian-sync`; cross-model review `codex-review`.
+  Anything that sends, schedules, creates, merges, shares or deletes through these is shown and approved first.
 - Desktop/OS config, PDFs, and other local-tool skills: check your profile
   (`config/profiles/<your-name>.md`) for any paths or skills specific to your own setup.
 

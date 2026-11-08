@@ -15,3 +15,4 @@
 - [0013 — project-init interview, manifest and stack profiles](0013-interview-manifest-and-stack-profiles.md) — `project.json`, ADR per decision, `stack.env`, Java/Kotlin/Python templates.
 - [0014 — Packs, keyword index and critical hooks](0014-packs-keyword-index-and-critical-hooks.md) — packs by architecture; table in `AGENTS.md`; `critical.json` hint hook.
 - [0015 — Leak guard and generated plugin files](0015-leak-guard-and-generated-plugin-files.md) — local blocklist, pre-commit + CI; `gen-plugin.sh`.
+- [0016 — Integrations: plugins, user-scope MCP and outbound guardrails](0016-integrations-plugins-mcp.md) — plugins in settings.base.json, `config/mcp.user.json`, `ask` rules, paste-preview patch.

@@ -314,9 +314,10 @@ Results go to `evals/results/` (gitignored).
   `npx ccusage@latest` (install.sh prints this hint).
 - [`rtk`](https://github.com/rtk-ai/rtk) (optional, `install.sh --with-rtk`) is a separate
   token-reduction tool for repeated agent runs — install it deliberately, not by default.
-- Per-project MCP servers and the Vercel plugin are opt-in per repo
-  (`.claude/settings.local.json`), not globally enabled — `config/settings.base.json` ships
-  `vercel@claude-plugins-official: false` and only `superpowers` on by default.
+- Per-project MCP servers are opt-in per repo (`.claude/settings.local.json`), not globally enabled.
+  Exceptions (ADR 0016): the personal plugins, the Vercel plugin (`vercel@claude-plugins-official: true`,
+  its skills cost context in every session) and the user-scope MCP servers in `config/mcp.user.json`
+  (NotebookLM, Obsidian) apply everywhere.
 - Prefer `/clear` between unrelated tasks over `/compact` — a fresh session is cheaper than
   summarizing a long one just to keep going.
 
