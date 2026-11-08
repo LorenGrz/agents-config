@@ -1,6 +1,6 @@
 ---
 name: project-init
-description: Use this skill when starting a new project or repo, or when adopting an existing one that this skill didn't generate. For new repos, scaffolds a repository that works with any AI agent (Codex, Cursor, Claude) and humans - a single AGENTS.md source of truth, CLAUDE.md as a thin pointer, .claude/ with the superpowers plugin and project hooks, a spec-driven workflow, branch flow feat|fix|refactor/<issue>-<slug> to dev with squash merge, a GitHub Project v2 per repo, and real enforcement via ESLint, a git pre-push hook, and CI. For existing repos, scripts/adopt.sh documents their current git workflow (branch/merge/CI reality, docs-only, no new hooks/CI/enforcement) and fills in the same AGENTS.md/CLAUDE.md/.agents/CONTEXT.md/docs/decisions documentation layer.
+description: Use this skill when starting a new project or repo, or when adopting an existing one that this skill didn't generate. For new repos, scaffolds a repository that works with any AI agent (Codex, Cursor, Claude) and humans - a single AGENTS.md source of truth, CLAUDE.md as a thin pointer, .claude/ with the superpowers plugin and project hooks, a spec-driven workflow, branch flow feat|fix|refactor/<issue>-<slug> to dev with squash merge, a GitHub Project v2 per repo, and real enforcement via ESLint, a git pre-push hook, and CI. For existing repos, scripts/adopt.sh documents their current git workflow (branch/merge/CI reality, docs-only, no new hooks/CI/enforcement) and fills in the same AGENTS.md/CLAUDE.md/.agents/CONTEXT.md/docs/decisions documentation layer. For a plain folder that groups several repos of one product (e.g. frontend + backend), workspace mode (scripts/workspace.sh) creates the workspace-level AGENTS.md.
 ---
 
 # Project Init
@@ -68,6 +68,23 @@ Every scaffolded repo carries Loren's engineering standards two ways: as convent
 ## Documentation layer
 
 Every scaffolded repo carries enough documentation for a new agent session to work from docs alone: `AGENTS.md`'s "Documentation map" points, in order, to `.agents/CONTEXT.md` (current stack/architecture snapshot), `docs/plans/HANDOFF.md` (current state + how to resume mid-flight work), `docs/architecture.md` (overview/modules/data model/flows/env/deploy skeleton), `docs/decisions/` (ADRs for trade-offs, starting at `0001-record-architecture-decisions.md`, new ones copied from `0000-template.md`), `docs/superpowers/specs|plans/` (the existing spec-driven workflow - every plan and worker spec created in a session, not only the first), and `docs/prompts.md` (every AI prompt the app sends, verbatim, with its history; deleted if the app calls no model). `AGENTS.md`'s "Documentation rules" section says when each gets written and keeps `AGENTS.md` itself capped at ~150 lines. The PR template checklist and a non-blocking `docs-check` step in CI (`scripts/docs-check.sh`, warns via `::warning::` when a PR touches deps/env/docker/workflows/top-level folders without touching docs) nudge toward keeping it current; neither blocks a merge.
+
+## Workspace mode
+
+Use `scripts/workspace.sh` when the target is a plain folder (not a git repo) that holds **2 or more repos side by side** - a frontend and a backend of one product, say. Per-repo setup (init or adopt) is unchanged and stays inside each repo; the workspace layer only adds what is shared: a map of the repos, how they talk, the cross-repo flow and, for an organization, its policies and skills.
+
+1. **Recognize it**: the folder has no `.git` and no `AGENTS.md`, and the user confirms it is one product. A workspace is marked by its own `AGENTS.md` (first line `<!-- workspace-init -->`); never infer it from the folder shape alone (a folder of unrelated projects is not a workspace).
+2. **Interview** (ask, don't assume): which child dirs are repos and the role of each (frontend, backend, ...); each one's stack (a `config/scopes.json` stack or `-`); how the repos talk (HTTP API, events, shared types) and where the contract lives; the cross-repo flow if it differs from the default; the organization, if any (propose the detected one with `bash scripts/orgs.sh detect <owner>`).
+3. **Dry run first, then apply**:
+   ```
+   bash scripts/workspace.sh --dir <workspace> --name <slug> --repo <dir>:<role>:<stack> --repo ... [--org <name>] [--comm "<text>"] [--cross "<text>"] --dry-run
+   ```
+   - **With `--org`**: the config is written to `organizations/<org>/workspaces/<slug>/` (the org's private repo) and the workspace folder gets symlinks to it, so it is versioned and nothing company-specific enters this public repo. Org skills and `POLICIES.md` are installed there with `project-agents.sh --org --no-packs`.
+   - **Without `--org`**: files go in the folder itself, which becomes its own local git repo (child repos git-ignored). No commit and no remote are made; the user decides those.
+4. **Never overwrite**: an existing `AGENTS.md`/`CLAUDE.md` without the marker is skipped and reported; merge by hand. Re-running refreshes only files that carry the marker.
+5. Show the generated files and the commit command; commit in the org repo (or the local workspace repo) and create any remote only with the user's OK.
+
+Open Claude in the workspace folder for cross-repo work. For code changes, work inside the right repo: its own `AGENTS.md`, `.claude/skills` and hooks apply there. SessionStart tells the agent when it starts in a workspace folder.
 
 ## Adopting an existing repo
 

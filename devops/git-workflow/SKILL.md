@@ -87,3 +87,12 @@ lighter flow above. An org's `POLICIES.md` may add to these rules, never relax t
   (`path:line`). No lint warnings or style preferences, nothing unverified. Filed only with the user's OK.
 - **Say exactly where work landed.** Report the branch name; never write "committed to main" for work on a
   branch cut from main.
+
+## Shortcuts
+<!-- parsed by scripts/gen-intents.sh -->
+- bash: `^git (commit|push|merge|rebase)|^gh pr (create|merge)`
+- intent: pull changes — `traete los cambios|tra[eé] los cambios|baj[aá] los cambios|actualiz[aá] la rama|(pull|fetch|get) (the )?(latest )?changes|pull latest` → `git pull origin <base>`
+- intent: new branch — `nueva rama|cre[aá] una rama|new branch|start a branch` → `git fetch && git checkout -b <type>/<scope>-<topic> origin/<base>` (never commit on the base branch)
+- intent: commit — `(hac[eé]|hacer|hag[aá]) (un )?commit|commite[aá]|commit (my|the) changes|commit this` → `Conventional Commit on a task branch, after git status and verification (see Workflow)`
+- intent: push — `sub[ií] los cambios|push[eé]a|(hac[eé]|hacer) (un )?push|push (my|the) changes|git push` → `git push -u origin <branch>` (ask the user first when the repo matches an organization)
+- intent: open PR — `abr[ií] (un )?pr|cre[aá] (un )?pr|open (a )?pr|create (a )?pull request` → `gh pr create --base <base>` (show the text and ask first)

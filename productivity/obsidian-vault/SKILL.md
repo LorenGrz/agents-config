@@ -41,3 +41,8 @@ For LLM-wiki style ingestion and querying, use its skills: `/claude-obsidian:wik
 - Commit or back up the vault before bulk edits.
 - Never write secrets into notes.
 - For NotebookLM sync, use the `notebooklm-obsidian-sync` skill.
+
+## Shortcuts
+<!-- parsed by scripts/gen-intents.sh -->
+- tools: `^mcp__obsidian__`
+- intent: vault notes — `obsidian|\bvault\b|guard[aá] (esto )?(en|como) (una )?nota|save (this )?(as|to) (a )?note` → `obsidian MCP; follow the vault conventions in this skill; confirm before delete or move`

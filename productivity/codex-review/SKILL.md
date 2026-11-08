@@ -25,3 +25,7 @@ description: Use when the user wants a second-opinion code review from Codex bef
 2. Pick the command by risk level; pass `--base <branch>` matching the PR target.
 3. Read the result with `/codex:result` when the job finishes.
 4. Report: confirmed findings, rejected findings with reason, what changed.
+
+## Shortcuts
+<!-- parsed by scripts/gen-intents.sh -->
+- intent: Codex review — `revis[aá]lo con codex|segunda opini[oó]n|codex review|review (it )?with codex|second opinion` → `/codex:review (or /codex:adversarial-review for risky changes); never enable the review gate`

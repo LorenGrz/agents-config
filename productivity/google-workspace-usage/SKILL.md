@@ -36,3 +36,10 @@ Reading and searching is free. Anything that sends, shares, deletes or invites n
 - Never put secrets or credentials in drafts, events or docs.
 - Summarize with links or message/file titles.
 - If the `anthropic-skills:google-workspace` skill is present, it is complementary: use it for workflows, and this skill for approval rules.
+
+## Shortcuts
+<!-- parsed by scripts/gen-intents.sh -->
+- tools: `^mcp__claude_ai_(Gmail|Google_Calendar|Google_Drive|Google_Docs|Google_Sheets)__`
+- intent: email — `\bgmail\b|\bmail\b|\bcorreo\b|\be-?mail\b|inbox|bandeja de entrada` → `search/read freely; create a draft before any send; send only after approval`
+- intent: calendar — `calendario|calendar|reuni[oó]n|\bmeeting\b|agend[aá]|disponibilidad|availability` → `list/search freely; confirm attendees and time before creating or changing events`
+- intent: drive files — `\bdrive\b|google docs?|google sheets?|spreadsheet|planilla` → `search/read freely; confirm before sharing or trashing`

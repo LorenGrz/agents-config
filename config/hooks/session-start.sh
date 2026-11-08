@@ -39,5 +39,23 @@ if git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   fi
 fi
 
+# Project setup state (guidance only; nothing is written without the user's OK).
+HUB="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../.." 2>/dev/null && pwd || true)"
+root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -n "$root" ]; then
+  if [ ! -f "$root/AGENTS.md" ]; then
+    msg="$msg"$'\n'"This repo has no AGENTS.md (not set up with project-init): ask the user whether to run the \`project-init\` skill first (adopt mode if the repo already has code) before other work."
+  elif [ ! -f "$root/.agents/project.json" ] && [ ! -d "$root/.claude/skills" ] && [ -x "$HUB/scripts/detect-stack.sh" ]; then
+    stack="$(bash "$HUB/scripts/detect-stack.sh" "$root" 2>/dev/null || true)"
+    if [ -n "$stack" ]; then
+      msg="$msg"$'\n'"Stack skills are not installed here (detected stack: $stack). Propose to the user: \`bash $HUB/scripts/project-agents.sh --stack $stack --dry-run\` from the repo root, and apply it only with their OK."
+    fi
+  fi
+elif [ -f "$cwd/AGENTS.md" ]; then
+  msg="$msg"$'\n'"Workspace folder (not a git repo): read its AGENTS.md first. Each repo inside has its own AGENTS.md and stack skills; work inside the right repo for code changes."
+else
+  msg="$msg"$'\n'"Not inside a git repo or workspace: only global config is loaded (AGENTS.md, memory and stack skills are per repo). Open Claude inside the repo, or create a workspace AGENTS.md with project-init's workspace mode for a multi-repo project."
+fi
+
 jq -n --arg c "$msg" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$c}}'
 exit 0

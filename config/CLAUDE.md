@@ -23,6 +23,14 @@ Routing (by skill name). Stack skills (React, Next, Nest, persistence, API, auth
 - Tests: `unit-test-generator` to write, `execute-test-suite` to run and fix.
 - Debugging: `debug-assistant`. Docs: `code-documenter`. Regex: `regex-builder-explainer`. Commits: `conventional-commit-generator`.
 - Security/auth: `auth-security-basics` only when relevant.
+- Plugin skills overlap with the hub's; one default per task: planning `superpowers:brainstorming` then
+  `superpowers:writing-plans`; TDD `superpowers:test-driven-development`; unknown-cause bugs
+  `superpowers:systematic-debugging` (`debug-assistant` only for a pasted stack trace); TypeScript review
+  `code-review-safety` (acting on feedback: `superpowers:receiving-code-review`); optional
+  `mattpocock-skills:grilling` to stress-test an idea. Any git action goes through `git-workflow` first, not
+  `superpowers:finishing-a-development-branch`.
+- Plugins that only fit some stacks (`vercel`, `playwright`) are off globally and enabled per project by
+  `scripts/project-agents.sh` (`config/scopes.json` `plugins`, or `--plugin`).
 - AWS (`aws/`): `sam-deploy`, `lambda-patterns`, `iam-least-privilege` (always least privilege), `cost-optimizer`, `serverless-scanner` (migration analysis).
 - Integrations (ADR 0016): Slack `slack-usage`; Jira/Confluence `jira-usage`; GitHub remote `github-usage`
   (local git flow stays `git-workflow`); Gmail/Calendar/Drive `google-workspace-usage`; Obsidian notes

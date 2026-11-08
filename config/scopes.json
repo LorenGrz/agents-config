@@ -1,10 +1,15 @@
 {
-  "_comment": "Anything NOT listed under a stack is global (installed in ~/.claude by install.sh/sync.sh). Listed skills/rules are installed per project by scripts/project-agents.sh.",
+  "_comment": "Anything NOT listed under a stack is global (installed in ~/.claude by install.sh/sync.sh). Listed skills/rules/mcp/plugins are installed per project by scripts/project-agents.sh (plugins go to the project's .claude/settings.json enabledPlugins; they are off globally in settings.base.json).",
   "stacks": {
-    "react-vite": { "skills": ["react-component-validator"], "rules": ["react"] },
+    "react-vite": {
+      "skills": ["react-component-validator"],
+      "rules": ["react"],
+      "plugins": ["playwright@anthropic-plugin-directory"]
+    },
     "next": {
       "skills": ["nextjs-ssr-frontend", "react-component-validator", "api-contract-design"],
-      "rules": ["next", "react"]
+      "rules": ["next", "react"],
+      "plugins": ["vercel@claude-plugins-official", "playwright@anthropic-plugin-directory"]
     },
     "nestjs": {
       "skills": ["nest-module-generator", "database-persistence-patterns", "api-contract-design", "auth-security-basics"],

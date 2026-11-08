@@ -68,3 +68,23 @@ Learning roadmap and current stage are personal — see your profile
 - If changing OS or desktop config, test locally first, and confirm the change works before
   pushing to the settings repo named in the profile. Do not push unrelated or pre-existing
   changes.
+
+<!-- intents:start -->
+## Shortcuts
+
+Natural phrases map to a skill. Load the skill and use the command in its `## Shortcuts` section;
+Claude Code's `intent-router` hook injects this automatically. Outbound actions still need the user's OK.
+
+- `codex-review`: Codex review
+- `git-workflow`: pull changes, new branch, commit, push, open PR
+- `github-usage`: issues and PRs
+- `google-workspace-usage`: email, calendar, drive files
+- `jira-usage`: Jira ticket
+- `mattpocock-skills:grilling`: stress-test an idea
+- `notebooklm-obsidian-sync`: NotebookLM
+- `obsidian-vault`: vault notes
+- `slack-usage`: read or search Slack, send to Slack
+- `superpowers:brainstorming`: design before building
+- `superpowers:systematic-debugging`: unknown-cause bug
+- `superpowers:test-driven-development`: test first
+<!-- intents:end -->
