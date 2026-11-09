@@ -35,3 +35,7 @@ short docs-layer rule, see below, and lost the roadmap detail).
   a second copy in `AGENTS.md` — update it there when the stage changes.
 - Future additions to `CLAUDE.md` should ask "does this apply to every session?" before
   growing the file; if not, it belongs in a skill, rule, or reference file loaded on demand.
+
+## Update (2026-11-09)
+
+The budget is revised to ≤60 lines and ≤4.2 KB in ADR 0020: the 3.1 KB target no longer fits the rules the file has to carry.

@@ -13,6 +13,10 @@ jqr() { jq -r "$@" <<<"$input" 2>/dev/null; }
 
 [ -z "$(jqr '.agent_type // empty')" ] || exit 0  # already inside worker/scout/reasoner
 
+# Inside a CAO pane (ADR 0020) only integration-tool calls are routed: the prompt of a worker is the
+# assignment text and its git commands follow its role ("never push"), so phrases and Bash stay silent.
+cao="${CAO_TERMINAL_ID:-}"
+
 HERE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 HUB="$(cd "$HERE/../.." && pwd)"
 TABLE="$HERE/../intents.json"
@@ -48,8 +52,12 @@ resolve_base() {
 matches=""
 case "$event" in
   UserPromptSubmit)
+    [ -z "$cao" ] || exit 0
     prompt="$(jqr '.prompt // empty' | tr '[:upper:]' '[:lower:]')"
     [ -n "$prompt" ] || exit 0
+    # Background-task notifications reach this hook as prompts; their text is not a user phrase.
+    # Heuristic: Claude Code documents no field that tells them apart.
+    ! grep -Eq '<task-notification>|^\[system notification' <<<"$prompt" || exit 0
     matches="$(jq -r --arg p "$prompt" '
       .skills[] | select(.intents | length > 0) | . as $s
       | ([.intents[] | select(. as $i | try ($p | test($i.re; "i")) catch false)] | first) as $i
@@ -60,6 +68,7 @@ case "$event" in
     tool="$(jqr '.tool_name // empty')"
     case "$tool" in
       Bash)
+        [ -z "$cao" ] || exit 0
         what="$(jqr '.tool_input.command // empty' | head -n 1 | cut -c1-80)"
         matches="$(jq -r --arg c "$(jqr '.tool_input.command // empty')" '
           ($c | gsub("\\s*(&&|;|\\|\\|)\\s*"; "\n") | split("\n") | map(sub("^\\s+"; ""))) as $segs

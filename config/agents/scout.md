@@ -3,6 +3,7 @@ name: scout
 description: Read-only reconnaissance. Use to locate files, map conventions, inventory usages, or answer "where is X / what already exists for Y" before any code is written. Cheapest tier — never give it work that changes files.
 model: haiku
 tools: Read, Grep, Glob, Bash
+omitClaudeMd: true
 hooks:
   PreToolUse:
     - matcher: "Bash"

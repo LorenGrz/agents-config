@@ -1,6 +1,6 @@
 # 0006 — The main session delegates open lookups and large changes
 
-> Partly superseded by [0009](0009-opusplan-and-critical-reasoning-hook.md): the main session now runs on Sonnet (`opusplan`); "main session (Opus)" below means plan mode / `reasoner`.
+> Partly superseded by [0009](0009-opusplan-and-critical-reasoning-hook.md) and then [0018](0018-opus-medium-default-reasoner-high.md): the main session runs on Opus at medium effort; deep decisions go to `reasoner` (effort high).
 
 ## Context
 

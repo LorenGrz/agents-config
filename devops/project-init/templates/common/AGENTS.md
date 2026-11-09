@@ -14,6 +14,22 @@ A new agent session should understand this project from these files alone, in th
 6. `docs/superpowers/specs/` and `docs/superpowers/plans/` - what is being built and how, per unit of work.
 7. `docs/prompts.md` - every AI prompt the app sends (verbatim, where it lives, history and lessons). Only if the app calls an AI model.
 
+Read `.agents/CONTEXT.md` before exploring the code: it holds the current state.
+
+## Critical rules
+
+<!-- baseline:start -->
+Non-negotiable for every agent and model working in this repo (source: agents-config `baseline.md`):
+
+1. **Secrets**: never in the repo, logs or prompts. Keep `.env` ignored; assume the repo may be public.
+2. **Verify before "done"**: run the smallest check that covers the change (test, lint, typecheck, build) and report what ran and what did not.
+3. **Least privilege**: IAM, DB and tokens with minimum scope; production data read-only by default.
+4. **Safe git**: no force-push to shared branches, no destructive commands unless explicitly asked, never overwrite someone else's changes.
+5. **Critical decisions** (architecture, data, auth, deploy): ask, don't assume, and record them in an ADR.
+6. **Outbound actions** (push, publish, deploy, create remote repos): confirm first.
+7. **Org policy that replaces a base practice**: record it in a project ADR.
+<!-- baseline:end -->
+
 ## Purpose
 
 <!-- One or two sentences: what this project does and for whom. -->

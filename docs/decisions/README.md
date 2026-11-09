@@ -17,3 +17,8 @@
 - [0015 — Leak guard and generated plugin files](0015-leak-guard-and-generated-plugin-files.md) — local blocklist, pre-commit + CI; `gen-plugin.sh`.
 - [0016 — Integrations: plugins, user-scope MCP and outbound guardrails](0016-integrations-plugins-mcp.md) — plugins in settings.base.json, `config/mcp.user.json`, `ask` rules, paste-preview patch.
 - [0017 — Intent router, per-project plugins and workspaces](0017-intent-router-and-workspaces.md) — `## Shortcuts` in skills -> `intent-router.sh`; plugins per stack; workspace mode in project-init.
+- [0018 — Opus medium default, planning high via `reasoner`](0018-opus-medium-default-reasoner-high.md) — supersedes the `opusplan` default; effort is per model, so high planning rides on the `reasoner` subagent.
+- [0019 — AGENTS.md first](0019-agents-md-first.md) — AGENTS.md is the project source (no CLAUDE.md by default), baseline block in every repo, baseline file for agy/Copilot/OpenCode, `scout` skips the memory chain.
+- [0020 — CAO-aware hooks, context budget and workflow lanes](0020-cao-aware-hooks-and-context-budget.md) — hooks quiet in CAO panes, once-per-session reasoner reminder, `config/CLAUDE.md` ≤60 lines / ≤4.2 KB, lanes S/L.
+- [0021 — Statusline cache files are an interface for caolg](0021-statusline-cache-contract.md) — the two cache files, their fields and the rule for changing them.
+- [0022 — One question decides the process](0022-one-question-continue-plan-s-plan-l.md) — punctual change: direct; more than one file: Continuar / Plan S / Plan L; no heavy process outside a plan; no assumptions.

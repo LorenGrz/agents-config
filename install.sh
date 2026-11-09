@@ -35,7 +35,7 @@
 #
 # Usage:
 #   ./install.sh [--profile <name>] [--org <name> <git-url>] [--dry-run] [--with-rtk] [--with-rulesync]
-#                [--with-integrations]
+#                [--with-integrations] [--with-cli-baselines]
 #
 #   --profile <name> use config/profiles/<name>.md instead of auto-detecting
 #   --org <name> <url> clone a private organization repo into organizations/ (scripts/orgs.sh add);
@@ -47,6 +47,9 @@
 #                   and cursor via config/rulesync/
 #   --with-integrations also install the user-scope MCP servers in config/mcp.user.json
 #                   (tools via uv, registered with `claude mcp add-json --scope user`); ADR 0016
+#   --with-cli-baselines also write config/baseline.md as the global instructions of agy
+#                   (~/.gemini/GEMINI.md), Copilot, OpenCode (and OpenCode under CAO) for the tools
+#                   that are installed (scripts/gen-cli-baselines.sh); ADR 0019
 
 set -euo pipefail
 
@@ -64,6 +67,7 @@ DRY_RUN=0
 WITH_RTK=0
 WITH_RULESYNC=0
 WITH_INTEGRATIONS=0
+WITH_CLI_BASELINES=0
 PROFILE_FLAG=""
 ORG_ADD=()
 
@@ -75,8 +79,9 @@ while [ $# -gt 0 ]; do
     --with-rtk) WITH_RTK=1; shift ;;
     --with-rulesync) WITH_RULESYNC=1; shift ;;
     --with-integrations) WITH_INTEGRATIONS=1; shift ;;
+    --with-cli-baselines) WITH_CLI_BASELINES=1; shift ;;
     -h|--help)
-      sed -n '2,49p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,52p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -341,6 +346,8 @@ else
     .[0] as $cur | .[1] as $base
     | $cur
     | .model = $base.model
+    | .effortLevel = $base.effortLevel
+    | .modelSettings = ((.modelSettings // {}) * ($base.modelSettings // {}))
     | .hooks = $base.hooks
     | .statusLine = $base.statusLine
     | .enabledPlugins = (($cur.enabledPlugins // {}) + ($base.enabledPlugins // {}))
@@ -403,6 +410,16 @@ if [ "$WITH_INTEGRATIONS" -eq 1 ]; then
       fi
       [ -n "$post" ] && echo "todo:    $name - $post"
     done
+  fi
+fi
+
+if [ "$WITH_CLI_BASELINES" -eq 1 ]; then
+  echo
+  echo "== baseline for other CLIs (agy, Copilot, OpenCode); ADR 0019 =="
+  if [ "$DRY_RUN" -eq 1 ]; then
+    "$HUB/scripts/gen-cli-baselines.sh" --dry-run
+  else
+    "$HUB/scripts/gen-cli-baselines.sh"
   fi
 fi
 

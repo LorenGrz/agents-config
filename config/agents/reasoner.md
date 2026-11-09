@@ -2,6 +2,7 @@
 name: reasoner
 description: Deep reasoning for work whose scope crosses modules, whose cause is unknown, or that is hard to reverse — architecture and API contract decisions, root-cause debugging, security-sensitive changes, data migrations. Most expensive tier; use when a wrong answer is costly, not when the task is merely long.
 model: opus
+effort: high
 tools: Read, Grep, Glob, Bash, Write, Edit
 ---
 

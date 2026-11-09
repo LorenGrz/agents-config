@@ -2,6 +2,11 @@
 # Statusline minimalista, solo ASCII: modelo, esfuerzo, costo de sesion,
 # contexto y uso 5h/7d con tiempo al reset. Colores por umbral, responsiva a $COLUMNS
 # y alineada a la derecha. NO_COLOR desactiva los colores.
+#
+# CONTRATO con caolg (ADR 0021): ademas de dibujar la linea, escribe dos caches que lee otro repo.
+#   ~/.cache/claude/rate-limits.json         {ts, rate_limits{five_hour,seven_day{used_percentage,resets_at}}}
+#   ~/.cache/claude/ctx/$CAO_TERMINAL_ID.json {ts, used_percentage, size, cwd}   (solo en panes de CAO)
+# Escritura atomica, sin tokens. Renombrar o quitar un campo rompe la barra y los bordes de caolg.
 set -uo pipefail
 
 # --- Umbrales (ajustables) ---
