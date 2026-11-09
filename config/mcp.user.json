@@ -1,0 +1,30 @@
+{
+  "_comment": "User-scope MCP servers applied by `install.sh --with-integrations` via `claude mcp add-json --scope user`. No secrets here: servers that need auth log in themselves (notebooklm: `notebooklm login`). Account connectors (Slack, Atlassian, GitHub, Gmail, Calendar, Drive) come from claude.ai and are NOT declared here. See docs/decisions/0016-integrations-plugins-mcp.md.",
+  "servers": {
+    "notebooklm": {
+      "type": "stdio",
+      "command": "notebooklm-mcp",
+      "args": []
+    },
+    "obsidian": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bitbonsai/mcpvault@0.18.3",
+        "${OBSIDIAN_VAULT}"
+      ]
+    }
+  },
+  "tools": {
+    "notebooklm": {
+      "check": "notebooklm-mcp",
+      "install": "uv tool install \"notebooklm-py[browser,mcp]==0.8.6\"",
+      "post": "login (interactive, once): notebooklm login"
+    },
+    "obsidian": {
+      "check": "npx",
+      "post": "vault path comes from $OBSIDIAN_VAULT (default ~/Documents/Obsidian Vault) when install.sh runs; commit/back up the vault before heavy edits"
+    }
+  }
+}

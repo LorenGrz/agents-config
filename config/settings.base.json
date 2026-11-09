@@ -39,7 +39,49 @@
       "Bash(aws s3 rb*)",
       "Bash(aws s3 cp*)",
       "Bash(aws s3 mv*)",
-      "Bash(aws s3 sync*)"
+      "Bash(aws s3 sync*)",
+      "mcp__claude_ai_Slack__slack_send_message",
+      "mcp__claude_ai_Slack__slack_schedule_message",
+      "mcp__claude_ai_Slack__slack_create_conversation",
+      "mcp__claude_ai_Slack__slack_create_canvas",
+      "mcp__claude_ai_Slack__slack_update_canvas",
+      "mcp__claude_ai_Slack__slack_add_list_record",
+      "mcp__claude_ai_Slack__slack_update_list_record",
+      "mcp__claude_ai_Gmail__send_message",
+      "mcp__claude_ai_Gmail__reply",
+      "mcp__claude_ai_Gmail__forward",
+      "mcp__claude_ai_Gmail__trash_message",
+      "mcp__claude_ai_Gmail__trash_thread",
+      "mcp__claude_ai_Google_Calendar__create_event",
+      "mcp__claude_ai_Google_Calendar__update_event",
+      "mcp__claude_ai_Google_Calendar__delete_event",
+      "mcp__claude_ai_Google_Calendar__respond_to_event",
+      "mcp__claude_ai_Google_Drive__share_file",
+      "mcp__claude_ai_Google_Drive__trash_file",
+      "mcp__claude_ai_Google_Drive__update_file",
+      "mcp__claude_ai_Google_Drive__create_file",
+      "mcp__claude_ai_Atlassian_Rovo__createJiraIssue",
+      "mcp__claude_ai_Atlassian_Rovo__editJiraIssue",
+      "mcp__claude_ai_Atlassian_Rovo__transitionJiraIssue",
+      "mcp__claude_ai_Atlassian_Rovo__addCommentToJiraIssue",
+      "mcp__claude_ai_Atlassian_Rovo__addWorklogToJiraIssue",
+      "mcp__claude_ai_Atlassian_Rovo__createIssueLink",
+      "mcp__claude_ai_Atlassian_Rovo__createConfluencePage",
+      "mcp__claude_ai_Atlassian_Rovo__updateConfluencePage",
+      "mcp__claude_ai_GitHub__merge_pull_request",
+      "mcp__claude_ai_GitHub__create_pull_request",
+      "mcp__claude_ai_GitHub__push_files",
+      "mcp__claude_ai_GitHub__create_or_update_file",
+      "mcp__claude_ai_GitHub__delete_file",
+      "mcp__claude_ai_GitHub__create_repository",
+      "mcp__claude_ai_GitHub__delete_repository",
+      "mcp__claude_ai_GitHub__issue_write",
+      "mcp__claude_ai_GitHub__add_issue_comment",
+      "mcp__claude_ai_GitHub__pull_request_review_write",
+      "mcp__claude_ai_GitHub__fork_repository",
+      "mcp__obsidian__delete_note",
+      "mcp__obsidian__move_note",
+      "mcp__obsidian__move_file"
     ],
     "defaultMode": "auto"
   },
@@ -144,15 +186,59 @@
     "refreshInterval": 60
   },
   "enabledPlugins": {
-    "vercel@claude-plugins-official": false,
+    "vercel@claude-plugins-official": true,
     "superpowers@superpowers-marketplace": true,
-    "playwright@anthropic-plugin-directory": true
+    "playwright@anthropic-plugin-directory": true,
+    "skill-creator@anthropic-plugin-directory": true,
+    "github@anthropic-plugin-directory": false,
+    "paste-preview@paste-preview": true,
+    "mattpocock-skills@mattpocock": true,
+    "claudex-loop@claudex-loop": true,
+    "codex@openai-codex": true,
+    "claude-obsidian@agricidaniel-claude-obsidian": true,
+    "andrej-karpathy-skills@karpathy-skills": true
   },
   "extraKnownMarketplaces": {
     "superpowers-marketplace": {
       "source": {
         "source": "github",
         "repo": "obra/superpowers-marketplace"
+      }
+    },
+    "paste-preview": {
+      "source": {
+        "source": "github",
+        "repo": "alan890104/claude-code-paste-preview"
+      }
+    },
+    "mattpocock": {
+      "source": {
+        "source": "github",
+        "repo": "mattpocock/skills"
+      }
+    },
+    "claudex-loop": {
+      "source": {
+        "source": "github",
+        "repo": "chaseai-yt/claudex-loop"
+      }
+    },
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
+    },
+    "agricidaniel-claude-obsidian": {
+      "source": {
+        "source": "github",
+        "repo": "AgriciDaniel/claude-obsidian"
+      }
+    },
+    "karpathy-skills": {
+      "source": {
+        "source": "github",
+        "repo": "multica-ai/andrej-karpathy-skills"
       }
     }
   },
