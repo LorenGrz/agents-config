@@ -6,7 +6,7 @@ Full-stack developer, UNSAM tutor, Buenos Aires, Argentina.
 
 - Name: Lorenzo Graizzaro (Loren).
 - Preferred language for replies: Spanish by default; switch to English when the user writes in English.
-- English coaching: yes — for every message written partly or fully in English, add a 2-line-maximum `English note` (one main issue) plus a `Better` line with the prompt phrased correctly, in English only (the `english-prompt-coach` skill, when available).
+- English coaching: yes (format in `AGENTS.md` "Communication"; the `english-prompt-coach` skill, when available).
 
 ## GitHub
 
@@ -32,7 +32,6 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 - Main session: Opus at medium effort; planning/decisions via `reasoner` (Opus, effort high), ADR 0018 (supersedes the `opusplan` choice of ADR 0009).
 - `worker` = Sonnet: implements common writing tasks (code, docs, tests) from an approved plan. `reasoner` = Opus: decisions only. `scout` = Haiku: light read-only lookups.
 - Gemini (`agy`) for bulk mechanical writing or wide reading when its quota is the better spend.
-- Planning: recommend subagents and ask. Default recommendation: `scout` for open lookups, `reasoner` for critical decisions, `worker` for changes over 3 files.
 
 ## Local tool paths
 
@@ -47,9 +46,7 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 
 ## OS / desktop config
 
-- Desktop: Omarchy (Arch-based Linux). Settings repo: `~/projects/omarchy-settings`.
-- For end-user Omarchy customization, edit safe user config locations such as `~/.config/`, never Omarchy source under `~/.local/share/omarchy/`.
-- If changing OS or desktop config, test locally first; confirm the change works before pushing to the settings repo above; do not push unrelated or pre-existing changes.
+- Desktop: Omarchy (Arch-based Linux). Settings repo: `~/projects/omarchy-settings`. Never edit Omarchy source under `~/.local/share/omarchy/` (the generic rules are in `AGENTS.md` "OS and desktop config").
 
 ## Codex workflow adapter
 
@@ -60,4 +57,4 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 
 ## Notes
 
-- All of Loren's repos are public except `omarchy-loren` (private: per-machine config and the new-PC setup). Never commit secrets, API keys, or credentials to any of them, private included.
+- All of Loren's repos are public except `omarchy-loren` (private: per-machine config and the new-PC setup). Baseline rule 1 (no secrets) applies to all of them, private included.
