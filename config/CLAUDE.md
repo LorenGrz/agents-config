@@ -27,17 +27,17 @@ Where skills overlap, one default per task:
 
 ## Workflow lanes
 
-- **Punctual change** (one file, clear intent): do it directly. No question, no plan, no lane (optional:
-  PonyTail, ADR 0020).
+- **Punctual change** (one file, clear intent): do it directly. No question, no plan, no lane.
 - **More than one file, or unclear scope** (unknown-cause bugs too): before editing, one `AskUserQuestion`
   with exactly three options, in this order: **Continuar** (direct, no plan) · **Plan S** (plan mode, short
-  plan: files, change, check; executed inline, no brainstorming, no spec docs, no `worker`/`reasoner`) ·
-  **Plan L** (plan mode: `brainstorming`, `writing-plans` in `docs/superpowers/`, then `worker`/`reasoner`,
-  or caolg across repos). Mark the one you recommend with one line of why; keep the order. On Plan S/L
-  call `EnterPlanMode`; an unknown cause starts with `systematic-debugging`. If the user enters plan mode
-  directly, the plan ends with "Plan S/L because …".
+  plan: files, change, check; run inline with the `ponytail:ponytail` skill loaded at the start; no
+  brainstorming, no spec docs, no `worker`/`reasoner`) · **Plan L** (plan mode: `brainstorming`,
+  `writing-plans` in `docs/superpowers/`, then `worker`/`reasoner`, or caolg across repos). Recommend one
+  (one line why); keep the order. On Plan S/L call `EnterPlanMode`; an unknown cause starts with
+  `systematic-debugging`. A plan the user starts directly ends with "Plan S/L because …".
 - Outside a plan, never invoke `brainstorming`, `writing-plans`, `executing-plans`, `subagent-driven-development`,
-  `worker` or `reasoner` unless asked (this overrides `using-superpowers`); `scout` stays allowed for open lookups.
+  `worker`, `reasoner` or `ponytail*` unless asked; this overrides `using-superpowers` and the
+  skills' own descriptions. `scout` stays allowed for open lookups.
 
 ## Agent Routing
 

@@ -215,7 +215,8 @@
     "claudex-loop@claudex-loop": true,
     "codex@openai-codex": true,
     "claude-obsidian@agricidaniel-claude-obsidian": true,
-    "andrej-karpathy-skills@karpathy-skills": true
+    "andrej-karpathy-skills@karpathy-skills": true,
+    "ponytail@ponytail": true
   },
   "extraKnownMarketplaces": {
     "superpowers-marketplace": {
@@ -259,7 +260,23 @@
         "source": "github",
         "repo": "multica-ai/andrej-karpathy-skills"
       }
+    },
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      }
     }
   },
-  "theme": "dark"
+  "theme": "dark",
+  "env": {
+    "PONYTAIL_DEFAULT_MODE": "off"
+  },
+  "pluginConfigs": {
+    "ponytail@ponytail": {
+      "options": {
+        "ledger": false
+      }
+    }
+  }
 }
