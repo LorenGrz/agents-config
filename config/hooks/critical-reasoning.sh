@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # UserPromptSubmit + PreToolUse(Edit|Write|MultiEdit): when the work looks costly to get
 # wrong (architecture, unknown-cause bugs, security, migrations, prod/IAM), remind the main
-# session to route it through the `reasoner` subagent (Opus, effort high) instead of deciding inline
-# at medium effort (ADR 0018). Guidance only (additionalContext); never blocks, always exits 0.
+# session to ask the one question Continuar / Plan S / Plan L before editing, and that in Plan L the
+# decision goes to the `reasoner` subagent (Opus, effort high; ADRs 0018, 0022). Guidance only
+# (additionalContext); never blocks, always exits 0.
 # Silent: inside subagents, inside CAO panes (ADR 0020), in plan mode, and on task notifications.
 # The reasoner reminder is sent once per session (needs a session_id); the skill hint is not capped.
 #
@@ -67,7 +68,7 @@ fi
 
 msg=""
 if [ -n "$reason" ]; then
-  msg="Razonamiento crítico (agents-config): $reason. Antes de decidir o editar, delegá el análisis al subagente \`reasoner\` (Opus, effort high) con el contexto y la pregunta concreta; después implementá con \`worker\` o inline según el tamaño. No resuelvas la decisión de fondo inline con esfuerzo medio. Si ya hay un plan aprobado de reasoner o de modo plan para esto, ignorá este aviso."
+  msg="Razonamiento crítico (agents-config): $reason. Esto parece Plan L: antes de editar, hacé una sola pregunta con las opciones Continuar / Plan S / Plan L (marcá la que recomendás). En Plan L, la decisión de fondo va al subagente \`reasoner\` (Opus, effort high) con el contexto y la pregunta concreta. Si ya hay un plan aprobado para esto, ignorá este aviso."
 fi
 if [ -n "$hint" ]; then
   msg="${msg:+$msg }Skill del proyecto para esto: leé$hint antes de implementar."

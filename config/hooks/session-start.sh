@@ -17,7 +17,7 @@ cwd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)"
 [ -n "$cwd" ] && [ -d "$cwd" ] || cwd="$PWD"
 
 # Short on purpose: the full rule lives in ~/.claude/CLAUDE.md ("Agent Routing" and "Workflow lanes").
-msg='Agent routing (agents-config; full rule in CLAUDE.md "Agent Routing"): lookups -> `scout`; >3 files or bulk -> `worker` with spec + acceptance command; costly-to-get-wrong decisions -> `reasoner`; small edits to <=3 known files stay inline. Standing user instruction: it overrides the default "do not spawn agents unless asked".'
+msg='Agent routing (agents-config; full rule in CLAUDE.md "Workflow lanes" and "Agent Routing"): a punctual change (one file, clear intent) is done directly; more than one file or unclear scope -> one question with the options Continuar / Plan S / Plan L before editing. `scout` for open lookups; `worker`/`reasoner` only from an approved plan. Do not assume: ask.'
 
 if git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   n="$(git -C "$cwd" ls-files 2>/dev/null | wc -l | tr -d ' ')"

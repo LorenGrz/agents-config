@@ -77,6 +77,7 @@ check "folder with 2 repos names them and offers workspace mode" 'out="$(start "
 mkdir -p "$W/fakehome/a" "$W/fakehome/b"; git -C "$W/fakehome/a" init -q; git -C "$W/fakehome/b" init -q
 check "HOME itself never gets the workspace offer" '! HOME="$W/fakehome" start "$W/fakehome" | grep -q "workspace mode"'
 check "SessionStart routing text points to CLAUDE.md and stays short" 'out="$(start "$W/ss/ready")"; grep -q "Agent routing" <<<"$out" && grep -q "scout" <<<"$out" && [ "${#out}" -lt 520 ]'
+check "SessionStart names the one question Continuar / Plan S / Plan L (ADR 0022)" 'start "$W/ss/ready" | grep -q "Continuar / Plan S / Plan L"'
 
 # --- CAO panes (caolg leader and workers): ADR 0020
 check "CAO pane: SessionStart adds nothing (no routing, no project-init nudge)" '[ -z "$(CAO_TERMINAL_ID=t1 start "$W/ss/noagents")" ]'

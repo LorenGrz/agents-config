@@ -44,6 +44,7 @@ check "no hint when the skill is not installed" '[ -z "$out" ]'
 out="$(hook "$P" '{"hook_event_name":"UserPromptSubmit","prompt":"necesito una migración de la base y un nuevo bounded context"}')"
 check "critical reasoning and skill hint combine" 'grep -q "reasoner" <<<"$out" && grep -q "new-bounded-context" <<<"$out"'
 check "reasoner reminder names the high-effort reasoner (ADR 0018)" 'grep -q "effort high" <<<"$out" && ! grep -q "Sonnet" <<<"$out"'
+check "reminder asks the one question Continuar / Plan S / Plan L (ADR 0022)" 'grep -q "Continuar / Plan S / Plan L" <<<"$out"'
 
 # --- hook: once per session, plan mode, notifications, CAO panes
 crit='{"hook_event_name":"UserPromptSubmit","session_id":"sess1","prompt":"necesito una migración de la base"}'

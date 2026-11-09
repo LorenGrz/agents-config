@@ -7,6 +7,7 @@ Full-stack developer, UNSAM tutor, Buenos Aires, Argentina.
 - Name: Lorenzo Graizzaro (Loren).
 - Preferred language for replies: Spanish by default; switch to English when the user writes in English.
 - English coaching: yes (format in `AGENTS.md` "Communication"; the `english-prompt-coach` skill, when available).
+- **No assumptions** unless Loren says so ("asumí" / "assume"). When scope, a requirement or a choice is unclear, ask instead of picking a default, even on trivial tasks; when something must be assumed to continue, say it explicitly first. Stricter version of `karpathy-guidelines` §1.
 
 ## GitHub
 
