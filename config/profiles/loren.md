@@ -29,7 +29,7 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 
 ## Model routing
 
-- Main session: Sonnet via `opusplan` (Opus in plan mode), ADR 0009.
+- Main session: Opus at medium effort; planning/decisions via `reasoner` (Opus, effort high), ADR 0018 (supersedes the `opusplan` choice of ADR 0009).
 - `worker` = Sonnet: implements common writing tasks (code, docs, tests) from an approved plan. `reasoner` = Opus: decisions only. `scout` = Haiku: light read-only lookups.
 - Gemini (`agy`) for bulk mechanical writing or wide reading when its quota is the better spend.
 - Planning: recommend subagents and ask. Default recommendation: `scout` for open lookups, `reasoner` for critical decisions, `worker` for changes over 3 files.

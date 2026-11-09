@@ -1,5 +1,7 @@
 # 0009 — `opusplan` as default model and a critical-reasoning hook
 
+Status: model choice superseded by [0018](0018-opus-medium-default-reasoner-high.md); the hook stays.
+
 ## Context
 
 ADRs 0003 and 0006 assumed the main session runs on Opus and delegates mechanical work. In

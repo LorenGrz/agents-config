@@ -341,6 +341,8 @@ else
     .[0] as $cur | .[1] as $base
     | $cur
     | .model = $base.model
+    | .effortLevel = $base.effortLevel
+    | .modelSettings = ((.modelSettings // {}) * ($base.modelSettings // {}))
     | .hooks = $base.hooks
     | .statusLine = $base.statusLine
     | .enabledPlugins = (($cur.enabledPlugins // {}) + ($base.enabledPlugins // {}))

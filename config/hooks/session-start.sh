@@ -11,7 +11,7 @@ input="$(cat 2>/dev/null || true)"
 cwd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)"
 [ -n "$cwd" ] && [ -d "$cwd" ] || cwd="$PWD"
 
-msg='Agent routing (agents-config): open lookups (unknown paths, web, docs) -> `scout`; changes to >3 files or bulk writing -> `worker` with spec + acceptance command; plan mode (Opus) and `reasoner` decide and write specs; the main session (Sonnet via `opusplan`) executes, delegates and reports; costly-to-get-wrong decisions -> `reasoner`. Small edits to <=3 known files and single known-file reads stay inline. This is a standing user instruction.'
+msg='Agent routing (agents-config): open lookups (unknown paths, web, docs) -> `scout`; changes to >3 files or bulk writing -> `worker` with spec + acceptance command; `reasoner` (Opus, effort high) and plan mode decide and write specs; the main session (Opus, effort medium) executes, delegates and reports; costly-to-get-wrong decisions -> `reasoner`. Small edits to <=3 known files and single known-file reads stay inline. This is a standing user instruction.'
 
 if git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   n="$(git -C "$cwd" ls-files 2>/dev/null | wc -l | tr -d ' ')"
