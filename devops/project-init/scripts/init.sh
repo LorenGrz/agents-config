@@ -3,7 +3,12 @@
 #
 # Usage: init.sh --stack <react-vite|next|nestjs|node-ts|python|java-spring|kotlin-spring> --name <name>
 #                 [--dir <path>] [--owner <owner>] [--project-number N]
-#                 [--force] [--install] [--manifest <file>]
+#                 [--force] [--install] [--manifest <file>] [--claude-shim]
+#
+# AGENTS.md is the single source for agents; no CLAUDE.md is generated (Claude
+# Code >= 2.1.277 reads AGENTS.md natively when no CLAUDE.md exists in the cwd
+# or any parent directory). --claude-shim writes a CLAUDE.md that only says
+# `@AGENTS.md`, for older Claude Code versions.
 #
 # Also installs the stack's skills/rules/MCP into .claude/ via
 # scripts/project-agents.sh; --with adds extra stacks (rn,aws,python,kotlin,
@@ -21,7 +26,7 @@ usage() {
   cat <<'EOF'
 Usage: init.sh --stack <react-vite|next|nestjs|node-ts|python|java-spring|kotlin-spring> --name <name>
                [--dir <path>] [--owner <owner>] [--project-number N]
-               [--force] [--install]
+               [--force] [--install] [--claude-shim]
 
   --stack            react-vite | next | nestjs | node-ts | python | java-spring |
                      kotlin-spring (required). JVM stacks: generate the project first
@@ -38,6 +43,9 @@ Usage: init.sh --stack <react-vite|next|nestjs|node-ts|python|java-spring|kotlin
                      references/interview.md): fills --name/--stack/--with
                      when not given, writes project.json, ADRs and pending
                      decisions. --stack and --name become optional
+  --claude-shim      also write CLAUDE.md containing only `@AGENTS.md` (default: no
+                     CLAUDE.md; Claude Code >= 2.1.277 reads AGENTS.md natively, and a
+                     CLAUDE.md in any parent directory disables that)
   --force           overwrite files that already exist
   --install          actually install the missing devDependencies (ESLint plus
                      any prettier/vitest/tsx the scripts use), write missing
@@ -70,6 +78,7 @@ ORG=""
 ORG_MISMATCH_OK=0
 FORCE=0
 INSTALL=0
+CLAUDE_SHIM=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -84,6 +93,7 @@ while [ $# -gt 0 ]; do
     --allow-org-mismatch) ORG_MISMATCH_OK=1; shift ;;
     --force) FORCE=1; shift ;;
     --install) INSTALL=1; shift ;;
+    --claude-shim) CLAUDE_SHIM=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; usage; exit 1 ;;
   esac
@@ -280,6 +290,18 @@ generate_agents_md() {
     done < "$COMMON_DIR/AGENTS.md"
   } | substitute > "$dest"
   echo "wrote AGENTS.md"
+}
+
+# Optional CLAUDE.md shim (--claude-shim): the whole file is `@AGENTS.md`.
+generate_claude_shim() {
+  [ "$CLAUDE_SHIM" = 1 ] || return 0
+  local dest="$DIR/CLAUDE.md"
+  if [ -e "$dest" ] && [ "$FORCE" != 1 ]; then
+    echo "skip CLAUDE.md (exists)"
+    return
+  fi
+  printf '@AGENTS.md\n' > "$dest"
+  echo "wrote CLAUDE.md"
 }
 
 # devDependencies the stack's eslint.config.*/tsconfig.json need. react-vite
@@ -568,6 +590,7 @@ install_agent_scope() {
 copy_template_tree "$STACK_DIR"
 copy_template_tree "$COMMON_DIR" "$SKIP_COMMON"
 generate_agents_md
+generate_claude_shim
 apply_sdd
 if [ "$RUNTIME" = node ]; then
   report_scripts

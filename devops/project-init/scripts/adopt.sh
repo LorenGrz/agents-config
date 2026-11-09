@@ -8,7 +8,11 @@
 # actually enforced today, which may be "nothing") and may RECOMMEND
 # stronger enforcement in its output.
 #
-# Usage: adopt.sh --dir <repo> [--dry-run] [--json]
+# Usage: adopt.sh --dir <repo> [--dry-run] [--json] [--claude-shim]
+#
+# AGENTS.md is the single source for agents: no CLAUDE.md is created unless
+# --claude-shim is passed (then CLAUDE.md is the single line `@AGENTS.md`).
+# An existing CLAUDE.md is never deleted or overwritten.
 #
 # Must not modify the repo's current working tree or branch - it only
 # writes into the directory given. The caller is expected to pass a git
@@ -20,24 +24,31 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: adopt.sh --dir <repo> [--dry-run] [--json]
+Usage: adopt.sh --dir <repo> [--dry-run] [--json] [--claude-shim]
 
   --dir       path to the existing repo to adopt (required)
   --dry-run   detect and print the plan, write nothing
   --json      emit the detection summary (and, on a real run, the actions
               taken) as JSON instead of human-readable text
+  --claude-shim  also create CLAUDE.md containing only `@AGENTS.md` when the
+              repo has none (default: no CLAUDE.md is created; Claude Code
+              >= 2.1.277 reads AGENTS.md natively, and a CLAUDE.md in any
+              parent directory disables that). An existing CLAUDE.md is
+              never touched.
 EOF
 }
 
 DIR=""
 DRY_RUN=0
 JSON=0
+CLAUDE_SHIM=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --dir) DIR="$2"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
     --json) JSON=1; shift ;;
+    --claude-shim) CLAUDE_SHIM=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; usage; exit 1 ;;
   esac
@@ -389,6 +400,29 @@ DOC_RULES='## Documentation rules
 - Changing any "Workflow contract" rule updates every enforcement point in the same change, per that section above.
 '
 
+# Critical rules: the baseline block, delimited by markers so a re-run can tell
+# it is already there.
+BASELINE_BLOCK="$(cat <<'EOF'
+<!-- baseline:start -->
+Non-negotiable for every agent and model working in this repo (source: agents-config `baseline.md`):
+
+1. **Secrets**: never in the repo, logs or prompts. Keep `.env` ignored; assume the repo may be public.
+2. **Verify before "done"**: run the smallest check that covers the change (test, lint, typecheck, build) and report what ran and what did not.
+3. **Least privilege**: IAM, DB and tokens with minimum scope; production data read-only by default.
+4. **Safe git**: no force-push to shared branches, no destructive commands unless explicitly asked, never overwrite someone else's changes.
+5. **Critical decisions** (architecture, data, auth, deploy): ask, don't assume, and record them in an ADR.
+6. **Outbound actions** (push, publish, deploy, create remote repos): confirm first.
+7. **Org policy that replaces a base practice**: record it in a project ADR.
+<!-- baseline:end -->
+EOF
+)"
+
+# Lead-in (if .agents/CONTEXT.md exists) + "## Critical rules" heading + block.
+baseline_section() {
+  [ -f .agents/CONTEXT.md ] && printf 'Read `.agents/CONTEXT.md` before exploring the code: it holds the current state.\n\n'
+  printf '## Critical rules\n\n%s' "$BASELINE_BLOCK"
+}
+
 # ---------------------------------------------------------------------------
 # .agents/CONTEXT.md - generated before AGENTS.md so its Documentation map
 # can already point at it if it was just created.
@@ -541,6 +575,8 @@ Single source of truth for humans and AI agents working on this repo. Moved here
 
 $(doc_map_entries)
 
+$(baseline_section)
+
 $claude_body
 
 $WORKFLOW_CONTRACT
@@ -567,6 +603,8 @@ Single source of truth for humans and AI agents (Codex, Cursor, Claude, others) 
 
 $(doc_map_entries)
 
+$(baseline_section)
+
 ## Purpose
 
 $(readme_first_paragraph)
@@ -584,10 +622,10 @@ $WORKFLOW_CONTRACT
 $DOC_RULES"
   write_file "AGENTS.md" "$agents_content"
 else
+  append=""
   if grep -q '^## Workflow contract' AGENTS.md 2>/dev/null || grep -q '^# Workflow contract' AGENTS.md 2>/dev/null; then
     skip "AGENTS.md (already has a Workflow contract section)"
   else
-    append=""
     if ! grep -q '^## Documentation map' AGENTS.md 2>/dev/null; then
       append="$append
 
@@ -603,17 +641,29 @@ $WORKFLOW_CONTRACT"
 
 $DOC_RULES"
     fi
-    append_file "AGENTS.md" "$append"
   fi
+  if ! grep -q 'baseline:start' AGENTS.md 2>/dev/null; then
+    if grep -q '^## Critical rules' AGENTS.md 2>/dev/null; then
+      append="$append
+
+$BASELINE_BLOCK"
+    else
+      append="$append
+
+$(baseline_section)"
+    fi
+  fi
+  if [ -n "$append" ]; then append_file "AGENTS.md" "$append"; fi
 fi
 
 if [ "$CLAUDE_HANDLED" = 0 ]; then
   if [ "$CLAUDE_EXISTED" = 0 ]; then
-    claude_content="@AGENTS.md
+    if [ "$CLAUDE_SHIM" = 1 ]; then
+      write_file "CLAUDE.md" "@AGENTS.md
 "
-    [ -f .agents/CONTEXT.md ] && claude_content="$claude_content@.agents/CONTEXT.md
-"
-    write_file "CLAUDE.md" "$claude_content"
+    else
+      skip "CLAUDE.md (not created: AGENTS.md is the source, pass --claude-shim for a pointer)"
+    fi
   else
     if [ "$CLAUDE_HAS_REAL_CONTENT" = 1 ] && ! grep -q '^@AGENTS\.md' CLAUDE.md 2>/dev/null; then
       deviation "CLAUDE.md has its own content and does not import AGENTS.md - left untouched to avoid losing content. Review by hand: merge into AGENTS.md and replace CLAUDE.md with @AGENTS.md."

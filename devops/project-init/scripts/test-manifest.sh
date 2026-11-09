@@ -90,5 +90,35 @@ before="$(sha1sum "$W/sdd-app-light/AGENTS.md")"
 bash "$SD/init.sh" --manifest "$W/sdd-light.json" --dir "$W/sdd-app-light" --owner o >/dev/null 2>&1
 check "a second run leaves the adjusted AGENTS.md alone" '[ "$before" = "$(sha1sum "$W/sdd-app-light/AGENTS.md")" ]'
 
+# --- AGENTS.md is the single source: no CLAUDE.md by default (init), optional shim, adopt never touches one
+check "fresh init has no CLAUDE.md and AGENTS.md carries both baseline markers" '[ ! -e "$Q/CLAUDE.md" ] && grep -q "<!-- baseline:start -->" "$Q/AGENTS.md" && grep -q "<!-- baseline:end -->" "$Q/AGENTS.md" && grep -q "^## Critical rules" "$Q/AGENTS.md"'
+S="$W/shim"; mkdir -p "$S"
+bash "$SD/init.sh" --stack node-ts --name shim --dir "$S" --owner o --claude-shim >"$W/shim.log" 2>&1
+check "init.sh --claude-shim writes CLAUDE.md as the single line @AGENTS.md" '[ "$(cat "$S/CLAUDE.md")" = "@AGENTS.md" ]'
+
+mkrepo() { # <dir>: a minimal git repo for adopt.sh
+  mkdir -p "$1" && git -C "$1" init -q -b main && git -C "$1" config user.name t && git -C "$1" config user.email t@t.invalid
+  echo "# repo" > "$1/README.md"; git -C "$1" add -A && git -C "$1" commit -q -m init
+}
+A="$W/adopt-a"; mkrepo "$A"; printf '# AGENTS.md\n\nmine\n' > "$A/AGENTS.md"
+bash "$SD/adopt.sh" --dir "$A" >"$W/adopt-a.log" 2>&1
+check "adopt appends the Critical rules block once to an AGENTS.md without markers" '[ "$(grep -c "baseline:start" "$A/AGENTS.md")" -eq 1 ] && [ "$(grep -c "baseline:end" "$A/AGENTS.md")" -eq 1 ] && head -n 3 "$A/AGENTS.md" | grep -q "^mine$"'
+check "adopt creates no CLAUDE.md without --claude-shim" '[ ! -e "$A/CLAUDE.md" ]'
+before="$(find "$A" -path "$A/.git" -prune -o -type f -exec sha1sum {} + | sort)"
+bash "$SD/adopt.sh" --dir "$A" >"$W/adopt-a2.log" 2>&1
+check "a second adopt run changes nothing" '[ "$before" = "$(find "$A" -path "$A/.git" -prune -o -type f -exec sha1sum {} + | sort)" ]'
+
+B="$W/adopt-b"; mkrepo "$B"
+bash "$SD/adopt.sh" --dir "$B" --claude-shim >"$W/adopt-b.log" 2>&1
+check "adopt --claude-shim creates CLAUDE.md == @AGENTS.md; fresh AGENTS.md has the markers" '[ "$(cat "$B/CLAUDE.md")" = "@AGENTS.md" ] && grep -q "baseline:start" "$B/AGENTS.md"'
+before="$(find "$B" -path "$B/.git" -prune -o -type f -exec sha1sum {} + | sort)"
+bash "$SD/adopt.sh" --dir "$B" --claude-shim >"$W/adopt-b2.log" 2>&1
+check "adopt on a fresh AGENTS.md is idempotent too" '[ "$before" = "$(find "$B" -path "$B/.git" -prune -o -type f -exec sha1sum {} + | sort)" ]'
+
+C="$W/adopt-c"; mkrepo "$C"; printf '# AGENTS.md\n\nmine\n' > "$C/AGENTS.md"
+printf '# Notes\n\nown line one\nown line two\n' > "$C/CLAUDE.md"; c_before="$(sha1sum "$C/CLAUDE.md")"
+bash "$SD/adopt.sh" --dir "$C" --claude-shim >"$W/adopt-c.log" 2>&1
+check "adopt never modifies an existing CLAUDE.md" '[ "$c_before" = "$(sha1sum "$C/CLAUDE.md")" ]'
+
 echo; echo "$pass passed, $failn failed"
 [ "$failn" -eq 0 ]

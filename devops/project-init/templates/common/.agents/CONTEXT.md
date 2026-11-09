@@ -1,6 +1,6 @@
 # {{PROJECT}} - Repository Context
 
-<!-- Keep this file <= 60 lines: CLAUDE.md imports it into every session automatically. -->
+<!-- Keep this file <= 60 lines: AGENTS.md tells every session to read it first, so keep it short. -->
 
 ## Purpose
 
