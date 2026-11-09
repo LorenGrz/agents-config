@@ -36,3 +36,9 @@ All tools are `mcp__claude_ai_Slack__*` (search channels/users/messages, read ch
 
 - For reads: short summary plus message links.
 - For writes: a preview block with target and text, then wait for the OK.
+
+## Shortcuts
+<!-- parsed by scripts/gen-intents.sh -->
+- tools: `^mcp__claude_ai_Slack__`
+- intent: read or search Slack — `\bslack\b|canal #|qu[eé] dijeron en|what did .* say in` → `read/search freely; summarize with message links`
+- intent: send to Slack — `mand[aá]le (a|al)|envi[aá] (un )?mensaje|post (this )?(in|to) #|send a slack` → `draft first; send only the approved text`

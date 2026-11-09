@@ -18,6 +18,15 @@
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/config/hooks/critical-reasoning.sh\""
           }
         ]
+      },
+      {
+        "matcher": "Bash|mcp__claude_ai_GitHub__.*|mcp__claude_ai_Slack__.*|mcp__claude_ai_Atlassian_Rovo__.*|mcp__claude_ai_Gmail__.*|mcp__claude_ai_Google_.*|mcp__obsidian__.*|mcp__notebooklm__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/config/hooks/intent-router.sh\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -69,6 +78,10 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/config/hooks/critical-reasoning.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/config/hooks/intent-router.sh\""
           }
         ]
       }

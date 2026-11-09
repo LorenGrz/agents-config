@@ -155,6 +155,18 @@ Q3="$W/app3"; mkdir -p "$Q3"
 bash "$H/devops/project-init/scripts/init.sh" --manifest "$W/init.json" --dir "$Q3" --owner someone-else --allow-org-mismatch </dev/null >/dev/null 2>&1
 check "--allow-org-mismatch proceeds" '[ -f "$Q3/.agents/POLICIES.md" ]'
 
+# workspace mode with an org: config lives in the org repo, the workspace folder gets symlinks
+WSD="$W/wsorg"; mkdir -p "$WSD/front" "$WSD/back"; git -C "$WSD/front" init -q; git -C "$WSD/back" init -q
+WSA=(--dir "$WSD" --name prod --org acme --repo front:frontend:react-vite --repo back:backend:java-spring)
+bash "$H/devops/project-init/scripts/workspace.sh" "${WSA[@]}" >/dev/null 2>&1
+check "workspace --org writes the config inside the org repo" '[ -f "$A/workspaces/prod/AGENTS.md" ] && [ -f "$A/workspaces/prod/.agents/POLICIES.md" ] && [ -d "$A/workspaces/prod/.claude/skills/acme-ui-builder" ]'
+check "workspace --org installs no pack commands" '[ ! -d "$A/workspaces/prod/.claude/commands" ] || [ -z "$(ls "$A/workspaces/prod/.claude/commands" 2>/dev/null)" ]'
+check "workspace --org links the folder to the org copy" '[ "$(readlink "$WSD/AGENTS.md")" = "$A/workspaces/prod/AGENTS.md" ] && [ -L "$WSD/.claude" ] && [ -L "$WSD/.agents" ]'
+check "workspace --org mentions the policies and does not git init the folder" 'grep -q "\.agents/POLICIES.md" "$A/workspaces/prod/AGENTS.md" && [ ! -d "$WSD/.git" ]'
+bash "$H/devops/project-init/scripts/workspace.sh" "${WSA[@]}" >/dev/null 2>&1
+check "workspace --org re-run is safe and the org still validates" 'bash "$ORGS" validate acme >/dev/null 2>&1'
+check "workspace --org refuses an org that is not installed" '! bash "$H/devops/project-init/scripts/workspace.sh" --dir "$WSD" --name prod --org nope --repo front:frontend:- --repo back:backend:- >/dev/null 2>&1'
+
 # status / remove / push safety
 st="$(bash "$ORGS" status 2>&1)"
 check "status reports the org" 'grep -q "^acme: 0.1.0" <<<"$st"'

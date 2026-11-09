@@ -3,7 +3,13 @@
 # of one or more stacks into a project's .claude/ and .mcp.json.
 #
 # Usage: project-agents.sh --stack <name>[,<name>...] [--pack <name>[,...]] [--manifest <file>]
-#                           [--org <name>] [--dir <path>] [--dry-run]
+#                           [--plugin <name>[,...]] [--no-packs] [--org <name>] [--dir <path>] [--dry-run]
+#
+# --no-packs skips every pack, even the "always" ones (used for workspace folders, which have no repo flow).
+#
+# Plugins listed under a stack in config/scopes.json ("plugins") and those named with --plugin are
+# enabled for this project only, in <dir>/.claude/settings.json (enabledPlugins, merged, never
+# overwritten). --plugin takes a short name (vercel) or a full id (vercel@claude-plugins-official).
 #
 # --org installs an organization (organizations/<name>, see organizations/README.md) on top of the
 # packs: its skills and commands (per-stack filters and "replaces" from org.json), its index and
@@ -26,12 +32,14 @@ set -euo pipefail
 
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCOPES="$HUB/config/scopes.json"
-STACKS="" PACKS="" MANIFEST="" ORG="" DIR="$(pwd)" DRY=0
+STACKS="" PACKS="" MANIFEST="" ORG="" PLUGINS="" NO_PACKS=0 DIR="$(pwd)" DRY=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --stack) STACKS="$2"; shift 2 ;;
     --pack) PACKS="$2"; shift 2 ;;
+    --plugin) PLUGINS="$2"; shift 2 ;;
+    --no-packs) NO_PACKS=1; shift ;;
     --manifest) MANIFEST="$2"; shift 2 ;;
     --org) ORG="$2"; shift 2 ;;
     --dir) DIR="$2"; shift 2 ;;
@@ -40,7 +48,7 @@ while [ $# -gt 0 ]; do
     *) echo "unknown flag: $1" >&2; exit 1 ;;
   esac
 done
-[ -n "$STACKS$PACKS$MANIFEST$ORG" ] || { echo "Error: --stack, --pack or --manifest is required" >&2; exit 1; }
+[ -n "$STACKS$PACKS$MANIFEST$ORG$PLUGINS" ] || { echo "Error: --stack, --pack, --manifest or --plugin is required" >&2; exit 1; }
 command -v jq >/dev/null || { echo "Error: jq is required" >&2; exit 1; }
 
 run() { if [ "$DRY" -eq 1 ]; then echo "  [dry-run] $*"; else "$@"; fi; }
@@ -50,6 +58,7 @@ valid_file() { local LC_ALL=C; [[ "$1" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; }
 # literal (non-regex) replacement of every occurrence of $1 by $2 in stdin
 replace_literal() { F="$1" T="$2" awk '{ out = ""; line = $0; f = ENVIRON["F"]; t = ENVIRON["T"]
   while ((i = index(line, f)) > 0) { out = out substr(line, 1, i - 1) t; line = substr(line, i + length(f)) } print out line }'; }
+PLUGIN_IDS=""
 INST_S="" INST_C="" STACK_S=""   # skills/commands installed from packs and the org (tracked in skills.lock); stack skills
 rec_s() { INST_S+="$1"$'\n'; }
 rec_c() { INST_C+="$1"$'\n'; }
@@ -123,7 +132,38 @@ for stack in "${LIST[@]}"; do
       mv "$DIR/.mcp.json.tmp" "$DIR/.mcp.json"
     fi
   fi
+
+  while IFS= read -r pl; do
+    [ -n "$pl" ] && PLUGIN_IDS+="$pl"$'\n'
+  done < <(jq -r --arg s "$stack" '.stacks[$s].plugins[]?' "$SCOPES")
 done
+
+# ---------------------------------------------------------------- plugins (per project)
+# Plugins are off globally (config/settings.base.json) when they only make sense for some stacks;
+# turn them on here, in the project's own .claude/settings.json.
+BASE_SETTINGS="$HUB/config/settings.base.json"
+resolve_plugin() { # short name or full id -> full id (from settings.base.json), or the input if it has an @
+  case "$1" in
+    *@*) printf '%s' "$1" ;;
+    *) jq -r --arg n "$1" '.enabledPlugins // {} | keys[] | select(startswith($n + "@"))' "$BASE_SETTINGS" 2>/dev/null | head -n 1 ;;
+  esac
+}
+for _p in ${PLUGINS//,/ }; do
+  _id="$(resolve_plugin "$_p")"
+  [ -n "$_id" ] || die "unknown plugin '$_p' (not in config/settings.base.json; pass the full name@marketplace id)"
+  PLUGIN_IDS+="$_id"$'\n'
+done
+PLUGIN_JSON="$(printf '%s' "$PLUGIN_IDS" | awk 'NF && !seen[$0]++' | jq -R . | jq -s .)"
+if [ "$(jq 'length' <<<"$PLUGIN_JSON")" -gt 0 ]; then
+  echo "plugins: .claude/settings.json enabledPlugins <- $(jq -r 'join(", ")' <<<"$PLUGIN_JSON")"
+  if [ "$DRY" -eq 0 ]; then
+    mkdir -p "$DIR/.claude"
+    cur='{}'
+    [ -f "$DIR/.claude/settings.json" ] && cur="$(cat "$DIR/.claude/settings.json")"
+    jq --argjson ids "$PLUGIN_JSON" '.enabledPlugins = ((.enabledPlugins // {}) + ($ids | map({(.): true}) | add))' <<<"$cur" >"$DIR/.claude/settings.json.tmp"
+    mv "$DIR/.claude/settings.json.tmp" "$DIR/.claude/settings.json"
+  fi
+fi
 
 
 # ---------------------------------------------------------------- packs
@@ -146,7 +186,7 @@ select_packs() {
   done
 }
 
-mapfile -t SELECTED < <(select_packs | sort -u)
+if [ "$NO_PACKS" -eq 1 ]; then SELECTED=(); else mapfile -t SELECTED < <(select_packs | sort -u); fi
 # an architecture decision with no matching pack is not an error, but say it (free-text values never match)
 if [ -n "$MANIFEST" ]; then
   for _k in backend-style frontend-style; do

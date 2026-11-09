@@ -31,3 +31,9 @@ description: Use when the task touches GitHub - issues, pull requests, reviews, 
 - Never commit or paste secrets.
 - The `github@anthropic-plugin-directory` plugin is disabled (auth failure, duplicates the connector); do not re-enable it.
 - Report what was read or changed, with links.
+
+## Shortcuts
+<!-- parsed by scripts/gen-intents.sh -->
+- tools: `^mcp__claude_ai_GitHub__`
+- bash: `^gh (issue|repo|release|api|pr (view|list|review|checkout|comment|diff))`
+- intent: issues and PRs — `\bissues?\b|\bpr #?[0-9]+|pull request #?[0-9]+|revis[aá] (el|la) pr|review (the )?pr|list(a|ar)? (los )?prs` → `gh with a local checkout; the claude.ai GitHub connector without one`

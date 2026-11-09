@@ -121,7 +121,7 @@ base (this repo, public) -> organization (private repo in organizations/) -> pro
 
 - Add a company or client: `scripts/orgs.sh add <name> <git-url>` or `--init`, or the `org-creator` skill. Details: `organizations/README.md`.
 - Packs: `packs/<name>/pack.json` says when it applies; `scripts/project-agents.sh --manifest <file> [--org <name>]` installs it.
-- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `devops/project-init/scripts/test-manifest.sh`, `test-docs-check.sh`, and `e2e.sh` per stack.
+- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `scripts/test-intents.sh`, `devops/project-init/scripts/test-manifest.sh`, `test-docs-check.sh`, and `e2e.sh` per stack.
 - Guards: `scripts/leak-guard.sh` (blocklist stays local; hooks pre-commit, commit-msg, pre-push) and `scripts/gen-plugin.sh --check`; enable with `git config core.hooksPath .githooks`. Tests: add `scripts/test-leak-guard.sh`.
 - Requirements: bash 4+, `jq`, GNU sed/awk/xargs/tar (Linux; on macOS `brew install bash gnu-sed gawk findutils gnu-tar`).
 
@@ -165,16 +165,18 @@ Hooks, concretely (event → script):
 | `PreToolUse` (Edit/Write/MultiEdit) | `guard-omarchy.sh` | denies edits under `~/.local/share/omarchy/` |
 | `PreToolUse` (Edit/Write/MultiEdit) | `critical-reasoning.sh` | nudges toward `reasoner` when the edited file is sensitive (migrations, auth, IAM, infra, CI); never blocks |
 | `UserPromptSubmit` | `critical-reasoning.sh` | nudges toward `reasoner` when the prompt is about architecture, security, migrations, prod or unknown-cause bugs; silent in subagents |
+| `UserPromptSubmit` | `intent-router.sh` | a natural phrase ("traete los cambios") -> "skill X; run `git pull origin <base>`", from each skill's `## Shortcuts`; once per session per skill; silent in subagents |
+| `PreToolUse` (Bash, MCP integrations) | `intent-router.sh` | first call to `gh`/`git push`/Slack/Jira/GitHub/Google/Obsidian/NotebookLM tools -> "load skill X first"; never blocks |
 | `PreToolUse` (Bash) | `scout-readonly.sh` | inside the `scout` subagent only: allows read-only commands, denies writes |
 | `PreToolUse` (Bash) | `rtk.sh` | routes read-only/verification commands through `rtk` to compress output; no-op if `rtk` is missing |
 | `PostToolUse` (Edit/Write/MultiEdit) | `format-file.sh` | runs the project's own formatter/linter on the edited file |
-| `SessionStart` | `session-start.sh` | re-injects the routing rule; in large repos (≥200 tracked files) nudges to create/refresh `.agents/CONTEXT.md` (≥30 commits stale) |
+| `SessionStart` | `session-start.sh` | re-injects the routing rule; in large repos (≥200 tracked files) nudges to create/refresh `.agents/CONTEXT.md` (≥30 commits stale); repo without `AGENTS.md` -> propose `project-init`; repo with `AGENTS.md` but no stack skills -> propose `project-agents.sh --stack <detected>`; workspace folder -> read its `AGENTS.md`; folder that is neither repo nor workspace -> one-line notice (if it holds 2+ git repos it names them and offers workspace mode "if they are one product") |
 | `Stop` | `stop-git-status.sh` | shows uncommitted changes when in a git repo |
 | `InstructionsLoaded` | `log-instructions.sh` | logs what got loaded to `~/.claude/logs/instructions-loaded.log` |
 
-The plugin marketplace method (below) ships six of them as a generic subset
+The plugin marketplace method (below) ships seven of them as a generic subset
 (`hooks/hooks.json`: `scout-readonly.sh`, `format-file.sh`, `session-start.sh`,
-`stop-git-status.sh`, `log-instructions.sh`, `critical-reasoning.sh`) and omits `guard-omarchy.sh` (desktop-specific),
+`stop-git-status.sh`, `log-instructions.sh`, `critical-reasoning.sh`, `intent-router.sh`) and omits `guard-omarchy.sh` (desktop-specific),
 `rtk.sh` (needs rtk installed) and the cost-tracking status line (untracked, machine-local).
 
 Generated files + symlink map (`install.sh` creates/repairs these; see `config/README.md`
@@ -188,6 +190,17 @@ for the full list — `<repo>` is wherever you cloned this):
 ~/.claude/agents ──────┘
 ~/.claude/skills/<name> ──► <repo>/<category>/<name>/   (flat mirror, via sync.sh)
 ```
+
+#### Shortcuts: phrases and integrations to skills (ADR [0017](docs/decisions/0017-intent-router-and-workspaces.md))
+
+A skill that owns an integration or a flow (`git-workflow`, `github-usage`, `slack-usage`, `jira-usage`,
+`google-workspace-usage`, `obsidian-vault`, `notebooklm-obsidian-sync`, `codex-review`) ends with a `## Shortcuts`
+section: `tools:`/`bash:` patterns that identify its tool calls and `intent:` lines (label, phrase regex in
+Spanish and English, command). Skills that come from plugins can't be edited, so their shortcuts live in
+`config/intents.plugins.md`. `scripts/gen-intents.sh` turns all of it into `config/intents.json` (read by the
+hook) and a short table in `config/AGENTS.md` (read by Codex, Cursor and the rest); `sync.sh` and CI keep it
+fresh (`--check`). `<base>` in a command is the repo's base branch: `scripts/gh-flow.sh` present -> `dev`, then
+an AGENTS.md "Base branch is `x`" rule, then the organization's `base_branch`, then `origin/HEAD`, then `main`.
 
 ### Per-project — `project-init`, once per real repo
 
@@ -224,6 +237,23 @@ scripts/project-agents.sh --stack nestjs,aws,supabase --dir ~/projects/my-app
 Stacks: `react-vite`, `next`, `nestjs`, `node-ts`, `rn`, `aws`, `python`, `kotlin`, `apex`,
 `docker`, `llm`, `supabase`, `jira`. Files are copied into the project's `.claude/` (commit them);
 MCPs are merged into `.mcp.json`.
+
+Plugins follow the same rule: `vercel` and `playwright` only make sense for web stacks, so they are off in
+`config/settings.base.json` and a stack's `plugins` list in `scopes.json` (`next`: both, `react-vite`:
+playwright) enables them in that project's `.claude/settings.json`; `--plugin vercel,playwright` forces them.
+The rest (superpowers, skill-creator, claude-obsidian, codex, mattpocock, karpathy, claudex-loop, paste-preview)
+stay global.
+
+### Workspaces: several repos of one product
+
+A plain folder that groups repos (a frontend and a backend, say) is a **workspace**, marked by its own
+`AGENTS.md` (first line `<!-- workspace-init -->`). `project-init`'s workspace mode
+(`devops/project-init/scripts/workspace.sh`) writes it after an interview: repo map, how the repos talk,
+cross-repo flow and, with `--org`, the organization's policies and skills. Stack skills stay in each repo, so
+opening Claude in the workspace gives the generic layer and each repo adds its own. Where it lives: with an
+organization, in `organizations/<org>/workspaces/<name>/` (private repo, symlinked into the folder); without
+one, in the folder itself as a local git repo that ignores the child repos. Nothing is committed or pushed
+without an OK.
 
 ### When do I need `project-init`?
 

@@ -41,3 +41,8 @@ NotebookLM access uses unofficial APIs and Google session cookies. Use a seconda
 - Do not overwrite an existing note without showing the diff or getting OK.
 - Never export secrets or private notes to NotebookLM.
 - Report counts: exported, skipped, failed.
+
+## Shortcuts
+<!-- parsed by scripts/gen-intents.sh -->
+- tools: `^mcp__notebooklm__`
+- intent: NotebookLM — `notebooklm|notebook lm|cuaderno de notebook` → `notebooklm MCP; follow the sync flow in this skill`

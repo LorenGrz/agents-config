@@ -76,6 +76,9 @@ if [ ! -e "$GEMINI_SKILLS" ]; then
   ln -s "$MIRROR" "$GEMINI_SKILLS"
 fi
 
+# 4. Keep the intent table (config/intents.json + the AGENTS.md shortcuts) in step with the skills.
+[ -x "$HUB/scripts/gen-intents.sh" ] && "$HUB/scripts/gen-intents.sh" >/dev/null 2>&1 || true
+
 echo "hub:    $HUB"
 echo "mirror: $MIRROR"
 echo "created $created, updated $updated, pruned $pruned"
