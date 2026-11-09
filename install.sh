@@ -11,6 +11,9 @@
 #     * permissions.defaultMode: base wins when base sets it.
 #     * enabledPlugins / extraKnownMarketplaces: union of existing + base; base
 #       wins only on conflicting keys, user-added entries survive.
+#     * env / pluginConfigs (only when base sets them): same union, pluginConfigs
+#       deep-merged per plugin option. Also creates ~/.claude/.ponytail-band = off
+#       once when PonyTail is enabled (ADR 0023).
 #     * permissions.allow / permissions.ask: union of existing + base, deduped.
 #     * every other existing top-level key (machine/project-specific blocks
 #       such as per-machine auto-approval config) is preserved as-is.
@@ -81,7 +84,7 @@ while [ $# -gt 0 ]; do
     --with-integrations) WITH_INTEGRATIONS=1; shift ;;
     --with-cli-baselines) WITH_CLI_BASELINES=1; shift ;;
     -h|--help)
-      sed -n '2,52p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,55p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -352,6 +355,8 @@ else
     | .statusLine = $base.statusLine
     | .enabledPlugins = (($cur.enabledPlugins // {}) + ($base.enabledPlugins // {}))
     | .extraKnownMarketplaces = (($cur.extraKnownMarketplaces // {}) + ($base.extraKnownMarketplaces // {}))
+    | (if $base.env then .env = (($cur.env // {}) + $base.env) else . end)
+    | (if $base.pluginConfigs then .pluginConfigs = (($cur.pluginConfigs // {}) * $base.pluginConfigs) else . end)
     | .theme = $base.theme
     | (if $base.permissions.defaultMode then .permissions.defaultMode = $base.permissions.defaultMode else . end)
     | .permissions.allow = ((($cur.permissions.allow // []) + ($base.permissions.allow // [])) | unique)
@@ -369,6 +374,19 @@ else
       cp "$SETTINGS" "$BACKUP"
       jq . <<<"$MERGED" >"$SETTINGS"
     fi
+  fi
+fi
+
+# PonyTail (ADR 0023): its band above the prompt starts hidden. The flag is PonyTail's own
+# (`/ponytail band` toggles it), so an existing one is never overwritten.
+BAND_FLAG="$CLAUDE_DIR/.ponytail-band"
+if jq -e '.enabledPlugins["ponytail@ponytail"] == true' "$BASE" >/dev/null 2>&1 && [ ! -e "$BAND_FLAG" ]; then
+  echo "create:  $BAND_FLAG (off: PonyTail band hidden)"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "  [dry-run] write 'off' to '$BAND_FLAG'"
+  else
+    mkdir -p "$CLAUDE_DIR"
+    printf 'off\n' >"$BAND_FLAG"
   fi
 fi
 
