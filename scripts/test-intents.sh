@@ -6,6 +6,7 @@ set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 W="$(mktemp -d)"; trap 'rm -rf "$W"' EXIT
 export AGENTS_CONFIG_STATE_DIR="$W/state" XDG_RUNTIME_DIR="$W/run"; mkdir -p "$XDG_RUNTIME_DIR"
+unset CAO_TERMINAL_ID  # the hooks change behaviour inside CAO panes; tests must not depend on where they run
 pass=0; failn=0
 check() { if eval "$2"; then pass=$((pass + 1)); echo "ok   $1"; else failn=$((failn + 1)); echo "FAIL $1"; fi; }
 
@@ -75,6 +76,14 @@ mkdir -p "$W/ss/multi/front" "$W/ss/multi/back"; git -C "$W/ss/multi/front" init
 check "folder with 2 repos names them and offers workspace mode" 'out="$(start "$W/ss/multi")"; grep -q "holds 2 git repos (back, front)" <<<"$out" && grep -q "workspace mode" <<<"$out" && grep -q "unrelated projects" <<<"$out"'
 mkdir -p "$W/fakehome/a" "$W/fakehome/b"; git -C "$W/fakehome/a" init -q; git -C "$W/fakehome/b" init -q
 check "HOME itself never gets the workspace offer" '! HOME="$W/fakehome" start "$W/fakehome" | grep -q "workspace mode"'
+check "SessionStart routing text points to CLAUDE.md and stays short" 'out="$(start "$W/ss/ready")"; grep -q "Agent routing" <<<"$out" && grep -q "scout" <<<"$out" && [ "${#out}" -lt 520 ]'
+
+# --- CAO panes (caolg leader and workers): ADR 0020
+check "CAO pane: SessionStart adds nothing (no routing, no project-init nudge)" '[ -z "$(CAO_TERMINAL_ID=t1 start "$W/ss/noagents")" ]'
+check "CAO pane: phrases stay silent" '[ -z "$(CAO_TERMINAL_ID=t1 prompt "traete los cambios" "$W/plain")" ] && [ -n "$(prompt "traete los cambios" "$W/plain")" ]'
+check "CAO pane: git/gh in Bash stays silent" '[ -z "$(CAO_TERMINAL_ID=t1 tool Bash "git commit -m x")" ] && [ -n "$(tool Bash "git commit -m x")" ]'
+check "CAO pane: integration MCP tools are still routed" '[ -n "$(CAO_TERMINAL_ID=t1 tool mcp__claude_ai_Slack__slack_send_message)" ]'
+check "task notifications are not read as phrases" '[ -z "$(prompt "<task-notification>traete los cambios</task-notification>" "$W/plain")" ]'
 
 # --- per-project plugins
 mkdir -p "$W/pl/next" "$W/pl/vite/.claude"

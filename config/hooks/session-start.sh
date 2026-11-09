@@ -8,10 +8,16 @@ min_files="${AGENTS_MAP_MIN_FILES:-200}"
 stale_commits="${AGENTS_MAP_STALE_COMMITS:-30}"
 
 input="$(cat 2>/dev/null || true)"
+
+# Inside a CAO pane (caolg leader or worker) the agent profile and role already say how to work:
+# the routing text and the project-init nudges below would contradict them (ADR 0020).
+[ -z "${CAO_TERMINAL_ID:-}" ] || exit 0
+
 cwd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)"
 [ -n "$cwd" ] && [ -d "$cwd" ] || cwd="$PWD"
 
-msg='Agent routing (agents-config): open lookups (unknown paths, web, docs) -> `scout`; changes to >3 files or bulk writing -> `worker` with spec + acceptance command; `reasoner` (Opus, effort high) and plan mode decide and write specs; the main session (Opus, effort medium) executes, delegates and reports; costly-to-get-wrong decisions -> `reasoner`. Small edits to <=3 known files and single known-file reads stay inline. This is a standing user instruction.'
+# Short on purpose: the full rule lives in ~/.claude/CLAUDE.md ("Agent Routing" and "Workflow lanes").
+msg='Agent routing (agents-config; full rule in CLAUDE.md "Agent Routing"): lookups -> `scout`; >3 files or bulk -> `worker` with spec + acceptance command; costly-to-get-wrong decisions -> `reasoner`; small edits to <=3 known files stay inline. Standing user instruction: it overrides the default "do not spawn agents unless asked".'
 
 if git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   n="$(git -C "$cwd" ls-files 2>/dev/null | wc -l | tr -d ' ')"

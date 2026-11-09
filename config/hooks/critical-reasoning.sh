@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # UserPromptSubmit + PreToolUse(Edit|Write|MultiEdit): when the work looks costly to get
 # wrong (architecture, unknown-cause bugs, security, migrations, prod/IAM), remind the main
-# session to route it through the `reasoner` subagent (Opus) instead of deciding inline on
-# Sonnet. Guidance only (additionalContext); never blocks, always exits 0, silent in subagents.
+# session to route it through the `reasoner` subagent (Opus, effort high) instead of deciding inline
+# at medium effort (ADR 0018). Guidance only (additionalContext); never blocks, always exits 0.
+# Silent: inside subagents, inside CAO panes (ADR 0020), in plan mode, and on task notifications.
+# The reasoner reminder is sent once per session (needs a session_id); the skill hint is not capped.
 #
 # Also reads the project's .agents/critical.json (written by scripts/project-agents.sh from the
 # installed packs): entries {skill, keywords (regex on the prompt), paths (regexes on the edited
@@ -13,8 +15,12 @@ set -uo pipefail
 input="$(cat 2>/dev/null || true)"
 agent_type="$(jq -r '.agent_type // empty' <<<"$input" 2>/dev/null || true)"
 [ -z "$agent_type" ] || exit 0  # already inside worker/scout/reasoner
+[ -z "${CAO_TERMINAL_ID:-}" ] || exit 0  # caolg leader or worker: its profile and role decide
 
 event="$(jq -r '.hook_event_name // empty' <<<"$input" 2>/dev/null || true)"
+perm_mode="$(jq -r '.permission_mode // empty' <<<"$input" 2>/dev/null || true)"
+sid="$(jq -r '.session_id // empty' <<<"$input" 2>/dev/null | tr -c 'A-Za-z0-9_\n-' '_')"
+seen="${XDG_RUNTIME_DIR:-/tmp}/agents-intents/${sid:-nosession}/critical-reasoning"
 reason=""
 skills=""
 proj="${CLAUDE_PROJECT_DIR:-$(jq -r '.cwd // empty' <<<"$input" 2>/dev/null)}"
@@ -23,6 +29,8 @@ map="$proj/.agents/critical.json"
 case "$event" in
   UserPromptSubmit)
     prompt="$(jq -r '.prompt // empty' <<<"$input" 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+    # Background-task notifications reach this hook as prompts (heuristic: no documented field).
+    ! grep -Eq '<task-notification>|^\[system notification' <<<"$prompt" || exit 0
     re='arquitectur|architecture|dise(ñ|n)o de (api|base|schema|sistema)|api contract|contrato de api|migraci(ó|o)n|migration|seguridad|security|autenticaci|authenticat|authoriz|autorizaci|\biam\b|permisos|root cause|causa ra(í|i)z|no s(é|e) por qu(é|e)|race condition|deadlock|memory leak|producci(ó|o)n|\bprod\b|borrar (datos|la base)|drop table|rotar (credenciales|secretos)|breaking change|trade-?off'
     if grep -Eq "$re" <<<"$prompt"; then
       reason="el pedido toca una decisión crítica (arquitectura, seguridad, migración, causa desconocida o prod)"
@@ -49,11 +57,17 @@ while IFS= read -r sk; do
   hint="$hint \`.claude/skills/$sk/SKILL.md\`"
 done <<<"$skills"
 
+# Plan mode already decides; and the reminder is sent once per session when there is a session id.
+[ "$perm_mode" != "plan" ] || reason=""
+if [ -n "$reason" ] && [ -n "$sid" ]; then
+  if [ -e "$seen" ]; then reason=""; else mkdir -p "$(dirname "$seen")" 2>/dev/null && : >"$seen" 2>/dev/null; fi
+fi
+
 [ -n "$reason" ] || [ -n "$hint" ] || exit 0
 
 msg=""
 if [ -n "$reason" ]; then
-  msg="Razonamiento crítico (agents-config): $reason. Antes de decidir o editar, delegá el análisis al subagente \`reasoner\` (Opus) con el contexto y la pregunta concreta; después implementá con \`worker\` o inline según el tamaño. No resuelvas la decisión de fondo en Sonnet. Si ya hay un plan aprobado de reasoner/Opus para esto, ignorá este aviso."
+  msg="Razonamiento crítico (agents-config): $reason. Antes de decidir o editar, delegá el análisis al subagente \`reasoner\` (Opus, effort high) con el contexto y la pregunta concreta; después implementá con \`worker\` o inline según el tamaño. No resuelvas la decisión de fondo inline con esfuerzo medio. Si ya hay un plan aprobado de reasoner o de modo plan para esto, ignorá este aviso."
 fi
 if [ -n "$hint" ]; then
   msg="${msg:+$msg }Skill del proyecto para esto: leé$hint antes de implementar."
