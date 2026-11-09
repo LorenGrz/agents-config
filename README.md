@@ -211,7 +211,7 @@ driving:
 
 | Adds | Why |
 |---|---|
-| Project `AGENTS.md` (+ thin `CLAUDE.md` pointer) | one source of truth any AI reads, not a Claude-only doc |
+| Project `AGENTS.md` with the critical rules (no `CLAUDE.md`; `--claude-shim` for older Claude Code) | one source of truth any AI reads, Claude Code and its subagents included (ADR [0019](docs/decisions/0019-agents-md-first.md)) |
 | `.claude/settings.json` with superpowers + branch/lint hooks | this project's Claude Code picks up spec-driven workflow + guardrails automatically |
 | ESLint (type-aware: `no-explicit-any`, `no-floating-promises`, ...) + strict `tsconfig` | a human or any AI can turn these off in a prompt; they can't turn off a lint/build failure |
 | Git pre-push hook + CI (`ci`, `secret-scan` via gitleaks) | enforcement that runs even if nobody reads `AGENTS.md` at all |
@@ -336,8 +336,8 @@ Results go to `evals/results/` (gitignored).
 
 ## Token efficiency
 
-- `config/CLAUDE.md` loads every session — kept ≤60 lines (ADR
-  [0004](docs/decisions/0004-token-budget.md)). Detail that's rarely needed moved into the
+- `config/CLAUDE.md` loads every session — kept ≤60 lines and ≤4.2 KB (ADR
+  [0004](docs/decisions/0004-token-budget.md), budget revised in [0020](docs/decisions/0020-cao-aware-hooks-and-context-budget.md)). Detail that's rarely needed moved into the
   skill it's about (e.g. the roadmap detail lives in `roadmap-coach`'s `references/`, not in
   always-loaded `AGENTS.md`).
 - Measure actual spend with [`ccusage`](https://github.com/ryoppippi/ccusage):
@@ -358,6 +358,7 @@ Results go to `evals/results/` (gitignored).
 ./install.sh --profile <name>                # generate CLAUDE.md/AGENTS.md, symlinks, settings.json
 ./install.sh --profile <name> --with-rulesync # also generate Cursor/Antigravity config
 ./install.sh --profile <name> --with-rtk      # also install rtk + `rtk init -g`
+./install.sh --profile <name> --with-cli-baselines # also write the baseline for agy, Copilot, OpenCode (ADR 0019)
 ```
 
 Adding or changing a skill:
