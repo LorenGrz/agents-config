@@ -2,6 +2,7 @@
 
 Status: accepted (2026-11-09). Supersedes the model choice in [0009](0009-opusplan-and-critical-reasoning-hook.md)
 (the critical-reasoning hook from 0009 stays).
+The medium effort is superseded by [0024](0024-opus-high-effort-and-terminal-images.md): the main session runs at high.
 
 ## Context
 

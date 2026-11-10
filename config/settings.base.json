@@ -86,10 +86,10 @@
     "defaultMode": "auto"
   },
   "model": "opus",
-  "effortLevel": "medium",
+  "effortLevel": "high",
   "modelSettings": {
     "claude-opus-5-5": {
-      "effortLevel": "medium"
+      "effortLevel": "high"
     }
   },
   "hooks": {
@@ -270,7 +270,8 @@
   },
   "theme": "dark",
   "env": {
-    "PONYTAIL_DEFAULT_MODE": "off"
+    "PONYTAIL_DEFAULT_MODE": "off",
+    "CLAUDE_CODE_FORCE_TERMINAL_IMAGES": "1"
   },
   "pluginConfigs": {
     "ponytail@ponytail": {

@@ -23,3 +23,4 @@
 - [0021 — Statusline cache files are an interface for caolg](0021-statusline-cache-contract.md) — the two cache files, their fields and the rule for changing them.
 - [0022 — One question decides the process](0022-one-question-continue-plan-s-plan-l.md) — punctual change: direct; more than one file: Continuar / Plan S / Plan L; no heavy process outside a plan; no assumptions.
 - [0023 — PonyTail, only in Plan S](0023-ponytail-in-plan-s.md) — installed and enabled but off by default; Plan S loads the `ponytail:ponytail` skill; ledger and band off; `install.sh` merges `env` and `pluginConfigs`.
+- [0024 — Opus at high effort; terminal images in tmux](0024-opus-high-effort-and-terminal-images.md) — supersedes the medium effort of 0018; `CLAUDE_CODE_FORCE_TERMINAL_IMAGES=1` so caolg panes show pasted-image thumbnails.
