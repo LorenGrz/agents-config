@@ -33,6 +33,7 @@ organizations/<name>/
 ```
 
 - `match`: how project-init and the global index recognize the org (GitHub owner or a regex on the remote URL).
+- `agent_providers` (optional): CAO providers allowed for agents in the org's repos (e.g. `["claude_code"]`); caolg's leader only opens workers of these providers (`caolg-providers`). Missing = all.
 - `blocklist_terms`: words that must never appear in the public repo; `orgs.sh` merges them into the local leak-guard blocklist.
 - `replaces`: base pack skills (`name`) or commands (`/name`) that the org replaces with its own, so both do not trigger.
 - `assets`: optional per-file filter by stack; a file without an entry is installed for every stack.
