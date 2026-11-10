@@ -1,0 +1,14 @@
+{
+  "name": "github-usage-scripts",
+  "private": true,
+  "type": "module",
+  "description": "PR screenshots: capture before/after with Playwright and upload them to GitHub user-attachments.",
+  "scripts": {
+    "setup": "pnpm install && pnpm exec playwright install chromium",
+    "shots": "node pr-screenshots.mjs",
+    "upload": "node gh-upload-images.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.65.0"
+  }
+}
