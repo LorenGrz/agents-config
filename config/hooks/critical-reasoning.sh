@@ -31,7 +31,7 @@ case "$event" in
   UserPromptSubmit)
     prompt="$(jq -r '.prompt // empty' <<<"$input" 2>/dev/null | tr '[:upper:]' '[:lower:]')"
     # Background-task notifications reach this hook as prompts (heuristic: no documented field).
-    ! grep -Eq '<task-notification>|^\[system notification' <<<"$prompt" || exit 0
+    ! grep -Eq '<task-notification>|^\[system notification|<agent-message|\[subagent hand-back\]' <<<"$prompt" || exit 0
     re='arquitectur|architecture|dise(ñ|n)o de (api|base|schema|sistema)|api contract|contrato de api|migraci(ó|o)n|migration|seguridad|security|autenticaci|authenticat|authoriz|autorizaci|\biam\b|permisos|root cause|causa ra(í|i)z|no s(é|e) por qu(é|e)|race condition|deadlock|memory leak|producci(ó|o)n|\bprod\b|borrar (datos|la base)|drop table|rotar (credenciales|secretos)|breaking change|trade-?off'
     if grep -Eq "$re" <<<"$prompt"; then
       reason="el pedido toca una decisión crítica (arquitectura, seguridad, migración, causa desconocida o prod)"

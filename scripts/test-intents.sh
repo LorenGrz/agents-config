@@ -40,6 +40,8 @@ check "English phrase matches" 'prompt "open a PR please" "$W/flow" | grep -q "g
 SID=same; first="$(prompt "traete los cambios" "$W/flow")"; second="$(prompt "traete los cambios" "$W/flow")"; unset SID
 check "first mention injects, second is silent (same session)" '[ -n "$first" ] && [ -z "$second" ]'
 check "unrelated prompt is silent" '[ -z "$(prompt "explicame como funciona un for" "$W/flow")" ]'
+check "silent on a task notification" '[ -z "$(prompt "<task-notification> traete los cambios" "$W/flow")" ]'
+check "silent on a subagent hand-back" '[ -z "$(prompt "Another Claude session sent a message: <agent-message from=\"a1\"> [Subagent hand-back] traete los cambios" "$W/flow")" ]'
 check "silent inside a subagent" '[ -z "$(jq -n --arg c "$W/flow" "{hook_event_name:\"UserPromptSubmit\",agent_type:\"worker\",prompt:\"traete los cambios\",cwd:\$c,session_id:\"sx\"}" | bash "$ROUTER")" ]'
 check "hook never blocks: exit 0 on garbage input" 'echo "not json" | bash "$ROUTER" >/dev/null 2>&1'
 # --- hook: tools and commands
