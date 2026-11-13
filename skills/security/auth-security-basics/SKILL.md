@@ -30,7 +30,9 @@ metadata:
 
 Implement authentication and authorization with secure defaults and clear boundaries between client, server, and storage.
 
-## Authentication Rules
+## Rules
+
+### Authentication Rules
 
 - Prefer existing project auth providers and session patterns.
 - Keep secrets and private keys server-side only.
@@ -38,21 +40,21 @@ Implement authentication and authorization with secure defaults and clear bounda
 - Use HTTPS-aware cookie settings, CSRF protections, or bearer-token protections according to the project's auth model.
 - Validate login, refresh, logout, and expired-session flows.
 
-## Authorization Rules
+### Authorization Rules
 
 - Enforce authorization on the server; client-side checks are UX only.
 - Put role, ownership, and permission checks near use cases or guards according to the backend architecture.
 - Do not trust user IDs, roles, tenant IDs, or permissions sent by the client.
 - Return safe error responses for forbidden and unauthenticated states.
 
-## Secrets And Input
+### Secrets And Input
 
 - Read secrets from environment or secret managers, never hardcode them.
 - Validate environment variables at startup when the project has a validation pattern.
 - Validate all external input before domain logic.
 - Avoid logging tokens, passwords, personal data, or sensitive headers.
 
-## Validation
+## Verification
 
 - Add tests for unauthenticated, forbidden, expired, and valid access paths.
 - Review frontend storage and backend logs for accidental secret exposure.

@@ -27,7 +27,9 @@ metadata:
 
 Build React Native apps that handle mobile constraints deliberately: navigation, permissions, device APIs, offline behavior, platform differences, and release readiness.
 
-## Architecture Rules
+## Rules
+
+### Architecture Rules
 
 - Keep screens thin; move data loading, permissions, and device integrations into hooks or services.
 - Use the repository's navigation library and route typing conventions.
@@ -35,20 +37,20 @@ Build React Native apps that handle mobile constraints deliberately: navigation,
 - Handle loading, empty, error, offline, and permission-denied states explicitly.
 - Avoid assuming iOS and Android behavior is identical; check platform-specific APIs and layout differences.
 
-## Native And Device APIs
+### Native And Device APIs
 
 - Request permissions at the point of need and explain denied states in the UI.
 - Clean up subscriptions, app-state listeners, geolocation watches, timers, and native event listeners.
 - Avoid blocking the JS thread with expensive synchronous work.
 - Use secure storage for sensitive tokens when the project provides it; do not store secrets in plain async storage.
 
-## Styling And UX
+### Styling And UX
 
 - Respect safe areas, keyboard avoidance, and touch target sizes.
 - Test small screens and large screens.
 - Use platform-native affordances when the project already has conventions for them.
 
-## Validation
+## Verification
 
 - Run typecheck, lint, unit tests, and platform-specific checks when scripts exist.
 - For navigation or native API changes, verify both iOS and Android behavior when available.

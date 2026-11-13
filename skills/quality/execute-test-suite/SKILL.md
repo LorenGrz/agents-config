@@ -28,7 +28,24 @@ metadata:
 
 Detect the current project's build tool, run the appropriate tests, and use failure logs to drive an automatic fix-and-retest loop.
 
-## Project Detection
+## Workflow
+
+1. Run the detected test command.
+2. If it passes, report the command and outcome.
+3. If it fails with exit code `1`, preserve the logs and identify the smallest failing unit.
+4. Make the smallest code or test change consistent with the project architecture.
+5. Re-run the same failing command.
+6. Repeat until the suite passes or the failure requires missing user input, credentials, services, or external dependencies.
+
+## Rules
+
+- Do not switch package managers.
+- Do not install dependencies unless the user approves or the project workflow requires it and the environment allows it.
+- Do not mask failures by skipping tests, weakening assertions, or deleting coverage checks.
+- Prefer focused test commands after the first failure, then run the broader suite before finalizing.
+- For TypeScript projects, treat typecheck failures as first-class test failures.
+
+### Project Detection
 
 Inspect the project root before running tests:
 
@@ -40,11 +57,11 @@ Inspect the project root before running tests:
 
 When multiple ecosystems exist, run the suite closest to the changed files first, then broaden to the repository-level suite.
 
-## Commands
+### Commands
 
 Use local wrappers and package scripts when available.
 
-### Node, NestJS, React, Next.js, React Native
+#### Node, NestJS, React, Next.js, React Native
 
 Prefer pnpm when `pnpm-lock.yaml` exists:
 
@@ -77,7 +94,7 @@ For Next.js projects, also run `next lint`, `next build`, or the repository's eq
 
 For React Native projects, prefer the repository's existing unit test, typecheck, lint, and platform check scripts. Do not run native build commands unless the environment is prepared and the task requires it.
 
-### Kotlin, Spring Boot, Gradle
+#### Kotlin, Spring Boot, Gradle
 
 Prefer the project wrapper:
 
@@ -91,7 +108,7 @@ Fallback only when no wrapper exists:
 gradle test
 ```
 
-### Kotlin, Spring Boot, Maven
+#### Kotlin, Spring Boot, Maven
 
 Prefer the project wrapper:
 
@@ -105,7 +122,7 @@ Fallback only when no wrapper exists:
 mvn test
 ```
 
-## Failure Capture
+### Failure Capture
 
 When a test command exits with code `1`, capture the relevant error output before editing:
 
@@ -128,20 +145,3 @@ For Maven, check:
 
 - `target/surefire-reports/`
 - `target/failsafe-reports/`
-
-## Automatic Correction Loop
-
-1. Run the detected test command.
-2. If it passes, report the command and outcome.
-3. If it fails with exit code `1`, preserve the logs and identify the smallest failing unit.
-4. Make the smallest code or test change consistent with the project architecture.
-5. Re-run the same failing command.
-6. Repeat until the suite passes or the failure requires missing user input, credentials, services, or external dependencies.
-
-## Operating Rules
-
-- Do not switch package managers.
-- Do not install dependencies unless the user approves or the project workflow requires it and the environment allows it.
-- Do not mask failures by skipping tests, weakening assertions, or deleting coverage checks.
-- Prefer focused test commands after the first failure, then run the broader suite before finalizing.
-- For TypeScript projects, treat typecheck failures as first-class test failures.

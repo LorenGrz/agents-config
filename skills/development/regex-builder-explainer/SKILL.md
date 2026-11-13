@@ -32,16 +32,16 @@ Translate a validation or extraction need into a working, readable regex, and ex
 5. Give 3 strings that match and 2 that do not.
 6. State any required flags (`g`, `i`, `m`, `s`, `u`).
 
+## Rules
+
+- Readability over cleverness. Prefer an explicit pattern to a dense one.
+- Avoid lookahead/lookbehind unless the task genuinely needs it, and note when the target engine lacks support.
+- Anchor patterns (`^`, `$`) when validating a whole string.
+- Never claim a regex fully validates emails, URLs, or dates; state the limits.
+
 ## Output
 
 - The full regex.
 - A part-by-part table with plain-language meaning.
 - Match / no-match examples.
 - Engine and flags used, plus what the pattern deliberately does not cover.
-
-## Operating Rules
-
-- Readability over cleverness. Prefer an explicit pattern to a dense one.
-- Avoid lookahead/lookbehind unless the task genuinely needs it, and note when the target engine lacks support.
-- Anchor patterns (`^`, `$`) when validating a whole string.
-- Never claim a regex fully validates emails, URLs, or dates; state the limits.

@@ -34,13 +34,7 @@ Turn undocumented code into accurate reference docs in the format the language e
 6. List edge cases the caller must handle: null or undefined input, empty arrays, out-of-range values, unexpected types, thrown errors.
 7. If numeric or unit assumptions exist (milliseconds, 0-based index, currency), state them.
 
-## Output
-
-- A doc block in the language's native format, placed directly above the unit.
-- A short usage-examples section.
-- A notes section for edge cases and limitations.
-
-## Operating Rules
+## Rules
 
 - Do not document behavior that is not in the code. If intent is unclear, say so instead of guessing.
 - Do not restate the obvious ("returns a boolean").
@@ -48,3 +42,9 @@ Turn undocumented code into accurate reference docs in the format the language e
 - Examples must run without modification against the real signature.
 - Match the surrounding file's existing doc style and comment density.
 - For deeper TypeScript typing concerns, defer to `typescript-code-quality`.
+
+## Output
+
+- A doc block in the language's native format, placed directly above the unit.
+- A short usage-examples section.
+- A notes section for edge cases and limitations.

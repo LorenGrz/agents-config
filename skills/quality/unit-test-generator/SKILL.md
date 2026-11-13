@@ -33,11 +33,7 @@ Produce a complete, runnable test file for one unit of code, covering the paths 
 5. Name tests by behavior: `should <expected> when <condition>`.
 6. Add a one-line comment on each block saying why the case matters.
 
-## Output
-
-- One test file, organized with `describe`/`it` or the framework equivalent, runnable without edits.
-
-## Operating Rules
+## Rules
 
 - Test observable behavior, not private implementation.
 - Each test is independent and order-free.
@@ -45,3 +41,7 @@ Produce a complete, runnable test file for one unit of code, covering the paths 
 - Match the project's existing test file layout and naming.
 - Treat a TypeScript typecheck failure in the test file as a failure to fix before finishing.
 - Hand off to `execute-test-suite` for the run-and-fix loop.
+
+## Output
+
+- One test file, organized with `describe`/`it` or the framework equivalent, runnable without edits.

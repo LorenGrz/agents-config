@@ -25,7 +25,9 @@ metadata:
 
 Use TypeScript to prevent invalid states, make contracts explicit, and keep application code refactorable.
 
-## Type Rules
+## Rules
+
+### Type Rules
 
 - Prefer precise domain types over loose objects.
 - Avoid `any`; use `unknown` at untrusted boundaries and narrow it.
@@ -34,20 +36,20 @@ Use TypeScript to prevent invalid states, make contracts explicit, and keep appl
 - Keep DTOs, API response types, and domain types separate when they represent different concerns.
 - Use `readonly` and immutable data shapes where mutation is not required.
 
-## Boundary Validation
+### Boundary Validation
 
 - Validate external input at boundaries: HTTP requests, environment variables, storage, files, and third-party APIs.
 - Convert validated input into domain-friendly types before it enters business logic.
 - Do not trust generated or shared types as runtime validation.
 
-## Error Modeling
+### Error Modeling
 
 - Prefer typed result objects or domain-specific errors where callers need to branch.
 - Preserve cause/context when wrapping errors.
 - Do not swallow errors silently.
 - Do not expose internal errors or stack traces through public APIs.
 
-## Validation
+## Verification
 
 - Run typecheck and tests after type-heavy changes.
 - Treat type errors as design feedback, not noise to bypass.

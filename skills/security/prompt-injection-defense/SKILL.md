@@ -27,7 +27,9 @@ Reduce the blast radius of prompt injection. It cannot be fully eliminated (the
 model is stochastic), so the goal is layered controls: even a successful
 injection should not be able to do damage.
 
-## Threat model
+## Rules
+
+### Threat model
 
 - **Direct**: the user types instructions that try to override the system prompt
   ("ignore previous instructions", role-play jailbreaks).
@@ -37,7 +39,7 @@ injection should not be able to do damage.
 
 Assume every one of those sources is hostile.
 
-## Layer 1 - Separate instructions from data
+### Layer 1 - Separate instructions from data
 
 - Put app instructions in the system/developer message. Never concatenate
   untrusted text into it.
@@ -49,7 +51,7 @@ Assume every one of those sources is hostile.
 - State the model's role and allowed topics explicitly, and the expected output
   format.
 
-## Layer 2 - Constrain what the model can do
+### Layer 2 - Constrain what the model can do
 
 - **Least privilege for tools**: allowlist tools per request; scope credentials;
   no ambient admin access. The agent should only reach data the current user may
@@ -62,7 +64,7 @@ Assume every one of those sources is hostile.
 - Never let model output directly drive a privileged action without validation
   (no "the model said delete user 42" straight to `DELETE`).
 
-## Layer 3 - Validate input and output
+### Layer 3 - Validate input and output
 
 - Validate/normalise user input at the boundary (length caps, encoding checks,
   strip control characters).
@@ -73,7 +75,7 @@ Assume every one of those sources is hostile.
 - Filter outbound content for secrets and for data the current user should not
   see.
 
-## Layer 4 - RAG and retrieved content
+### Layer 4 - RAG and retrieved content
 
 - Store provenance with every chunk; prefer trusted sources.
 - Wrap retrieved chunks in a data delimiter; instruct the model to treat them as
@@ -81,14 +83,14 @@ Assume every one of those sources is hostile.
 - Consider a cheap classifier / heuristic pass to flag chunks containing
   imperative "instructions to the assistant" before they reach the main model.
 
-## Layer 5 - Test and monitor
+### Layer 5 - Test and monitor
 
 - Keep a regression set of known injection strings; run it in CI against the
   prompt paths.
 - Log refusals, tool-call anomalies, and outputs that echo system-prompt text.
 - Re-test after any prompt or tool change.
 
-## Review checklist
+## Verification
 
 - [ ] System prompt never contains interpolated untrusted text.
 - [ ] Retrieved / tool / upload content is delimited and labelled as data.

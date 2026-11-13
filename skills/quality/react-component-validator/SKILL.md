@@ -24,7 +24,9 @@ metadata:
 
 Keep React components predictable, readable, and lifecycle-safe by avoiding unnecessary effects and extracting reusable behavior into clean hooks.
 
-## Validation Checklist
+## Rules
+
+### Validation Checklist
 
 Before adding or changing `useEffect`, ask whether the logic can be expressed through:
 
@@ -35,7 +37,7 @@ Before adding or changing `useEffect`, ask whether the logic can be expressed th
 - A custom hook with explicit inputs and outputs.
 - A project-standard lifecycle helper such as `useOnInit`.
 
-## Effect Rules
+### Effect Rules
 
 - Do not use `useEffect` to derive state that can be computed during render.
 - Do not use `useEffect` to mirror props into local state unless there is a clear reset or synchronization requirement.
@@ -44,7 +46,7 @@ Before adding or changing `useEffect`, ask whether the logic can be expressed th
 - Do not mix unrelated responsibilities in a single effect.
 - Always return cleanup functions for subscriptions, timers, observers, sockets, and external listeners.
 
-## `useOnInit` Standard
+### `useOnInit` Standard
 
 Use `useOnInit` or the repository's equivalent lifecycle hook for intentional mount-only initialization when the codebase already provides that standard.
 
@@ -58,7 +60,7 @@ useOnInit(() => {
 
 If the project does not provide `useOnInit`, prefer an explicit custom hook for the behavior rather than adding ad hoc lifecycle effects throughout components.
 
-## Custom Hook Guidance
+### Custom Hook Guidance
 
 Extract a hook when lifecycle logic:
 
@@ -73,7 +75,7 @@ Custom hooks should expose a small API:
 const { data, status, retry } = useFeatureData(featureId);
 ```
 
-## Component Rules
+### Component Rules
 
 - Keep components focused on rendering and user interaction.
 - Keep async orchestration, subscriptions, and integration logic outside presentational components.
@@ -83,7 +85,15 @@ const { data, status, retry } = useFeatureData(featureId);
 - In Next.js, keep components as server components unless interactivity, browser APIs, or client-side hooks require `"use client"`.
 - In React Native, account for app lifecycle, platform-specific APIs, and native subscriptions when validating effects.
 
-## Review Output
+## Reference
+
+### Compatibility Notes
+
+- Pair this skill with `ui-builder` / `ui-review` (frontend-ui pack) for broad frontend build and review.
+- Pair this skill with `nextjs-ssr-frontend` when reviewing server/client boundaries.
+- Pair this skill with `react-native-mobile` when lifecycle behavior depends on mobile APIs.
+
+## Output
 
 When acting as a validator, report issues in this order:
 
@@ -92,9 +102,3 @@ When acting as a validator, report issues in this order:
 3. Missing cleanup or cancellation.
 4. Hook extraction opportunities.
 5. Naming or organization improvements.
-
-## Compatibility Notes
-
-- Pair this skill with `ui-builder` / `ui-review` (frontend-ui pack) for broad frontend build and review.
-- Pair this skill with `nextjs-ssr-frontend` when reviewing server/client boundaries.
-- Pair this skill with `react-native-mobile` when lifecycle behavior depends on mobile APIs.

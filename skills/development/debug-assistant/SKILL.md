@@ -29,17 +29,17 @@ Diagnose a failing piece of code: name the real cause, not the symptom, and prop
 5. Give the minimal fix as a code diff.
 6. Add one prevention tip: a type, a guard, a test, a lint rule.
 
-## Output
-
-- **Diagnosis**: what the error means.
-- **Root cause**: why it happens here.
-- **Fix**: corrected code, scoped to the problem.
-- **Prevention**: one concrete way to stop it recurring.
-
-## Operating Rules
+## Rules
 
 - Do not rewrite unrelated code.
 - Always explain the why, not just the what.
 - If the framework, runtime version, or missing context blocks diagnosis, ask for it instead of assuming.
 - Prefer a fix that fails loudly next time over one that hides the problem.
 - For crashes that produced a core dump on this machine, use `diagnose-crash` instead.
+
+## Output
+
+- **Diagnosis**: what the error means.
+- **Root cause**: why it happens here.
+- **Fix**: corrected code, scoped to the problem.
+- **Prevention**: one concrete way to stop it recurring.

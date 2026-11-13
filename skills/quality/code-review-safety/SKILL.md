@@ -28,7 +28,7 @@ metadata:
 
 Review changes like a senior engineer: prioritize bugs, regressions, security risks, missing tests, and architecture violations before style comments.
 
-## Review Order
+## Workflow
 
 1. Correctness and behavioral regressions.
 2. Security and data exposure.
@@ -38,7 +38,7 @@ Review changes like a senior engineer: prioritize bugs, regressions, security ri
 6. Accessibility and UX issues for frontend changes.
 7. Maintainability, naming, and local consistency.
 
-## Review Rules
+## Rules
 
 - Ground each finding in a file and line when available.
 - Explain impact and the concrete failure mode.
@@ -46,7 +46,7 @@ Review changes like a senior engineer: prioritize bugs, regressions, security ri
 - Do not focus on formatting if automated tools handle it.
 - Identify missing tests when behavior changed without coverage.
 
-## TypeScript Full-Stack Checks
+### TypeScript Full-Stack Checks
 
 - Next.js: server/client boundary, cache choice, hydration risk, secret exposure.
 - React: unnecessary effects, stale closures, inaccessible controls, unclear state.
@@ -54,6 +54,6 @@ Review changes like a senior engineer: prioritize bugs, regressions, security ri
 - NestJS: controller thinness, validation, use-case boundaries, repository misuse.
 - API contracts: response stability, error shape consistency, client compatibility.
 
-## Output Format
+## Output
 
 Lead with findings ordered by severity. If no issues are found, say so clearly and mention residual test risk.

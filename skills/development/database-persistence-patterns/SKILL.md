@@ -32,7 +32,9 @@ metadata:
 
 Implement persistence code that protects domain boundaries, keeps schema changes reproducible, and works reliably with local development databases.
 
-## Repository Rules
+## Rules
+
+### Repository Rules
 
 - Repositories persist and retrieve data; they do not own business decisions.
 - Define repository ports/interfaces in the application or domain boundary when using clean architecture.
@@ -40,19 +42,19 @@ Implement persistence code that protects domain boundaries, keeps schema changes
 - Map between persistence records and domain objects explicitly.
 - Do not leak ORM entities into controllers or domain models.
 
-## Migrations And Seeds
+### Migrations And Seeds
 
 - Use migrations for schema changes; do not rely on implicit production synchronization.
 - Keep seeds deterministic and safe for development/test environments.
 - Do not modify historical migrations unless the project explicitly allows it and the migration has not been shared.
 
-## Transactions
+### Transactions
 
 - Use transactions for multi-write operations that must succeed or fail together.
 - Keep transaction boundaries in application services or unit-of-work abstractions, not controllers.
 - Avoid long-running external calls inside database transactions.
 
-## Local Validation
+## Verification
 
 - Use `run-docker-environment` when a local database is declared with Docker Compose.
 - Verify migrations apply against a clean local database when practical.
