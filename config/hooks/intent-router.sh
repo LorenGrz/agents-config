@@ -79,7 +79,7 @@ case "$event" in
     [ -n "$prompt" ] || exit 0
     # Background-task notifications reach this hook as prompts; their text is not a user phrase.
     # Heuristic: Claude Code documents no field that tells them apart.
-    ! grep -Eq '<task-notification>|^\[system notification' <<<"$prompt" || exit 0
+    ! grep -Eq '<task-notification>|^\[system notification|<agent-message|\[subagent hand-back\]' <<<"$prompt" || exit 0
     matches="$(jq -r --arg p "$prompt" '
       .skills[] | select(.intents | length > 0) | . as $s
       | ([.intents[] | select(. as $i | try ($p | test($i.re; "i")) catch false)] | first) as $i
