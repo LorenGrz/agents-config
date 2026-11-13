@@ -241,6 +241,13 @@ write_generated() {
     fi
   fi
 
+  # Keep blocks other installers own (an org's <!-- name:start --> … <!-- name:end -->), so a re-run does not drop them.
+  if [ -f "$dest" ]; then
+    local blocks
+    blocks="$(awk '/^<!-- [A-Za-z0-9_.-]+:start -->$/{b=1} b{print} /^<!-- [A-Za-z0-9_.-]+:end -->$/{b=0}' "$dest")"
+    [ -z "$blocks" ] || content="$content"$'\n\n'"$blocks"
+  fi
+
   if [ -f "$dest" ] && [ "$(cat "$dest" 2>/dev/null)" = "$content" ]; then
     echo "ok:      $dest already up to date"
     return
