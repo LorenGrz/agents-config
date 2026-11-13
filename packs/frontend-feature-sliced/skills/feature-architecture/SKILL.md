@@ -5,7 +5,13 @@ description: Feature-sliced frontend architecture - per-feature folder structure
 
 # Feature architecture
 
-## Structure
+## Objective
+
+Keep a feature-sliced frontend consistent: per-feature structure, barrel files as the only cross-feature contract, and lint/cycle checks that enforce it.
+
+## Rules
+
+### Structure
 
 ```
 src/features/<feature>/
@@ -22,7 +28,7 @@ src/router/     composition root: the only place that mounts pages and guards of
 
 Use only the folders a feature needs. `pages/` exists when the feature has 3+ pages or mixes pages with layouts, guards or flow modals; otherwise the page lives in `components/` with a `-page.tsx` suffix.
 
-## Rules
+### Feature rules
 
 - A page only calls hooks and renders. Queries, mutations, navigation and error handling live in hooks.
 - Components receive data and callbacks through props. Exceptions: guards, layouts and gates may navigate (the router mounts them).
@@ -31,7 +37,7 @@ Use only the folders a feature needs. `pages/` exists when the feature has 3+ pa
 - Where a component goes: component library -> composition of its primitives -> `shared/` if reusable -> feature-local only if specific to that flow. When unsure, `shared/`.
 - Files are `kebab-case`, components are `PascalCase` named exports, hooks are `use-*`. Routes come from one central constants file, never string literals.
 
-## Enforcement (set these up, do not rely on discipline)
+### Enforcement (set these up, do not rely on discipline)
 
 - ESLint boundaries (`eslint-plugin-boundaries` or `no-restricted-imports` zones): barrel-only access, shared -> features forbidden, page/component layer restrictions.
 - Cycle detection with `dependency-cruiser` in CI; the lint checks each import's direction, a cycle is built from individually legal imports.

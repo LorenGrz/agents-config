@@ -5,7 +5,11 @@ description: Silent architecture checklist to run before handing over any backen
 
 # Pre-delivery review
 
+## Objective
+
 Run this mentally before showing code. Fix what fails, then deliver.
+
+## Rules
 
 - **Controllers**: only parse -> one service call -> map to DTO. No state `if/else`, no repository calls, no multi-service orchestration, no rules.
 - **Services**: only orchestrate. No re-validation of what records or `@Valid` DTOs guarantee (`requireNonNull` on a record, blank checks already on the DTO). No direct persistence, no calls to other services, no business rules.

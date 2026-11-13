@@ -5,6 +5,14 @@ description: Hexagonal frontend architecture - pure domain, use cases over ports
 
 # Hexagonal frontend
 
+## Objective
+
+Structure a hexagonal frontend: pure domain, use cases over ports, adapters, and the UI as an inbound adapter.
+
+## Rules
+
+### Structure
+
 The structure is decided in the architecture ADR (`docs/decisions/`). Typical shape per feature:
 
 ```
@@ -17,7 +25,7 @@ src/features/<feature>/
 src/app/         composition root: builds adapters, wires them to use cases, provides them to the UI (context)
 ```
 
-## Rules
+### Layer rules
 
 - `domain/` imports nothing from React, the router or the network. Business rules (calculations, state machines, validation that is a rule) live here and are unit-tested as plain functions.
 - `application/` defines ports (`OrderApi`, `Clock`, `Storage`) and use cases that take ports as arguments. No framework, no JSX.
@@ -26,6 +34,6 @@ src/app/         composition root: builds adapters, wires them to use cases, pro
 - Dependencies point inward: ui -> application -> domain; adapters -> application/domain. The composition root is the only place that knows concrete adapters.
 - Cross-feature access only through a feature's barrel.
 
-## Tests
+### Tests
 
 Domain: plain unit tests. Use cases: fake adapters (in-memory implementations of the ports). Adapters: tests against recorded or mocked HTTP. UI: component tests with fake adapters provided through the context, not mocked modules.

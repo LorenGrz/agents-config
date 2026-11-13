@@ -5,6 +5,12 @@ description: Workflow to add a new use case or module to a hexagonal Python back
 
 # New use case / module
 
+## Objective
+
+Add a new use case or module to a hexagonal Python backend: entity, command, ports, use case, adapters, tests.
+
+## Workflow
+
 Read `hexagonal-architecture-py` first. Ask the user (never assume) for the entity and its states, what it needs from other parts of the system, and the data and auth decisions in `docs/decisions/`.
 
 ```
@@ -15,7 +21,7 @@ src/<package>/<module>/
 tests/<module>/ test_entities.py, test_use_cases.py, test_http.py
 ```
 
-## Steps
+### Steps
 
 1. **Entity**: dataclass with `create()` enforcing invariants and `restore()` without; mutators check preconditions first and raise domain errors.
 2. **Command**: a frozen dataclass per use case.

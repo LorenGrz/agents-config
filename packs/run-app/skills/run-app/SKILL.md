@@ -5,6 +5,12 @@ description: Launch the project and verify a change in the real running app, not
 
 # Run the app
 
+## Objective
+
+Launch the project and verify a change in the real running app, not only with tests.
+
+## Workflow
+
 1. **Find the commands** in `AGENTS.md` (Commands table: dev/run) and the ports/env in the README or `.env.example`. Never invent a command. Do not start paid or shared external resources (cloud databases, deploys); use local containers or ask first.
 2. **Start it in the background** and wait for readiness instead of sleeping: poll the health endpoint or the port until it answers (a Spring app: `/actuator/health`; a Node/Vite app: the dev server port; a Python app: its health route or port). Read the log if it does not come up.
 3. **Exercise the change**:

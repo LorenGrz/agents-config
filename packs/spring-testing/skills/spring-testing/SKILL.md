@@ -5,7 +5,13 @@ description: Testing conventions for Spring Boot services and controllers - Mock
 
 # Spring testing
 
-## Application service: unit test with mocked ports
+## Objective
+
+Write Spring Boot tests: Mockito unit tests for application services and `@WebMvcTest` for controllers.
+
+## Rules
+
+### Application service: unit test with mocked ports
 
 ```java
 @ExtendWith(MockitoExtension.class)
@@ -34,15 +40,15 @@ class CreateXServiceTest {
 
 (Kotlin: same shape with MockK or Mockito-Kotlin and backtick names.)
 
-## Naming
+### Naming
 
 `method_throwsType_whenCondition` for errors, `method_result_whenCondition` for behavior.
 
-## Domain helpers inside the test
+### Domain helpers inside the test
 
 Build aggregates in the initial state with `create()`; for any other state use `restore()` so the test does not replay the transition flow. Do not use `restore()` paths in service tests (it belongs to mapper and model tests).
 
-## Controller: `@WebMvcTest`
+### Controller: `@WebMvcTest`
 
 ```java
 @WebMvcTest(XController.class)
@@ -57,7 +63,7 @@ class XControllerTest {
 
 If controllers authorize through a service, mock it and clear the `SecurityContext` in `@AfterEach`. Assert HTTP status and the serialized shape only. Error bodies: assert the project's error code and field errors for validation failures.
 
-## Coverage gap analysis (per service)
+### Coverage gap analysis (per service)
 
 - [ ] not-found for every external dependency that is looked up
 - [ ] invalid state transition (illegal state) and invalid input (illegal argument)
@@ -65,7 +71,7 @@ If controllers authorize through a service, mock it and clear the `SecurityConte
 - [ ] full happy path: final state plus `verify(repository).save(...)`
 - [ ] side-effect ports receive the instance returned by `save()`, not the pre-save one
 
-## Do not
+### Do not
 
 - Use `@MockBean` where `@MockitoBean` exists.
 - Replace the database with an in-memory fake in service tests; mock the port.

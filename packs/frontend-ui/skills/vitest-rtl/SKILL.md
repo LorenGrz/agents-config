@@ -5,6 +5,12 @@ description: Conventions for unit tests of React + TypeScript with Vitest and Re
 
 # Vitest + React Testing Library
 
+## Objective
+
+Write unit tests for React + TypeScript with Vitest and React Testing Library that protect behavior, not implementation.
+
+## Rules
+
 - Test observable behavior and the public API, never internals. Prefer accessible queries (`getByRole`, `findByRole`, `getByLabelText`); interact with `@testing-library/user-event`.
 - Tests sit next to the file: `<file>.test.ts(x)`. Reuse the project's existing helpers, fixtures and patterns before adding new ones.
 - Cover what applies: happy path, edge cases, invalid input, errors, loading, empty, public callbacks, relevant state transitions. No artificial cases for coverage numbers.

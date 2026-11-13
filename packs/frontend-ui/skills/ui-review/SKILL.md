@@ -5,9 +5,13 @@ description: Review pages and components already built - design-system complianc
 
 # UI review
 
+## Objective
+
 Read the changed files and the project's design-system skill/docs, then report. Do not edit unless asked.
 
-## Check
+## Rules
+
+### Check
 
 - **Tokens and scale**: no literal colors, no arbitrary spacing or type sizes, no stale or invented tokens.
 - **Component reuse**: library components used where they exist; no re-implementation of buttons, inputs or modals; shared vs feature-local placement is right.

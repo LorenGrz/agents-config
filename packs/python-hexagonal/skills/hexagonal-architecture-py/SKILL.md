@@ -5,6 +5,14 @@ description: Layer rules and design guidance for hexagonal (ports and adapters) 
 
 # Hexagonal architecture (Python)
 
+## Objective
+
+Apply layer rules and design guidance to a hexagonal (ports and adapters) Python backend: pure domain, use cases, Protocol ports, adapters.
+
+## Rules
+
+### Layers
+
 The package layout comes from the architecture ADR (`docs/decisions/`). Layers inside `src/<package>/`:
 
 | Layer | May import | Forbidden |
@@ -13,28 +21,28 @@ The package layout comes from the architecture ADR (`docs/decisions/`). Layers i
 | `application/` | `domain/` | ORMs, web frameworks, concrete adapters |
 | `adapters/` (or `infrastructure/`) | `application/`, `domain/`, frameworks | business rules |
 
-## Domain
+### Domain
 
 - Business rules and invariants live in the entities, named in business language (`order.confirm()`, not `order.status = "confirmed"`).
 - `@dataclass` (use `frozen=True` for value objects, `slots=True` when useful). Validate in `__post_init__` or a `create()` classmethod; keep a separate `restore()` for rebuilding from storage.
 - Domain errors are plain exception classes (`NotFoundError`, `ConflictError`, `RuleViolation`), mapped to transport codes by the adapter layer only.
 
-## Application
+### Application
 
 - One use case per class or function; it orchestrates: load aggregate through a port, call the domain method, call side-effect ports, save, return. No rules.
 - Ports are `typing.Protocol` classes in `application/ports.py` (repository, lookup, gateway). Use cases receive them through the constructor.
 
-## Adapters and wiring
+### Adapters and wiring
 
 - Inbound adapters (HTTP, CLI, queue handlers) validate raw input at the boundary (Pydantic or similar), build a command, call one use case, map the result to a response.
 - Outbound adapters implement the ports (SQLAlchemy repository, HTTP gateway) and map between ORM models and domain entities.
 - Compose everything in one place (the app factory or `main`), never inside use cases or adapters.
 
-## Tests
+### Tests
 
 Domain: plain unit tests per rule. Use cases: in-memory fakes of the ports (a dict-backed repository is fine in Python) or mocks. Adapters: integration tests against the real thing.
 
-## Anti-patterns
+### Anti-patterns
 
 | Anti-pattern | Instead |
 |---|---|
