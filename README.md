@@ -97,8 +97,9 @@ the generated `CLAUDE.md`/`AGENTS.md`/`settings.json` merge — use Method 1 for
 │   ├── hooks/                       # lifecycle shell scripts wired in settings.base.json
 │   └── rulesync/                     # multi-AI generation for Cursor / Antigravity, see below
 │
-├── scripts/                    # orgs.sh, project-agents.sh, gen-plugin.sh, gen-intents.sh,
-│                                 leak-guard.sh, lint-docs.sh, eval-skills.sh, test-*.sh
+├── scripts/                    # orgs.sh, project-agents.sh, detect-stack.sh, gen-plugin.sh,
+│                                 gen-intents.sh, gen-cli-baselines.sh, leak-guard.sh, lint-docs.sh,
+│                                 eval-skills.sh, export-obsidian.sh, test-*.sh
 ├── evals/                      # trigger evals for `claude plugin eval` (see Skill evals)
 ├── docs/
 │   ├── decisions/                 # ADRs for this hub's own structure (0001-single-repo.md, ...)
