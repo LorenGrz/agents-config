@@ -37,8 +37,7 @@ Implement persistence code that protects domain boundaries, keeps schema changes
 ### Repository Rules
 
 - Repositories persist and retrieve data; they do not own business decisions.
-- Define repository ports/interfaces in the application or domain boundary when using clean architecture.
-- Implement database-specific logic in infrastructure adapters.
+- With clean architecture, define repository ports/interfaces at the application or domain boundary and put database-specific logic in infrastructure adapters.
 - Map between persistence records and domain objects explicitly.
 - Do not leak ORM entities into controllers or domain models.
 
@@ -56,6 +55,6 @@ Implement persistence code that protects domain boundaries, keeps schema changes
 
 ## Verification
 
-- Use `run-docker-environment` when a local database is declared with Docker Compose.
+- When a local database is declared with Docker Compose, start it first (`docker compose up -d`; follow `run-docker-environment` when that skill is installed).
 - Verify migrations apply against a clean local database when practical.
 - Run repository and integration tests when present.

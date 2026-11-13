@@ -23,15 +23,14 @@ Produce commit messages in `type(scope): description` form so history stays read
 1. Read the actual change: `git diff --staged`, a diff, or a written description.
 2. Pick the type: `feat`, `fix`, `refactor`, `docs`, `style`, `test`, `chore`, `perf`, `build`, `ci`.
 3. Infer a scope from the affected area (`auth`, `api`, `ui`, `db`, module name). Omit if it spans everything.
-4. Write the subject in the imperative, lowercase, no trailing period, at most 72 characters.
-5. Add a body only when the reason for the change is not obvious from the diff.
-6. If changes are unrelated, propose separate commits.
-7. Mark breaking changes with a `BREAKING CHANGE:` footer.
+4. Write the subject, and a body only when the reason for the change is not obvious from the diff.
+5. If changes are unrelated, propose separate commits.
 
 ## Rules
 
-- Imperative mood: "add", not "added" or "adds".
+- Subject: imperative mood ("add", not "added" or "adds"), lowercase, no trailing period, at most 72 characters.
 - One commit is one logical change; never mix `feat` and `fix`.
+- Mark breaking changes with a `BREAKING CHANGE:` footer.
 - Do not invent a scope or motive; ask if the type is ambiguous.
 - Keep any trailers a repo or workflow requires (e.g. `Co-Authored-By`, sign-off) below the body.
 - Follow the repo's existing commit style if it diverges from this.

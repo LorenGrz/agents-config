@@ -40,19 +40,17 @@ Design client/server contracts that are explicit, validated, and safe to evolve 
 
 ### Contract Rules
 
-- Define request and response DTOs at the API boundary.
-- Validate incoming requests on the server before reaching application or domain logic.
-- Keep public API shapes stable; avoid breaking existing clients without an explicit migration.
-- Use consistent error responses with machine-readable codes and human-readable messages.
-- Do not leak persistence models, ORM entities, or domain internals directly as API responses.
+- Define request and response DTOs at the API boundary; validate requests on the server before application or domain logic.
+- Do not break a public API shape without an explicit migration.
+- Use one error shape: machine-readable code plus human-readable message.
+- Do not leak persistence models, ORM entities, or domain internals as API responses.
 - Keep date, money, enum, pagination, and optional-field semantics explicit.
 
 ### Client Integration
 
-- Centralize API clients or fetch wrappers when the project has that pattern.
-- Normalize API errors before they reach UI components.
+- Use the project's central API client or fetch wrapper when it has one, and normalize API errors there, before they reach UI components.
 - Model loading, empty, forbidden, not found, validation error, and unexpected error states separately when the UX needs them.
-- Avoid duplicating contract types manually across apps when a shared package or generated client already exists.
+- Reuse the shared package or generated client for contract types; do not hand-copy them across apps.
 
 ## Verification
 

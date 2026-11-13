@@ -35,7 +35,7 @@ Build React Native apps that handle mobile constraints deliberately: navigation,
 - Use the repository's navigation library and route typing conventions.
 - Keep reusable UI components platform-aware but not business-aware.
 - Handle loading, empty, error, offline, and permission-denied states explicitly.
-- Avoid assuming iOS and Android behavior is identical; check platform-specific APIs and layout differences.
+- Do not assume iOS and Android behave the same; check platform-specific APIs and layout differences.
 
 ### Native And Device APIs
 

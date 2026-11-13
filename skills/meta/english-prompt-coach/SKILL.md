@@ -11,8 +11,8 @@ Fast language coaching on the prompt Loren typed. This checks his English, not h
 
 ## When to use
 
-- Any user message written partly or fully in English.
-- Skip when the English text is only code, commands, file paths, proper names, or deliberate informal shorthand.
+Any user message written partly or fully in English. Skip when the English text is only code,
+commands, file paths, proper names, or deliberate informal shorthand.
 
 ## Rules
 

@@ -15,16 +15,13 @@ Use the Gmail, Calendar, Drive, Docs and Sheets connectors safely: read and sear
 - Calendar: `mcp__claude_ai_Google_Calendar__*`
 - Drive: `mcp__claude_ai_Google_Drive__*`; Docs: `mcp__claude_ai_Google_Docs__*`; Sheets: `mcp__claude_ai_Google_Sheets__*`
 
-Reading and searching is free. Anything that sends, shares, deletes or invites needs approval.
-
 ## Rules
 
 - In a repo that matches an organization, use that organization's replacement skill when one is installed (e.g. in `.claude/skills/`); its rules win.
 
 ### Gmail
 
-- Create a draft first. Send, reply or forward only after the user approves the text and the recipients (To, Cc, Bcc).
-- Show subject, recipients and body before sending.
+- Create a draft first. Show subject, recipients (To, Cc, Bcc) and body; send, reply or forward only after the user approves them.
 
 ### Calendar
 

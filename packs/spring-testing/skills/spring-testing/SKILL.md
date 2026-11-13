@@ -46,7 +46,7 @@ class CreateXServiceTest {
 
 ### Domain helpers inside the test
 
-Build aggregates in the initial state with `create()`; for any other state use `restore()` so the test does not replay the transition flow. Do not use `restore()` paths in service tests (it belongs to mapper and model tests).
+Build aggregates in the initial state with `create()`; for any other state use `restore()` so the test does not replay the transition flow. Do not test the `restore()` path itself in service tests (that belongs to mapper and model tests).
 
 ### Controller: `@WebMvcTest`
 

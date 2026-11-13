@@ -7,7 +7,7 @@ description: Layer rules and design guidance for hexagonal (ports and adapters) 
 
 ## Objective
 
-The package layout comes from the project's architecture ADR (`docs/decisions/`); this skill is the layer discipline. Below, `{bc}` is a bounded context.
+Layer discipline for a hexagonal + DDD Spring backend. The package layout comes from the project's architecture ADR (`docs/decisions/`).
 
 ## Rules
 
@@ -24,9 +24,8 @@ The package layout comes from the project's architecture ADR (`docs/decisions/`)
 - All business rules and invariants live in the model, not in services or controllers.
 - Rich model: behavior on the object, named in business language (`formalize()`, `cancel()`), never `setStatus()`. No public setters.
 - Every mutating method checks its precondition first (`ensureStatus`, `ensureEditable`).
-- Two factories: `create()` enforces invariants; `restore()` rebuilds from storage and tests without re-checking (a common convention: follow the project's architecture ADR if it differs).
+- Two factories: `create()` enforces invariants; `restore()` rebuilds an object from storage or in a test without re-checking them (a common convention: follow the project's architecture ADR if it differs).
 - Expose collections unmodifiable. Use value objects (`Money`, `Quantity`, enums) instead of raw `BigDecimal`/`String` for validated concepts; validate in the constructor.
-- No framework annotations in the model.
 
 ### Application services
 

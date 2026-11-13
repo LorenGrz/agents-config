@@ -7,7 +7,7 @@ description: Feature-sliced frontend architecture - per-feature folder structure
 
 ## Objective
 
-Keep a feature-sliced frontend consistent: per-feature structure, barrel files as the only cross-feature contract, and lint/cycle checks that enforce it.
+Keep a feature-sliced frontend consistent: where files go, what may import what, and the checks that enforce it.
 
 ## Rules
 

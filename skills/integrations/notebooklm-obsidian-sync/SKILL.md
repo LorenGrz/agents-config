@@ -12,12 +12,8 @@ Move knowledge between NotebookLM and Obsidian: export notebook sources to notes
 ## Prerequisites
 
 - NotebookLM MCP: server `notebooklm` (from `notebooklm-py`, configured in `config/mcp.user.json`). Login is manual: run `notebooklm login`.
-- Obsidian MCP: server `obsidian` (`@bitbonsai/mcpvault`). Follow the `obsidian-vault` skill for conventions.
-- Slugs: lowercase, hyphens, e.g. `projects/mibiblio`.
-
-### Risk note
-
-NotebookLM access uses unofficial APIs and Google session cookies. Use a secondary account, never `--master-token`, and tell the user if it breaks.
+- Obsidian MCP: server `obsidian` (`@bitbonsai/mcpvault`). The `obsidian-vault` skill owns the vault layout, slugs (lowercase, hyphens, e.g. `projects/mibiblio`) and note conventions.
+- Risk: NotebookLM access uses unofficial APIs and Google session cookies. Use a secondary account, never `--master-token`, and tell the user if it breaks.
 
 ## Workflow
 

@@ -60,35 +60,22 @@ pnpm exec nest generate controller <feature>
 pnpm exec nest generate service <feature>
 ```
 
-Use the global `nest` command only when the project has no local executable and the environment already provides it.
+Use the global `nest` command only when the project has no local executable and the environment already provides it. Do not hand-create Nest boilerplate when the CLI can generate it consistently.
 
 ### Architecture Rules
 
-- Keep complex business rules inside domain objects, domain services, value objects, or use cases.
-- Do not put business decisions in repositories.
-- Repositories persist and retrieve data; they do not decide domain behavior.
-- Controllers translate HTTP input and output only.
+- Keep complex business rules inside domain objects, domain services, value objects, or use cases. Do not implement business validation exclusively with DTO decorators when the invariant belongs to the domain.
+- Controllers translate HTTP input and output only: do not inject ORM repositories into them, call persistence adapters from them, return ORM entities, or bypass use cases to make controller code shorter.
 - Application services orchestrate use cases and transactions, but do not become procedural domain models.
 - Infrastructure adapters implement persistence, messaging, HTTP clients, and external integrations behind interfaces.
-- DTOs must not leak into domain objects.
-- Validate DTOs at the presentation/API boundary, then map them into application commands or domain-friendly input.
-- Keep repository ports separate from ORM-specific implementations.
-
-### Guardrails
-
-- Do not hand-create Nest boilerplate when the CLI can generate it consistently.
-- Do not inject ORM repositories directly into controllers.
-- Do not allow controllers to call persistence adapters directly.
-- Do not implement business validation exclusively with DTO decorators when the invariant belongs to the domain.
-- Do not create a generic repository abstraction unless the project already uses that pattern.
-- Do not return ORM entities directly from controllers.
-- Do not bypass use cases to make controller code shorter.
+- Validate DTOs at the presentation/API boundary, then map them into application commands or domain-friendly input. DTOs must not leak into domain objects.
+- Repositories persist and retrieve data; they do not decide domain behavior. Keep repository ports separate from ORM-specific implementations, and do not create a generic repository abstraction unless the project already uses that pattern. Full repository, migration, and transaction rules: `database-persistence-patterns` (same `nestjs` stack).
 
 ## Reference
 
 ### Recommended Structure
 
-For a feature named `<feature>`, prefer this shape when the project does not already define a stronger convention:
+For a feature named `<feature>`, use this shape unless the repository already has its own clean architecture layout (then follow that one; do not introduce a parallel style):
 
 ```text
 src/<feature>/
@@ -107,5 +94,3 @@ src/<feature>/
     dto/
   <feature>.module.ts
 ```
-
-If the existing repository uses a different clean architecture layout, follow the existing layout instead of introducing a parallel style.

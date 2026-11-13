@@ -7,7 +7,7 @@ description: Layer rules and design guidance for hexagonal (ports and adapters) 
 
 ## Objective
 
-Apply layer rules and design guidance to a hexagonal (ports and adapters) Python backend: pure domain, use cases, Protocol ports, adapters.
+Layer discipline for a hexagonal Python backend: pure domain, use cases, Protocol ports, adapters.
 
 ## Rules
 

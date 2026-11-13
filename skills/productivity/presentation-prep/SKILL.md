@@ -21,20 +21,17 @@ Produce a presentation plan: what to say, what to show, and how to hold attentio
 ## Workflow
 
 1. Open with a hook: a surprising figure, a question, a short story.
-2. One idea per slide; 3-4 key points maximum.
-3. Add a transition slide between major sections.
-4. Close with a call to action or a memorable line.
-5. Suggest concrete visuals ("bar chart, X vs Y over time"), never "some chart".
-6. Add speaker notes as talking points, not a script.
-7. Estimate time per slide.
+2. Build the body: one idea per slide, with a transition slide between major sections.
+3. Close with a call to action or a memorable line.
+4. Per slide, add a concrete visual, speaker notes and an estimated time.
 
 ## Rules
 
 - Write in the language of the request; default to Spanish for Loren.
+- 3-4 key points maximum per slide; slide text under ~30 words.
 - No more than ~20 slides for a 15-20 minute talk.
-- Every slide has a visual component; no text-only slides.
-- Keep slide text under ~30 words.
-- Speaker notes are bullet points, not prose.
+- Every slide has a visual component; no text-only slides. Name it concretely ("bar chart, X vs Y over time"), never "some chart".
+- Speaker notes are bullet talking points, not a script or prose.
 
 ## Output
 

@@ -17,7 +17,7 @@ Full workflow for packaging and deploying AWS serverless stacks with SAM CLI.
 ### Pre-flight
 
 Before writing or running any SAM command:
-1. Check the project has `template.yaml` and `samconfig.toml`.
+1. Check the project has `template.yaml` and `samconfig.toml` (no `samconfig.toml` yet: the first `sam deploy --guided` writes it).
 2. Confirm the AWS CLI is configured (`aws sts get-caller-identity`).
 3. Never use root credentials — see `iam-least-privilege` skill for deploy-user setup.
 
@@ -60,63 +60,6 @@ Full one-liner after setup:
 sam build && sam deploy
 ```
 
-## Rules
-
-### template.yaml conventions
-
-```yaml
-AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-
-Resources:
-  MyFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: my-function
-      Handler: index.handler
-      Runtime: nodejs22.x       # or python3.12
-      Architectures: [arm64]    # always prefer arm64 — 20% cheaper, faster
-      MemorySize: 256
-      Timeout: 29               # max 29s when behind API Gateway REST API (29s proxy limit)
-      CodeUri: ./build/         # or src/ if no build step
-
-Outputs:
-  FunctionArn:
-    Value: !GetAtt MyFunction.Arn
-  ApiUrl:
-    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod/"
-```
-
-### Lambda response streaming (Node.js)
-
-Required when streaming large payloads through API Gateway:
-
-```js
-// Must use InvokeWithResponseStream — configure in template.yaml
-import awslambda from 'aws-lambda'
-
-export const handler = awslambda.streamifyResponse(async (event, responseStream, context) => {
-  const metadata = { statusCode: 200, headers: { 'Content-Type': 'text/html' } }
-  responseStream = awslambda.HttpResponseStream.from(responseStream, metadata)
-  responseStream.write('chunk 1')
-  responseStream.write('chunk 2')
-  responseStream.end()
-})
-```
-
-API Gateway method must set `ResponseTransferMode: STREAM` in the integration.
-
-### Common errors and fixes
-
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `No changes to deploy. Stack X is up to date` | Lambda code unchanged from last build | Run `sam build` again — if still same hash, the code genuinely didn't change |
-| `CAPABILITY_IAM` missing | Template creates IAM resources | Add `capabilities = "CAPABILITY_IAM"` to samconfig.toml |
-| `Missing Authentication Token` from API Gateway | Request URL missing the stage prefix | Ensure all `href` values include the stage path (e.g. `/prod/`) |
-| `Error: Running NodejsNpmBuilder:NpmTest` and fails | `test` script exits non-zero | Add `"test": "echo ok"` to package.json if no tests yet |
-| `Uploaded artifact is too large` | Lambda ZIP > 50 MB unzipped / 250 MB unzipped layer | Exclude node_modules from CodeUri using `.samignore`; use Lambda Layers for deps |
-| `Cannot resolve S3 bucket` | First deploy on fresh account | Run `sam deploy --guided` once to create the SAM managed bucket |
-
 ### Deployment verification
 
 After deploy, always verify with:
@@ -139,3 +82,39 @@ sam delete --stack-name <name>
 ```
 
 Always run `sam delete` rather than manually deleting resources — SAM handles dependency order.
+
+## Rules
+
+### template.yaml conventions
+
+```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  MyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: my-function
+      Handler: index.handler
+      Runtime: nodejs22.x       # or python3.12
+      Architectures: [arm64]    # always arm64 — 20% cheaper (see lambda-patterns)
+      MemorySize: 256
+      Timeout: 29               # max 29s when behind API Gateway REST API (29s proxy limit)
+      CodeUri: ./build/         # or src/ if no build step
+
+Outputs:
+  FunctionArn:
+    Value: !GetAtt MyFunction.Arn
+  ApiUrl:
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+```
+
+`${Api}` is the logical ID of an explicit `AWS::Serverless::Api` with `StageName: prod`. With SAM's implicit API the ID is `ServerlessRestApi` and the stage is `Prod`.
+
+Handler structure, sizing, and logging: `lambda-patterns`. Log retention and billing alarm: `cost-optimizer`.
+
+## Reference
+
+- `references/troubleshooting.md`: table of common `sam build` / `sam deploy` / API Gateway errors with cause and fix. Read when a build, deploy, or first request fails.
+- `references/response-streaming.md`: Node.js `streamifyResponse` handler and the API Gateway integration settings. Read when a response must be streamed through API Gateway.

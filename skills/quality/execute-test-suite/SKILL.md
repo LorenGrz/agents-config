@@ -30,9 +30,9 @@ Detect the current project's build tool, run the appropriate tests, and use fail
 
 ## Workflow
 
-1. Run the detected test command.
+1. Detect the build tool from the project root (table below) and run its test command.
 2. If it passes, report the command and outcome.
-3. If it fails with exit code `1`, preserve the logs and identify the smallest failing unit.
+3. If it fails with exit code `1`, preserve the logs (Failure capture) and identify the smallest failing unit.
 4. Make the smallest code or test change consistent with the project architecture.
 5. Re-run the same failing command.
 6. Repeat until the suite passes or the failure requires missing user input, credentials, services, or external dependencies.
@@ -44,104 +44,31 @@ Detect the current project's build tool, run the appropriate tests, and use fail
 - Do not mask failures by skipping tests, weakening assertions, or deleting coverage checks.
 - Prefer focused test commands after the first failure, then run the broader suite before finalizing.
 - For TypeScript projects, treat typecheck failures as first-class test failures.
+- When multiple ecosystems exist, run the suite closest to the changed files first, then broaden to the repository-level suite.
 
-### Project Detection
-
-Inspect the project root before running tests:
-
-- `pnpm-lock.yaml` indicates pnpm.
-- `package-lock.json` indicates npm.
-- `package.json` without pnpm lock usually uses npm unless repository docs say otherwise.
-- `gradlew` or `build.gradle(.kts)` indicates Gradle.
-- `mvnw` or `pom.xml` indicates Maven.
-
-When multiple ecosystems exist, run the suite closest to the changed files first, then broaden to the repository-level suite.
-
-### Commands
+### Detection and commands
 
 Use local wrappers and package scripts when available.
 
-#### Node, NestJS, React, Next.js, React Native
+| In the project root | Command | Fallback only when no wrapper exists |
+|---|---|---|
+| `pnpm-lock.yaml` | `pnpm test` | |
+| `package-lock.json`, or `package.json` without a pnpm lock (unless repository docs say otherwise) | `npm test` | |
+| `gradlew` or `build.gradle(.kts)` | `./gradlew test` | `gradle test` |
+| `mvnw` or `pom.xml` | `./mvnw test` | `mvn test` |
 
-Prefer pnpm when `pnpm-lock.yaml` exists:
+- Node (NestJS, React, Next.js, React Native): when `package.json` has more specific scripts (`test:unit`, `test:e2e`, `typecheck`, `lint`), run them with the same package manager: `pnpm run test:unit`, `npm run test:unit`.
+- Next.js: also run the repository's lint and build scripts when they exist (`next build`; `next lint` only up to Next 15, it was removed in 16).
+- React Native: prefer the repository's existing unit test, typecheck, lint, and platform check scripts. Do not run native build commands unless the environment is prepared and the task requires it.
 
-```bash
-pnpm test
-```
+### Failure capture
 
-Use npm when `package-lock.json` exists or no pnpm lock exists:
-
-```bash
-npm test
-```
-
-If scripts reveal more specific commands, use them:
-
-```bash
-npm run test
-npm run test:unit
-npm run test:e2e
-pnpm run test
-pnpm run test:unit
-pnpm run test:e2e
-npm run typecheck
-npm run lint
-pnpm run typecheck
-pnpm run lint
-```
-
-For Next.js projects, also run `next lint`, `next build`, or the repository's equivalent scripts when they exist.
-
-For React Native projects, prefer the repository's existing unit test, typecheck, lint, and platform check scripts. Do not run native build commands unless the environment is prepared and the task requires it.
-
-#### Kotlin, Spring Boot, Gradle
-
-Prefer the project wrapper:
+Capture the output before editing. `pipefail` keeps the test command's exit code instead of the one from `tee`:
 
 ```bash
-./gradlew test
-```
-
-Fallback only when no wrapper exists:
-
-```bash
-gradle test
-```
-
-#### Kotlin, Spring Boot, Maven
-
-Prefer the project wrapper:
-
-```bash
-./mvnw test
-```
-
-Fallback only when no wrapper exists:
-
-```bash
-mvn test
-```
-
-### Failure Capture
-
-When a test command exits with code `1`, capture the relevant error output before editing:
-
-```bash
+set -o pipefail
 <test-command> 2>&1 | tee /tmp/agent-test.log
-```
-
-Then inspect the failure:
-
-```bash
 tail -n 200 /tmp/agent-test.log
 ```
 
-For Gradle, also check generated reports when present:
-
-- `build/reports/tests/test/index.html`
-- `build/test-results/test/`
-
-For Maven, check:
-
-- `target/surefire-reports/`
-- `target/failsafe-reports/`
+Reports to check when present: Gradle `build/reports/tests/test/index.html` and `build/test-results/test/`; Maven `target/surefire-reports/` and `target/failsafe-reports/`.

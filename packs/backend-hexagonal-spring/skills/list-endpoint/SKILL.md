@@ -38,7 +38,7 @@ return ids.map(id -> mapper.toDomain(byId.get(id)));
 
 ### Layers
 
-- **Repository port** (domain): `Page<X> findByOwnerId(UUID ownerId, Pageable pageable)` plus one method per filter combination that is really needed; no speculative filters.
+- **Repository port** (domain): `Page<X> findByOwnerId(UUID ownerId, Pageable pageable)` plus one method per filter combination that is really needed; no speculative filters. `Page`/`Pageable` are the one deliberate exception to the no-Spring-in-domain rule of `hexagonal-architecture`, unless the ADR defines its own page type.
 - **Query service** (application): one class for reads; `findById` throws not-found, list methods return `Page<X>`.
 - **Controller**: `@RequestParam` filters (optional ones `required = false`) and `Pageable`; map with `.map(XResponse::from)`. If the project wraps pages in an envelope, that happens in one place (advice or shared mapper), never per controller.
 - **Response DTO**: an immutable record with a static `from(domain)`; expose only what the client needs.

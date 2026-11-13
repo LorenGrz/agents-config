@@ -19,24 +19,16 @@ Create minimal, reproducible JS/TS projects that match the roadmap and do not ov
 
 ## Rules
 
-### Defaults
-
 - Use `pnpm` for package management.
-- Keep tooling project-local: install TypeScript, Vitest, ESLint, Prettier, tsx, Playwright, Nest CLI, or Supabase CLI as dev dependencies only when the project needs them.
+- Keep tooling project-local: install TypeScript, Vitest, ESLint, Prettier, tsx, Playwright, Nest CLI, or Supabase CLI as dev dependencies only when the project needs them. Do not install global npm packages for project tooling.
 - Prefer `type: "module"` unless the project already uses CommonJS.
-- Add scripts before adding complex tooling.
-
-### Avoid
-
-- Do not install global npm packages for project tooling.
+- Add scripts before adding complex tooling, and only scripts that the installed dependencies support.
 - Do not create monorepos before there are multiple real packages/apps.
 - Do not add React, NestJS, Next.js, or React Native unless the roadmap stage or user request explicitly calls for it.
 
 ## Reference
 
 ### Starter Scripts
-
-Use only scripts that are supported by installed dependencies:
 
 ```json
 {

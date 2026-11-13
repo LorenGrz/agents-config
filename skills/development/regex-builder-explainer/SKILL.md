@@ -21,7 +21,7 @@ metadata:
 
 ## Objective
 
-Translate a validation or extraction need into a working, readable regex, and explain every part. Also works in reverse: take a regex and explain it.
+Translate a validation or extraction need into a working, readable regex and explain every part, or take an existing regex and explain it.
 
 ## Workflow
 

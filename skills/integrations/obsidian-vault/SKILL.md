@@ -11,11 +11,7 @@ Read, write, search and organize notes in the Obsidian vault following its layou
 
 ## Prerequisites
 
-### Location
-
-Vault path: `$OBSIDIAN_VAULT`, default `~/Documents/Obsidian Vault`.
-
-### Layout
+Vault path: `$OBSIDIAN_VAULT`, default `~/Documents/Obsidian Vault`. Layout:
 
 - `projects/<slug>/` (slug lowercase, hyphens) with:
   - `<slug>.md`: index note
@@ -40,17 +36,14 @@ Vault path: `$OBSIDIAN_VAULT`, default `~/Documents/Obsidian Vault`.
 - `write_note`: create or replace a note.
 - `patch_note`: small edits; prefer it over rewriting a whole note.
 - `update_frontmatter`, `manage_tags`: metadata changes.
-
-### claude-obsidian plugin
-
-For LLM-wiki style ingestion and querying, use its skills: `/claude-obsidian:wiki`, wiki-ingest, wiki-query.
+- LLM-wiki style ingestion and querying: the claude-obsidian plugin skills (`/claude-obsidian:wiki`, wiki-ingest, wiki-query).
+- NotebookLM sync: the `notebooklm-obsidian-sync` skill.
 
 ### Safety
 
 - Delete or move notes only with the user's OK, listing exactly what changes.
 - Commit or back up the vault before bulk edits.
 - Never write secrets into notes.
-- For NotebookLM sync, use the `notebooklm-obsidian-sync` skill.
 
 ## Shortcuts
 <!-- parsed by scripts/gen-intents.sh -->

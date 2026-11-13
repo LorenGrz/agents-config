@@ -20,10 +20,7 @@ Write efficient, cost-effective Lambda functions with the right defaults for eve
 Architectures: [arm64]
 ```
 
-- 20% cheaper per GB-second than x86_64
-- Equal or better performance for most workloads (Node.js, Python)
-- No code changes required for pure JS/TS or Python
-- Exception: binaries compiled only for x86 (rare; check first with `file <binary>`)
+20% cheaper per GB-second than x86_64, equal or better performance for most workloads, and no code changes for pure JS/TS or Python. Exception: binaries compiled only for x86 (rare; check first with `file <binary>`).
 
 ### Memory and timeout sizing
 
@@ -32,105 +29,36 @@ Architectures: [arm64]
 | Simple API proxy / CRUD | 128–256 MB | 10–15 s |
 | Report / PDF generation | 512–1024 MB | 60–120 s |
 | ML inference (small model) | 1024–3008 MB | 60–300 s |
-| Behind API Gateway REST proxy | any | **max 29 s** (hard limit) |
+| Behind API Gateway REST proxy | any | **max 29 s** (default integration timeout) |
 | Background / async (SQS, EventBridge) | 256–512 MB | up to 900 s |
 
 Start at 256 MB. Use CloudWatch `Duration` and `Max Memory Used` metrics to right-size.
 
-### Node.js handler — ESM (preferred)
+### Handler structure
 
-```js
-// index.mjs — use .mjs or set "type": "module" in package.json
-
-// Initialize SDK clients OUTSIDE the handler (reused across warm invocations)
-import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb'
-const db = new DynamoDBClient({ region: process.env.AWS_REGION })
-
-export const handler = async (event) => {
-  // Structured log — visible in CloudWatch
-  console.log(JSON.stringify({ event, requestId: event.requestContext?.requestId }))
-
-  try {
-    const result = await db.send(new GetItemCommand({ /* ... */ }))
-    return { statusCode: 200, body: JSON.stringify(result) }
-  } catch (err) {
-    console.error(JSON.stringify({ error: err.message, stack: err.stack }))
-    return { statusCode: 500, body: JSON.stringify({ error: 'Internal error' }) }
-  }
-}
-```
-
-### Python handler
-
-```python
-import json, os, logging, boto3
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-# Initialize clients outside handler
-dynamodb = boto3.resource('dynamodb', region_name=os.environ['AWS_DEFAULT_REGION'])
-table = dynamodb.Table(os.environ['TABLE_NAME'])
-
-def handler(event, context):
-    logger.info(json.dumps({'event': event, 'request_id': context.aws_request_id}))
-    try:
-        result = table.get_item(Key={'id': event['pathParameters']['id']})
-        return {'statusCode': 200, 'body': json.dumps(result.get('Item', {}))}
-    except Exception as e:
-        logger.error(json.dumps({'error': str(e)}))
-        return {'statusCode': 500, 'body': json.dumps({'error': 'Internal error'})}
-```
+- Node.js: ESM preferred (`index.mjs`, or `"type": "module"` in package.json). Templates for Node.js and Python: `references/handler-templates.md`.
+- Initialize SDK clients and read environment variables once at module load, outside the handler (reused across warm invocations). Fail at load when a required variable is missing.
+- Set variables under `Environment: Variables:` in `template.yaml` (`TABLE_NAME: !Ref MyTable`, `LOG_LEVEL: INFO`, `NODE_ENV: production`).
+- Do not hardcode region or account ID — use the `AWS_REGION` env var or `!Sub '${AWS::Region}'`.
 
 ### Cold starts — minimize them
 
 - **Keep imports lean**: only import what the handler needs.
-- **Initialize SDK clients once** at module load, not inside the handler.
 - **Avoid large local dependencies**: use Lambda Layers for heavy libraries (Puppeteer, PIL, etc.).
-- **Set reserved concurrency** if cold starts matter — keeps instances warm.
-- **Provisioned Concurrency** only for latency-critical, high-traffic paths; adds cost.
+- **Provisioned Concurrency** is the only setting that keeps instances warm; use it only for latency-critical, high-traffic paths because it adds cost. Reserved concurrency caps and guarantees capacity but does not pre-warm anything.
 
-### Environment variables
+### Logging
 
-```yaml
-# template.yaml
-Properties:
-  Environment:
-    Variables:
-      TABLE_NAME: !Ref MyTable
-      LOG_LEVEL: INFO
-      NODE_ENV: production
-```
-
-In code, read at module load time (not inside handler) for efficiency:
-```js
-const TABLE_NAME = process.env.TABLE_NAME
-if (!TABLE_NAME) throw new Error('Missing TABLE_NAME env var')
-```
-
-Never log environment variables — they may contain secrets.
-
-### CloudWatch logs
-
-- Every `console.log` / `print` goes to CloudWatch Logs automatically.
-- **Set log retention** in the template — default is never-expire (costly):
-
-```yaml
-MyFunctionLogGroup:
-  Type: AWS::Logs::LogGroup
-  Properties:
-    LogGroupName: !Sub '/aws/lambda/${MyFunction}'
-    RetentionInDays: 14
-```
-
-- Log JSON, not plain strings — enables structured querying with CloudWatch Insights.
-- Never log: tokens, passwords, credit card data, PII, full request bodies from auth flows.
+- Every `console.log` / `print` goes to CloudWatch Logs automatically. Log JSON, not plain strings — enables structured querying with CloudWatch Insights.
+- Never log: tokens, passwords, credit card data, PII, full request bodies from auth flows. That rules out logging the whole `event` (it carries headers and bodies).
+- Never log environment variables — they may contain secrets.
+- **Set log retention** in the template — default is never-expire (costly). Add an `AWS::Logs::LogGroup` named `/aws/lambda/${MyFunction}` with `RetentionInDays: 14`; full snippet in `cost-optimizer`.
 
 ### Error handling rules
 
 - Return structured error responses (`statusCode: 4xx/5xx` + `body: JSON`) from API-facing handlers.
-- For async handlers (SQS, EventBridge): throw the error — Lambda will retry according to the event source mapping.
-- Configure a Dead Letter Queue (DLQ) for all async Lambda event sources:
+- For async handlers (SQS, EventBridge): throw the error — Lambda retries according to the event source or async invocation settings.
+- Configure a failure destination for every async source. Asynchronous invocations (EventBridge, S3, SNS):
 ```yaml
 EventInvokeConfig:
   DestinationConfig:
@@ -138,11 +66,16 @@ EventInvokeConfig:
       Type: SQS
       Destination: !GetAtt DeadLetterQueue.Arn
 ```
+  SQS event sources ignore `EventInvokeConfig`: set a `RedrivePolicy` with a Dead Letter Queue (DLQ) on the source queue instead.
 
 ### Avoid
 
-- Hardcoding region or account ID — use `AWS_REGION` env var or `!Sub '${AWS::Region}'`.
 - Calling external services synchronously inside Lambda without timeout/retry logic.
 - Relying on `/tmp` for persistent state across invocations — it may persist but is not guaranteed.
 - Writing to files outside `/tmp` — Lambda filesystem is read-only except `/tmp` (512 MB–10 GB).
 - Lambda for tasks > 15 min — use Step Functions + ECS Fargate instead.
+
+## Reference
+
+- `references/handler-templates.md`: Node.js ESM and Python handler skeletons (client init, structured logging, error response) and the environment-variable snippet. Read when writing a new handler or reviewing one against the rules above.
+- Response streaming through API Gateway: `sam-deploy` (`references/response-streaming.md`).
