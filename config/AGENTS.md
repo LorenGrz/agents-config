@@ -30,6 +30,20 @@ your profile (`config/profiles/<your-name>.md`, imported alongside this file) �
 - Per-repo context lives in `AGENTS.md` (single source of truth for every agent). `CLAUDE.md`, when present, contains only `@AGENTS.md` plus Claude-specific instructions. Never duplicate content between them; when a repo has both with overlapping content, merge into AGENTS.md.
 - Every repo keeps: (a) `AGENTS.md` as the map new sessions read instead of the code; (b) `.agents/CONTEXT.md` for current state; (c) `docs/superpowers/specs/` and `docs/superpowers/plans/` for every approved spec/plan created in a session — including subagent/worker specs and mid-session follow-up plans, not only the first one — copy an approved plan-mode plan into `docs/superpowers/plans/YYYY-MM-DD-<slug>.md` before implementing (plan mode saves outside the repo, in `~/.claude/plans`); (d) `docs/decisions/NNNN-<slug>.md` ADRs for decisions with trade-offs; (e) `docs/prompts.md` with every AI prompt the app sends to a model (verbatim copy, where it lives in code, and a short history of what was tried and why it changed) — update it in the same PR as any prompt change. Update these after merging.
 
+## Workflow lanes
+
+- **Punctual change** (one file, clear intent): do it directly. No question, no plan.
+- **More than one file, or unclear scope** (unknown-cause bugs too): before editing, ask one question with
+  exactly three options, always in this order: **Continuar** (direct, no plan) · **Plan S** (short plan:
+  files, change, check; executed inline, no brainstorming, no spec docs, no subagents) · **Plan L** (design,
+  spec and plan in `docs/superpowers/`, then delegated to subagents or workers). Mark the recommended one
+  with "(Recomendado)" and one line of why, without moving it: Continuar stays first.
+- **Every plan (S or L) starts with a grilling interview:** before designing anything, interview the user
+  one question at a time (the `mattpocock-skills:grilling` skill where available) until nothing is left to
+  assume. Plan L's design step does not re-ask what was answered.
+- Outside a plan, don't pull in the heavy process (brainstorming, plan writing, subagent-driven execution)
+  unless asked.
+
 ## Organizations (work repos)
 
 In a repo that matches an organization (`organizations/INDEX.md`): never commit on `main`/`master`/`dev`,

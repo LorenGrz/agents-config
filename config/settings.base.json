@@ -138,6 +138,15 @@
             "command": "bash ~/.claude/hooks/intent-router.sh"
           }
         ]
+      },
+      {
+        "matcher": "AskUserQuestion|ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/lane-guard.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [

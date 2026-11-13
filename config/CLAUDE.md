@@ -13,7 +13,8 @@ Stack skills (React, Next, Nest, persistence, API, auth, AWS) exist only in repo
 
 Where skills overlap, one default per task:
 
-- Planning (Plan L only) `superpowers:brainstorming` then `writing-plans`; TDD `superpowers:test-driven-development`;
+- Planning: `mattpocock-skills:grilling` first (Plan S and L), then (Plan L only) `superpowers:brainstorming`
+  and `writing-plans`; TDD `superpowers:test-driven-development`;
   unknown-cause bugs `superpowers:systematic-debugging` (`debug-assistant` only for a pasted stack trace).
 - TypeScript review `code-review-safety` (acting on feedback: `superpowers:receiving-code-review`);
   stress-testing an idea `mattpocock-skills:grilling`. New repo `project-init`; new company `org-creator`.
@@ -27,14 +28,16 @@ Where skills overlap, one default per task:
 
 ## Workflow lanes
 
-- **Punctual change** (one file, clear intent): do it directly. No question, no plan, no lane.
-- **More than one file, or unclear scope** (unknown-cause bugs too): before editing, one `AskUserQuestion`
-  with exactly three options, in this order: **Continuar** (direct, no plan) · **Plan S** (plan mode, short
-  plan: files, change, check; run inline with the `ponytail:ponytail` skill loaded at the start; no
-  brainstorming, no spec docs, no `worker`/`reasoner`) · **Plan L** (plan mode: `brainstorming`,
-  `writing-plans` in `docs/superpowers/`, then `worker`/`reasoner`, or caolg across repos). Recommend one
-  (one line why); keep the order. On Plan S/L call `EnterPlanMode`; an unknown cause starts with
-  `systematic-debugging`. A plan the user starts directly ends with "Plan S/L because …".
+The lanes and the grilling interview are in `AGENTS.md` "Workflow lanes"; in Claude Code they run like this:
+
+- The lane question is one `AskUserQuestion`; its fixed order (Continuar first) overrides the tool's
+  "recommended first". Plan S/L call `EnterPlanMode` and load `mattpocock-skills:grilling` right after.
+  Plan S runs inline with `ponytail:ponytail` loaded at the start, no `worker`/`reasoner`. Plan L uses
+  `superpowers:brainstorming`, then `writing-plans`, then `worker`/`reasoner`, or caolg across repos. An
+  unknown cause starts with `superpowers:systematic-debugging`. A plan the user starts directly ends with
+  "Plan S/L because …".
+- `lane-guard.sh` enforces it: it denies a lane question in another order and an `ExitPlanMode` with no
+  grilling since plan mode began (ADR 0025).
 - Outside a plan, never invoke `brainstorming`, `writing-plans`, `executing-plans`, `subagent-driven-development`,
   `worker`, `reasoner` or `ponytail*` unless asked; this overrides `using-superpowers` and the
   skills' own descriptions. `scout` stays allowed for open lookups.

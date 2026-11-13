@@ -1,6 +1,6 @@
 # 0022 — One question decides the process: Continuar, Plan S or Plan L
 
-Status: accepted (2026-11-09). Supersedes the lane selection of ADR 0020 and narrows ADR 0006 (delegation
+Status: accepted (2026-11-09); hook enforcement of the order and the grilling interview added in ADR 0025. Supersedes the lane selection of ADR 0020 and narrows ADR 0006 (delegation
 applies to work that comes out of an approved plan).
 
 ## Context
