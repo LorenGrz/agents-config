@@ -27,6 +27,8 @@ description: Use when the task touches GitHub - issues, pull requests, reviews, 
 
 ## Screenshots in PRs
 
+Only when the PR changes something visible on screen, and only the screens and viewports that change (no mobile shots unless mobile changes). A change that is not visual (a number, a timing, a query) gets no screenshots: put the figure in a short table in the body.
+
 GitHub has no API to upload images: drag-and-drop goes to `user-attachments`, which only the web
 UI can reach (not `gh`, not the connector). Do not ask the user how to attach screenshots; use the
 scripts in `scripts/` (Playwright, run from that directory; first time: `pnpm run setup`):

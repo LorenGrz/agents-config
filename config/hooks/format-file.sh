@@ -7,6 +7,18 @@ payload="$(cat)"
 f="$(printf '%s' "$payload" | jq -r '.toolCall.args.TargetFile // .toolCall.args.AbsolutePath // .tool_response.filePath // .tool_input.file_path // empty' 2>/dev/null)"
 [ -n "$f" ] && [ -f "$f" ] || { echo '{}'; exit 0; }
 
+# Pausa por carpeta: si el archivo está bajo un prefijo de ~/.claude/format-skip (uno por
+# línea, # comenta), no se formatea. Sirve para repos que todavía no pasaron por un formateo
+# general: formatear al tocar un archivo viejo mete cientos de líneas ajenas al cambio en el
+# PR. El archivo es local (fuera de este repo) porque lista rutas de trabajo de cada persona.
+skip="${CLAUDE_FORMAT_SKIP:-$HOME/.claude/format-skip}"
+if [ -f "$skip" ]; then
+  while IFS= read -r prefix; do
+    prefix="${prefix%%#*}"; prefix="${prefix%"${prefix##*[![:space:]]}"}"
+    [ -n "$prefix" ] && [[ "$f" == "$prefix"* ]] && { echo '{}'; exit 0; }
+  done < "$skip"
+fi
+
 dir="$(dirname "$f")"
 ext="${f##*.}"
 
