@@ -27,13 +27,7 @@ Rewrite a CV so it matches what a specific posting asks for, and produce LinkedI
 5. For LinkedIn, write a headline as `role + differentiating value` and a short About.
 6. Where direct experience is missing, show transferable experience or name the gap.
 
-## Output
-
-- Optimized CV: professional profile (3-4 lines), experience, skills (prioritized to the posting), education.
-- LinkedIn: headline, About, skills to feature.
-- A short list of gaps and how to address them.
-
-## Operating Rules
+## Rules
 
 - Write in the language of the posting; default to Spanish for Loren.
 - Never invent experience or inflate results.
@@ -41,3 +35,9 @@ Rewrite a CV so it matches what a specific posting asks for, and produce LinkedI
 - Include only 4-5 of the most relevant projects, and group skills into sections the way the portfolio does - do not dump everything.
 - Do not copy phrases verbatim from the posting.
 - If there is a real gap, say so and suggest how to frame it.
+
+## Output
+
+- Optimized CV: professional profile (3-4 lines), experience, skills (prioritized to the posting), education.
+- LinkedIn: headline, About, skills to feature.
+- A short list of gaps and how to address them.

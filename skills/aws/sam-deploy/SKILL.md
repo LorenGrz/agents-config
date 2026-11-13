@@ -8,16 +8,20 @@ description: >
 
 # SAM Deploy
 
+## Objective
+
 Full workflow for packaging and deploying AWS serverless stacks with SAM CLI.
 
-## Pre-flight
+## Prerequisites
+
+### Pre-flight
 
 Before writing or running any SAM command:
 1. Check the project has `template.yaml` and `samconfig.toml`.
 2. Confirm the AWS CLI is configured (`aws sts get-caller-identity`).
 3. Never use root credentials — see `iam-least-privilege` skill for deploy-user setup.
 
-## samconfig.toml baseline
+### samconfig.toml baseline
 
 ```toml
 version = 0.1
@@ -36,7 +40,9 @@ region = "us-east-1"
 - `confirm_changeset = false` is safe for personal/dev stacks; set `true` for production.
 - `CAPABILITY_IAM` is required whenever the template creates IAM roles.
 
-## Deploy pipeline
+## Workflow
+
+### Deploy pipeline
 
 ```bash
 # Always build before deploy — never skip
@@ -54,7 +60,9 @@ Full one-liner after setup:
 sam build && sam deploy
 ```
 
-## template.yaml conventions
+## Rules
+
+### template.yaml conventions
 
 ```yaml
 AWSTemplateFormatVersion: '2010-09-09'
@@ -79,7 +87,7 @@ Outputs:
     Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod/"
 ```
 
-## Lambda response streaming (Node.js)
+### Lambda response streaming (Node.js)
 
 Required when streaming large payloads through API Gateway:
 
@@ -98,7 +106,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream,
 
 API Gateway method must set `ResponseTransferMode: STREAM` in the integration.
 
-## Common errors and fixes
+### Common errors and fixes
 
 | Error | Cause | Fix |
 |-------|-------|-----|
@@ -109,7 +117,7 @@ API Gateway method must set `ResponseTransferMode: STREAM` in the integration.
 | `Uploaded artifact is too large` | Lambda ZIP > 50 MB unzipped / 250 MB unzipped layer | Exclude node_modules from CodeUri using `.samignore`; use Lambda Layers for deps |
 | `Cannot resolve S3 bucket` | First deploy on fresh account | Run `sam deploy --guided` once to create the SAM managed bucket |
 
-## Deployment verification
+### Deployment verification
 
 After deploy, always verify with:
 ```bash
@@ -123,7 +131,7 @@ aws lambda get-function --function-name <name> --query 'Configuration.LastModifi
 curl -s https://<api-id>.execute-api.us-east-1.amazonaws.com/prod/
 ```
 
-## Stack cleanup
+### Stack cleanup
 
 ```bash
 # Delete the entire stack (irreversible)

@@ -1,4 +1,5 @@
 # Demo Scenarios
+Read when: the user asks for an example, or you need a worked scenario to calibrate judgment.
 
 Six worked examples for calibration and demonstration. Each follows the full Serverless Scanner output format.
 

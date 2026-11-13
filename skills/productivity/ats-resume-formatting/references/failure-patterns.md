@@ -1,4 +1,5 @@
 # ATS Parse Failure Patterns — Worked Examples
+Read when: a resume field parses blank or wrong and you need the worked before/after cause of each failure mode in `SKILL.md`.
 
 This reference walks through exactly how each failure mode in `SKILL.md` happens, with before/after examples. All company names below are fictional, chosen only to illustrate a naming *pattern* (lowercase brand, acquired subsidiary, domain-styled name, etc.) — not real companies.
 

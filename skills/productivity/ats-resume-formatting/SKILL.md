@@ -5,7 +5,13 @@ description: Use this skill whenever a resume needs to be formatted, reviewed, o
 
 # ATS / Workday Parse-Safe Resume Formatting
 
-## Why this exists
+## Objective
+
+Format and review resumes so ATS parsers (Workday, Greenhouse, Lever, iCIMS) fill Title, Company and Dates correctly, and verify the parsed result before and after upload.
+
+## Rules
+
+### Why this exists
 
 Workday and most ATS platforms don't show a recruiter your PDF or DOCX. They convert it to plain text, strip the layout, and run **named-entity recognition (NER)** to segment each experience block into structured fields: Job Title / Company / Start Date / End Date / Description. The recruiter searches and screens those parsed fields — not the file you uploaded.
 
@@ -13,7 +19,7 @@ Workday and most ATS platforms don't show a recruiter your PDF or DOCX. They con
 
 This is the single most common, least-visible way a strong candidate loses to a weaker one: not worse experience, a worse parse.
 
-### The two-stage parse (true of Workday's engine and most third-party parsers — Textkernel, RChilli, Daxtra)
+#### The two-stage parse (true of Workday's engine and most third-party parsers — Textkernel, RChilli, Daxtra)
 
 1. **Ingestion** — file → raw plain text, layout stripped, read strictly top to bottom.
 2. **Entity extraction** — each block segmented into Title / Company / Dates / Description. If extraction fails, the field is either blank or filled with the wrong text — and a blank required field can mean the application doesn't route into recruiter search at all.
@@ -24,7 +30,7 @@ This is the single most common, least-visible way a strong candidate loses to a 
 
 ---
 
-## Rule Set A — Date format
+### Rule Set A — Date format
 
 The single most common parse failure is a date range with no month.
 
@@ -37,7 +43,7 @@ The single most common parse failure is a date range with no month.
 
 ---
 
-## Rule Set B — Company name (the hardest failure to catch)
+### Rule Set B — Company name (the hardest failure to catch)
 
 NER can drop a real, correctly-spelled company name simply because it's unusual, small, stylized, or lowercase — and worse, it can then backfill the Company field with the wrong text pulled from elsewhere in the block. This is invisible until you actually test the parse; it's the failure most people never catch before submitting.
 
@@ -49,7 +55,7 @@ NER can drop a real, correctly-spelled company name simply because it's unusual,
 4. **Never fuse the company into the title line.** No `Title | Company`, no em dash, no bullet, no tab character joining the two.
 5. **Never put a parenthetical on the experience-block title line.** `Senior Product Manager (Growth & Retention)` on the title line reproduces the exact `Name (Org)` shape the parser uses to detect a company — and it can get seized as the employer instead of your actual company name. If you want a role qualifier or specialization visible, put it in your headline under your name, not on the title line inside an experience block.
 
-### How to build your own canonical company-name list
+#### How to build your own canonical company-name list
 
 Don't guess which of your past employers are parse-risky — test each one:
 
@@ -60,7 +66,7 @@ Don't guess which of your past employers are parse-risky — test each one:
 
 ---
 
-## Rule Set C — Experience block structure
+### Rule Set C — Experience block structure
 
 The parse-safest shape, one employer per block, whitespace-separated:
 
@@ -83,7 +89,7 @@ Mon YYYY – Mon YYYY                ← Line 3: alone
 
 ---
 
-## Rule Set D — Education & certifications
+### Rule Set D — Education & certifications
 
 1. **Never bullet an education or certification entry.** A bullet glyph marks a line as description text subordinate to something else — a bulleted degree line can be invisible as a degree.
 2. **Never fuse degree and institution with an em dash on one line** (`MSc, Environmental Science — Hebrew University` as a single line). Use a stacked two-line block instead:
@@ -97,7 +103,7 @@ Mon YYYY – Mon YYYY                ← Line 3: alone
 
 ---
 
-## Rule Set E — Tokens, competencies & file hygiene
+### Rule Set E — Tokens, competencies & file hygiene
 
 1. **Pair acronyms with their spelled-out form at least once**, anywhere on the resume: `Model Context Protocol (MCP)`, `Retrieval-Augmented Generation (RAG)`. Some ATS configurations treat the acronym and the full term as unrelated skills. Ubiquitous terms (`SaaS`, `ARR`, `GTM`) can usually stand alone.
 2. **Core Competencies / Skills as a single wrapped paragraph or plain vertical list** — never tab-aligned pseudo-columns or a table. Tab columns silently reintroduce the multi-column reading-order problem inside an otherwise single-column document.
@@ -105,7 +111,7 @@ Mon YYYY – Mon YYYY                ← Line 3: alone
 
 ---
 
-## File format
+### File format
 
 **.docx is the safest upload wherever the portal accepts it.** Text-selectable PDFs are sometimes advertised as parsing "at parity" with DOCX on modern ATS platforms — treat that claim skeptically. PDF text extraction can flatten document structure before NER runs, and a structurally-correct DOCX gives the parser more to work with. Use PDF only for:
 - Human-facing shares (email attachments, LinkedIn messages, networking) — never for portal upload where DOCX is accepted.
@@ -115,7 +121,7 @@ A styled/branded resume render (heavy color, icons, multi-column "modern" templa
 
 ---
 
-## Pre-submission parse validation (do this before every upload)
+### Pre-submission parse validation (do this before every upload)
 
 Catch a mis-parse while you can still fix the file — not after the form has locked it in.
 
@@ -125,7 +131,7 @@ Catch a mis-parse while you can still fix the file — not after the form has lo
 
 ---
 
-## Post-upload protocol (mandatory, even on a well-formatted file)
+### Post-upload protocol (mandatory, even on a well-formatted file)
 
 Autofill is unreliable even when the source document is fully compliant with everything above. After the portal autofills the form, **review and correct every field by hand** before submitting:
 
@@ -142,7 +148,7 @@ A blank field is a recruiter search you never appear in — even on fields that 
 
 ---
 
-## Quick pre-flight checklist
+### Quick pre-flight checklist
 
 - [ ] No year-only dates anywhere; `Mon YYYY` format, consistent document-wide
 - [ ] Every employer name tested against Rule Set B (de-stylized, correctly capitalized, anchored if needed)

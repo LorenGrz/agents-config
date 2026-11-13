@@ -5,9 +5,11 @@ description: 'Annotate screenshots, diagrams, and images with callout rectangles
 
 # Image Annotations
 
+## Objective
+
 Add visual callouts to any image — screenshots, diagrams, architecture docs, demo frames — using PIL/Pillow. Highlights what changed or what to look at, so reviewers don't have to guess.
 
-## When to Use This Skill
+## When to use
 
 Use this skill when you need to:
 
@@ -22,13 +24,15 @@ Use this skill when you need to:
 pip install Pillow -q
 ```
 
-## Color Rules
+## Rules
+
+### Color Rules
 
 - **Red (`#E63946`)** — only for "bad" / "removed" things (e.g., circling a bug being fixed)
 - **Yellowish-orange (`#FF9F1C`)** — for neutral highlights ("look here", "new feature", etc.)
 - Never use red just because it's eye-catching — red = bad/removed
 
-## Font
+### Font
 
 - Use **Ink Free** (`C:/Windows/Fonts/Inkfree.ttf`) for a handwritten look on Windows
 - On Linux/macOS, fall back to `ImageFont.load_default()`
@@ -36,13 +40,15 @@ pip install Pillow -q
 - `stroke_width=1` with `stroke_fill=<same color as fill>` — gives body without being too thick
 - Do NOT use white stroke — looks like a bad glow effect
 
-## Shapes
+### Shapes
 
 - Prefer **rounded rectangles** over circles/ellipses — less pixelation at edges
 - `draw.rounded_rectangle([x1, y1, x2, y2], radius=14, outline=color, width=5)`
 - **Padding 18px** around the target content
 
-## Reference Snippet
+## Reference
+
+### Reference Snippet
 
 ```python
 from PIL import Image, ImageDraw, ImageFont
@@ -74,11 +80,11 @@ draw.text(
 img.save('annotated.png')
 ```
 
-## Algorithmic Annotation — `annotate.py`
+### Algorithmic Annotation — `annotate.py`
 
 For images with multiple elements to annotate, use the `annotate.py` module below. Save it next to your script and import from it. It handles automatic label placement without overlapping.
 
-### Quick start
+#### Quick start
 
 ```python
 from annotate import annotate_image
@@ -99,7 +105,7 @@ result.save('annotated.png')
 - `draw_box`: if `True`, draws a rounded rectangle around the element. If `False` (default), draws a V-arrowhead pointing at the element
 - `debug`: shows targeting rectangles and candidate heatmap for placement validation
 
-### Coordinate grid helper
+#### Coordinate grid helper
 
 **Always use `grid_image()` before annotating an unfamiliar image.** Scaled-down previews display images smaller than actual pixel dimensions — the error compounds as you move away from (0,0).
 
@@ -119,7 +125,7 @@ crop = img.crop((x1 - 20, y1 - 20, x2 + 20, y2 + 20))
 crop.save('verify.png')
 ```
 
-### Algorithm overview
+#### Algorithm overview
 
 1. **Ring search**: candidates between MIN_ARROW (25px) and MAX_ARROW (120px) from element edge
 2. **Contrast scoring**: prefers placements where label text is readable — `abs(avg_brightness - 147) - std * 0.3 - dist * 0.02`
@@ -128,7 +134,7 @@ crop.save('verify.png')
 5. **Proximity penalty**: labels within 40px of other placed boxes get a score penalty
 6. **Arrow crossing penalty**: -50 for arrows crossing already-placed arrows
 
-### Debug mode colors
+#### Debug mode colors
 
 | Color | Meaning |
 |-------|---------|
@@ -138,12 +144,12 @@ crop.save('verify.png')
 | Magenta | Chosen label position |
 | Orange | Final rendered annotation |
 
-### Arrow styles
+#### Arrow styles
 
 - **`draw_box=True`**: rounded rectangle + straight line to label, no arrowhead
 - **`draw_box=False`**: V-shaped arrowhead with rounded line caps
 
-### `annotate.py` — full module
+#### `annotate.py` — full module
 
 Save this as `annotate.py` and import from it:
 
@@ -515,7 +521,7 @@ def grid_image(image_path, step=100):
     return img
 ```
 
-## Image Diffing
+### Image Diffing
 
 Find what changed between two screenshots programmatically. Use as a safety net for subtle changes — when the difference is obvious, annotate directly instead.
 
@@ -546,11 +552,11 @@ annotations = [
 **When to use:** subtle opacity changes, dashed lines, minor color shifts, anti-aliasing differences.
 **When NOT to use:** any change you can see by eye — annotate directly for better labels.
 
-## Animated GIF Annotations
+### Animated GIF Annotations
 
 Different from static images — animations have timing, transitions, and competing visual motion.
 
-### Element highlighting
+#### Element highlighting
 
 1. **Rects for big areas, arrows for small elements** — 500x300px area = rect, 200x25px element = arrow
 2. **Labels go RIGHT NEXT to what they describe** — short arrow (30-80px), label adjacent. Viewer's eye shouldn't travel more than ~100px
@@ -558,14 +564,14 @@ Different from static images — animations have timing, transitions, and compet
 4. **No bottom bar / subtitle approach** — eyes jump between content and bar. Contextual placement only
 5. **Hero message gets a bigger font** — main takeaway 64pt+, detail annotations 38pt
 
-### Timing and pacing
+#### Timing and pacing
 
 6. **Fade: 2-frame pop-in at 10fps** — 50% → 100% opacity (0.2s total). Easing curves look bad at low FPS
 7. **Type → pause → annotate** — during fast action, show NO annotation. Pause, then add it
 8. **Variable frame duration** — fast during action (100ms), slow during pauses (600-800ms), long hold for hero (500ms)
 9. **Higher FPS for smooth motion** — 10fps minimum for typing/interaction
 
-### Pop-in fade implementation
+#### Pop-in fade implementation
 
 ```python
 # 2-frame pop-in at 10fps
@@ -582,7 +588,7 @@ for frame_idx in range(total_frames):
     # - rect outline: outline=(*color, int(255 * alpha))
 ```
 
-## Guidelines
+### Guidelines
 
 1. **All elements same thickness** — rect `width`, line `width`, and visual text weight should feel consistent (~5px)
 2. Place labels **close to the rect** — short leader line (25-35px)
@@ -593,14 +599,14 @@ for frame_idx in range(total_frames):
 7. **Short labels work better** — wide labels have fewer valid placements. Use 1-3 words when possible
 8. **Verify with debug=True** — always check the first annotation of a new image with debug mode
 
-## Limitations
+### Limitations
 
 - Ink Free font is Windows-only; other platforms need a fallback font
 - PIL text rendering is basic — no rich text, no markdown
 - Animated GIF annotations require frame-by-frame processing which can be slow for long recordings
 - Algorithmic placement works best with 2-6 annotations; more than that may produce crowded results
 
-## Source and local notes
+### Source and local notes
 
 - Vendored from [`github/awesome-copilot`](https://github.com/github/awesome-copilot/tree/main/skills/image-annotations) (MIT) on 2026-11-05. The `annotate.py` module above is also saved as `scripts/annotate.py`.
 - Linux: Ink Free does not exist. Pass `font_path=` to a TTF that does (`fc-list : file | head`), e.g. a Noto/DejaVu sans.

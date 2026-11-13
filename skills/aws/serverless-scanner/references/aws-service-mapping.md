@@ -1,4 +1,5 @@
 # AWS Service Mapping
+Read when: mapping detected workflow patterns to AWS serverless services (steps 4 and 9 of `SKILL.md`).
 
 Map detected workflow patterns to the most appropriate AWS serverless service. Always recommend the simplest service that solves the problem.
 

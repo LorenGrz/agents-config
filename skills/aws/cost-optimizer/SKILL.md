@@ -8,10 +8,14 @@ description: >
 
 # Cost Optimizer
 
+## Objective
+
 Keep AWS bills at minimum for serverless stacks. A personal portfolio or small API can run
 for under $1/month or even free tier with the right defaults.
 
-## Free tier (12 months + always-free)
+## Rules
+
+### Free tier (12 months + always-free)
 
 | Service | Always-free allowance |
 |---------|----------------------|
@@ -25,7 +29,7 @@ for under $1/month or even free tier with the right defaults.
 
 A portfolio site that gets < 50k visits/month stays in Lambda + API Gateway free tier indefinitely.
 
-## arm64 always
+### arm64 always
 
 ```yaml
 Architectures: [arm64]
@@ -33,7 +37,7 @@ Architectures: [arm64]
 
 Graviton2 Lambda costs **20% less** per GB-second than x86_64. Zero code changes for Node.js and Python. Always use it.
 
-## Memory sizing matters more than you think
+### Memory sizing matters more than you think
 
 Lambda cost = duration × memory. Halving memory doesn't halve cost if it doubles duration.
 
@@ -45,7 +49,7 @@ Profile with AWS Lambda Power Tuning (open source) or manually:
 
 For a simple API returning JSON: 256 MB, < 100 ms duration → ~$0.000000417 per request. 1M requests/month = $0.42 — still in free tier.
 
-## CloudWatch Logs — set retention or pay forever
+### CloudWatch Logs — set retention or pay forever
 
 Default log group retention is **never expire**. This silently accumulates cost.
 
@@ -65,7 +69,7 @@ aws logs put-retention-policy \
   --retention-in-days 14
 ```
 
-## API Gateway: REST API vs HTTP API
+### API Gateway: REST API vs HTTP API
 
 | | REST API | HTTP API |
 |-|----------|----------|
@@ -76,21 +80,21 @@ aws logs put-retention-policy \
 
 For a personal site or simple API without streaming requirements, HTTP API is 3.5× cheaper.
 
-## S3 — avoid accidental costs
+### S3 — avoid accidental costs
 
 - **Versioning**: disable unless needed — stores every version of every object.
 - **Lifecycle policies**: add a rule to expire objects > 90 days in temp buckets.
 - **Data transfer (egress)**: S3 → internet costs $0.09/GB. Serve large assets via CloudFront.
 - **CloudFront**: has its own free tier (1 TB egress + 10M requests/month, first 12 months). Use it for static sites.
 
-## DynamoDB on-demand vs provisioned
+### DynamoDB on-demand vs provisioned
 
 - **On-demand (pay per request)**: best for low/unpredictable traffic. No minimum cost.
 - **Provisioned**: cheaper at sustained high traffic. Not suitable for portfolio/learning projects.
 
 Use on-demand unless you can guarantee steady throughput > 5 req/s.
 
-## CloudWatch dashboards and alarms
+### CloudWatch dashboards and alarms
 
 Set a **billing alarm** immediately after creating any stack:
 ```bash
@@ -107,7 +111,7 @@ aws cloudwatch put-metric-alarm \
   --alarm-actions arn:aws:sns:<region>:<account>:<topic>
 ```
 
-## Common cost traps
+### Common cost traps
 
 | Trap | Cause | Fix |
 |------|-------|-----|
@@ -118,7 +122,7 @@ aws cloudwatch put-metric-alarm \
 | S3 with versioning + frequent writes | Versions accumulate silently | Add S3 lifecycle rule to expire non-current versions after 7 days |
 | API Gateway caching enabled | Caching is $0.02–$3.84/hour per stage | Disable caching unless explicitly needed |
 
-## Cost review checklist
+### Cost review checklist
 
 Before declaring a stack production-ready:
 - [ ] All Lambda log groups have `RetentionInDays` ≤ 30

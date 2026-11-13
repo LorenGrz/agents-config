@@ -29,16 +29,16 @@ Produce a send-ready email with the right tone and a clear ask.
 6. For a follow-up, reference the prior message. For an escalation, stay firm without aggression.
 7. If the situation is delicate, add one alternative phrasing.
 
+## Rules
+
+- Write in the language of the request; default to Spanish for Loren.
+- Get to the point. No "I hope this email finds you well" unless asked.
+- Not passive-aggressive; no unnecessary apologies or filler.
+- Do not invent facts, commitments, or dates.
+
 ## Output
 
 - Subject line.
 - Full body with greeting and sign-off.
 - Alternative version when the context is sensitive.
 - One line on the tone chosen and why.
-
-## Operating Rules
-
-- Write in the language of the request; default to Spanish for Loren.
-- Get to the point. No "I hope this email finds you well" unless asked.
-- Not passive-aggressive; no unnecessary apologies or filler.
-- Do not invent facts, commitments, or dates.

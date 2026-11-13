@@ -72,6 +72,8 @@ If the repo has branch protection or a PR-based flow, stop after step 6 and open
 
 ## Rules
 
+- In a repo that matches an organization, use that organization's replacement skill when one is installed (e.g. in `.claude/skills/`); its rules win.
+
 ### Organizations (work repos)
 
 Applies to every repo that matches an organization (`organizations/INDEX.md`); personal repos keep the

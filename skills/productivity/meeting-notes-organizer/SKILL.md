@@ -26,6 +26,14 @@ Convert unstructured notes into a record where every decision and task is explic
 4. Write a 3-5 line executive summary.
 5. Move unresolved debates to an "open topics" section.
 
+## Rules
+
+- Write in the language of the source notes; default to Spanish for Loren.
+- Do not invent anything not in the notes.
+- Mark `[PENDING OWNER]` for any action without a clear owner.
+- Mark `[NO DATE]` for any task without a deadline.
+- Prefer a scannable structure over completeness.
+
 ## Output
 
 - Meeting metadata: date, attendees, topic.
@@ -33,11 +41,3 @@ Convert unstructured notes into a record where every decision and task is explic
 - Decisions made.
 - Action items: who / what / when.
 - Open topics for the next meeting.
-
-## Operating Rules
-
-- Write in the language of the source notes; default to Spanish for Loren.
-- Do not invent anything not in the notes.
-- Mark `[PENDING OWNER]` for any action without a clear owner.
-- Mark `[NO DATE]` for any task without a deadline.
-- Prefer a scannable structure over completeness.

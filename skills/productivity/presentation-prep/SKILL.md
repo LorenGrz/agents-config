@@ -28,15 +28,15 @@ Produce a presentation plan: what to say, what to show, and how to hold attentio
 6. Add speaker notes as talking points, not a script.
 7. Estimate time per slide.
 
-## Output
-
-- Title, target audience, estimated duration.
-- Per slide: number, title, key points, suggested visual, speaker notes, time.
-
-## Operating Rules
+## Rules
 
 - Write in the language of the request; default to Spanish for Loren.
 - No more than ~20 slides for a 15-20 minute talk.
 - Every slide has a visual component; no text-only slides.
 - Keep slide text under ~30 words.
 - Speaker notes are bullet points, not prose.
+
+## Output
+
+- Title, target audience, estimated duration.
+- Per slide: number, title, key points, suggested visual, speaker notes, time.

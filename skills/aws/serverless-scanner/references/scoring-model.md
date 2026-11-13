@@ -1,4 +1,5 @@
 # Scoring Model
+Read when: scoring migration candidates and picking the top opportunities (steps 6-7 of `SKILL.md`).
 
 Use this rubric to score each serverless migration candidate. Score every dimension, compute the composite, and assign a priority tier.
 

@@ -8,9 +8,13 @@ description: >
 
 # IAM Least Privilege
 
+## Objective
+
 Grant only the minimum permissions required, to the minimum number of principals, for the minimum time needed.
 
-## Core rules (never break these)
+## Rules
+
+### Core rules (never break these)
 
 1. **Never use root credentials** for anything except creating the first IAM admin and enabling MFA.
 2. **Never use `AdministratorAccess`** for deploy users, CI/CD pipelines, or application roles.
@@ -18,7 +22,7 @@ Grant only the minimum permissions required, to the minimum number of principals
 4. **Rotate access keys periodically.** Prefer IAM roles over long-lived access keys wherever possible.
 5. **Never commit credentials.** Use `~/.aws/credentials`, environment variables, or Secrets Manager.
 
-## IAM entity types and when to use each
+### IAM entity types and when to use each
 
 | Entity | Use case | Authentication |
 |--------|----------|----------------|
@@ -28,7 +32,7 @@ Grant only the minimum permissions required, to the minimum number of principals
 
 Prefer roles and OIDC. Only create IAM users when there is no alternative.
 
-## Deploy-user pattern (SAM / CloudFormation)
+### Deploy-user pattern (SAM / CloudFormation)
 
 Minimal IAM policy for a SAM deploy user. Store in `aws/iam-deploy-policy.json`:
 
@@ -124,7 +128,7 @@ Minimal IAM policy for a SAM deploy user. Store in `aws/iam-deploy-policy.json`:
 }
 ```
 
-## Lambda execution role (least privilege)
+### Lambda execution role (least privilege)
 
 SAM creates a managed execution role automatically. To customize:
 
@@ -153,7 +157,7 @@ MyFunctionRole:
 
 Always specify the exact resource ARN. Never use `"Resource": "*"` for data-plane actions (DynamoDB, S3 objects, Secrets Manager secrets).
 
-## Setup script pattern
+### Setup script pattern
 
 ```bash
 #!/usr/bin/env bash
@@ -173,7 +177,7 @@ aws iam attach-user-policy \
 aws iam create-access-key --user-name "$USER"
 ```
 
-## Validating a policy before applying it
+### Validating a policy before applying it
 
 Use the IAM Policy Simulator or AWS CLI:
 ```bash
@@ -183,7 +187,7 @@ aws iam simulate-principal-policy \
   --resource-arns "*"
 ```
 
-## Common mistakes
+### Common mistakes
 
 | Mistake | Fix |
 |---------|-----|

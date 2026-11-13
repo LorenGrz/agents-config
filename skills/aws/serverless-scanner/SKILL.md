@@ -8,7 +8,11 @@ description: >-
   and technical recommendations.
 ---
 
-## When to use this skill
+## Objective
+
+Identify high-ROI partial AWS serverless migration opportunities from the product input, score them, and produce executive and technical recommendations.
+
+## When to use
 
 Activate when the user provides any of the following:
 - Screenshots of a product or UI
@@ -20,7 +24,7 @@ Activate when the user provides any of the following:
 
 This skill focuses on **partial migration** — identifying specific workflows inside an existing product that are strong serverless candidates. It does not recommend full rewrites.
 
-## When to ask for missing context
+### When to ask for missing context
 
 Ask only if the input is too vague to infer the product type. One targeted question maximum:
 
@@ -28,7 +32,7 @@ Ask only if the input is too vague to infer the product type. One targeted quest
 
 If any product context exists, proceed with inferred information and flag confidence levels in the output.
 
-## Skill workflow
+## Workflow
 
 Follow these steps in order. Load the referenced file when indicated.
 
@@ -48,7 +52,7 @@ Follow these steps in order. Load the referenced file when indicated.
 | 12 | Generate 30-day action plan | → `references/output-templates.md` |
 | 13 | List only critical open questions | — |
 
-## Reference files
+### Reference files
 
 | File | Load when |
 |------|-----------|
@@ -57,7 +61,7 @@ Follow these steps in order. Load the referenced file when indicated.
 | `references/output-templates.md` | Generating the final report (steps 10–12) |
 | `references/demo-scenarios.md` | User requests an example, or to calibrate judgment |
 
-## Behavior rules
+## Rules
 
 1. **Never recommend serverless for everything.** Always include a "Do Not Migrate Yet" section.
 2. **Prefer isolated, stateless, event-driven, bursty, async, or scheduled workflows.** These are the strongest candidates.

@@ -8,9 +8,13 @@ description: >
 
 # Lambda Patterns
 
+## Objective
+
 Write efficient, cost-effective Lambda functions with the right defaults for every runtime.
 
-## Always use arm64
+## Rules
+
+### Always use arm64
 
 ```yaml
 Architectures: [arm64]
@@ -21,7 +25,7 @@ Architectures: [arm64]
 - No code changes required for pure JS/TS or Python
 - Exception: binaries compiled only for x86 (rare; check first with `file <binary>`)
 
-## Memory and timeout sizing
+### Memory and timeout sizing
 
 | Use case | Memory | Timeout |
 |----------|--------|---------|
@@ -33,7 +37,7 @@ Architectures: [arm64]
 
 Start at 256 MB. Use CloudWatch `Duration` and `Max Memory Used` metrics to right-size.
 
-## Node.js handler — ESM (preferred)
+### Node.js handler — ESM (preferred)
 
 ```js
 // index.mjs — use .mjs or set "type": "module" in package.json
@@ -56,7 +60,7 @@ export const handler = async (event) => {
 }
 ```
 
-## Python handler
+### Python handler
 
 ```python
 import json, os, logging, boto3
@@ -78,7 +82,7 @@ def handler(event, context):
         return {'statusCode': 500, 'body': json.dumps({'error': 'Internal error'})}
 ```
 
-## Cold starts — minimize them
+### Cold starts — minimize them
 
 - **Keep imports lean**: only import what the handler needs.
 - **Initialize SDK clients once** at module load, not inside the handler.
@@ -86,7 +90,7 @@ def handler(event, context):
 - **Set reserved concurrency** if cold starts matter — keeps instances warm.
 - **Provisioned Concurrency** only for latency-critical, high-traffic paths; adds cost.
 
-## Environment variables
+### Environment variables
 
 ```yaml
 # template.yaml
@@ -106,7 +110,7 @@ if (!TABLE_NAME) throw new Error('Missing TABLE_NAME env var')
 
 Never log environment variables — they may contain secrets.
 
-## CloudWatch logs
+### CloudWatch logs
 
 - Every `console.log` / `print` goes to CloudWatch Logs automatically.
 - **Set log retention** in the template — default is never-expire (costly):
@@ -122,7 +126,7 @@ MyFunctionLogGroup:
 - Log JSON, not plain strings — enables structured querying with CloudWatch Insights.
 - Never log: tokens, passwords, credit card data, PII, full request bodies from auth flows.
 
-## Error handling rules
+### Error handling rules
 
 - Return structured error responses (`statusCode: 4xx/5xx` + `body: JSON`) from API-facing handlers.
 - For async handlers (SQS, EventBridge): throw the error — Lambda will retry according to the event source mapping.
@@ -135,7 +139,7 @@ EventInvokeConfig:
       Destination: !GetAtt DeadLetterQueue.Arn
 ```
 
-## Avoid
+### Avoid
 
 - Hardcoding region or account ID — use `AWS_REGION` env var or `!Sub '${AWS::Region}'`.
 - Calling external services synchronously inside Lambda without timeout/retry logic.
