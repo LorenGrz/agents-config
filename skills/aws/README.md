@@ -1,4 +1,4 @@
-# aws-skills
+# aws
 
 Claude Code skills for working with AWS serverless infrastructure. Each skill is a self-contained `SKILL.md` that Claude reads on demand to apply consistent, least-privilege, cost-aware patterns.
 
@@ -14,9 +14,17 @@ Claude Code skills for working with AWS serverless infrastructure. Each skill is
 
 ## Usage
 
-These skills live inside this hub at `aws/<skill>/SKILL.md` (folded in via `git subtree`,
-see `docs/decisions/0001-single-repo.md`) — not a separate repo. `install.sh`'s `sync.sh`
-step mirrors them flat into `~/.claude/skills`, so Claude Code loads them by name
-(`sam-deploy`, `lambda-patterns`, `iam-least-privilege`, `cost-optimizer`,
-`serverless-scanner`) once the hub itself is installed. No extra clone or setup step is
-needed.
+These skills live inside this hub at `skills/aws/<skill>/SKILL.md` (folded in via `git subtree`,
+see `docs/decisions/0001-single-repo.md`), not in a separate repo.
+
+They are **project-scoped**, not global: all five are listed under the `aws` stack in
+`config/scopes.json`, so `sync.sh` does not mirror them into `~/.claude/skills` and `install.sh` does not
+install them. Add them to a project with `scripts/project-agents.sh`, which copies them into the project's
+`.claude/skills/`:
+
+```bash
+scripts/project-agents.sh --stack aws --dir ~/projects/my-app
+# project-init does the same: init.sh --stack nestjs --with aws ...
+```
+
+See "Global vs project scope" in the root `README.md` and ADR 0011.
