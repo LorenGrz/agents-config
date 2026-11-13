@@ -1,9 +1,10 @@
 ---
 name: lambda-patterns
 description: >
-  Use when writing, reviewing, or debugging AWS Lambda functions. Covers runtime selection,
-  arm64, handler structure, cold starts, memory/timeout sizing, environment variables,
-  CloudWatch logs, response streaming, error handling, and Node.js/Python patterns.
+  Use when writing, reviewing, or debugging AWS Lambda functions. Covers arm64,
+  handler structure, cold starts, memory/timeout sizing, environment variables,
+  CloudWatch logs, error handling, and Node.js/Python patterns (response streaming
+  lives in sam-deploy).
 ---
 
 # Lambda Patterns

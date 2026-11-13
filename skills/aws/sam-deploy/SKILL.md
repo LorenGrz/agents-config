@@ -2,7 +2,7 @@
 name: sam-deploy
 description: >
   Use when building or deploying a serverless stack with AWS SAM (Serverless Application Model).
-  Covers samconfig.toml, SAM build/deploy pipeline, IAM deploy-user setup, stack outputs,
+  Covers samconfig.toml, SAM build/deploy pipeline, stack outputs,
   response streaming, arm64 Lambda, and common error recovery.
 ---
 

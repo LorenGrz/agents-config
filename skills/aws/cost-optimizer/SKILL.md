@@ -2,7 +2,7 @@
 name: cost-optimizer
 description: >
   Use when estimating, reviewing, or minimizing AWS costs for serverless architectures.
-  Covers Lambda, API Gateway, S3, CloudWatch, and data transfer pricing. Optimizes for
+  Covers Lambda, API Gateway, DynamoDB, S3, CloudWatch, CloudFront, and data transfer pricing. Optimizes for
   sub-$1/month personal/portfolio workloads and identifies waste in small stacks.
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: codex-review
-description: Use when the user wants a second-opinion code review from Codex before a PR, on risky changes (auth, migrations, data), or delegates a task to Codex, via the codex plugin (openai/codex-plugin-cc) commands /codex:review, /codex:adversarial-review, /codex:rescue.
+description: Use when the user wants a second-opinion code review from Codex before a PR, on risky changes (auth, migrations, data), or delegates a task to Codex, via the codex plugin (openai/codex-plugin-cc) commands /codex:review, /codex:adversarial-review, /codex:rescue (and /codex:status, /codex:result, /codex:cancel to follow a running job).
 ---
 
 # Codex Review

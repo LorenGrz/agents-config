@@ -1,6 +1,6 @@
 ---
 name: typescript-project-starter
-description: Scaffold or upgrade small JavaScript and TypeScript learning projects with pnpm, strict scripts, README guidance, tests, linting, formatting, and verification. Use when creating a new JS/TS project, adding project structure, adding package.json scripts, moving from JavaScript to TypeScript, or standardizing a roadmap project.
+description: Use when creating a new JS/TS project, adding project structure, adding package.json scripts, moving from JavaScript to TypeScript, or standardizing a roadmap project - scaffolds or upgrades small JavaScript and TypeScript learning projects with pnpm, strict scripts, README guidance, tests, linting, formatting, and verification.
 ---
 
 # TypeScript Project Starter

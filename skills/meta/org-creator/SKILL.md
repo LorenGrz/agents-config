@@ -1,6 +1,6 @@
 ---
 name: org-creator
-description: Create or adapt an organization (employer or client) for agents-config - extract its policies, skills and commands from its repos into a private organizations/<name> repo that plugs into project-init. Use when starting at a new company or client, or when an org's rules change - "nueva organización", "nuevo cliente", "empiezo en una empresa", "armá la config de la empresa", "adapt to this company's policies", "new client setup". Reads the org's repos, asks, never invents policies.
+description: Use when starting at a new company or client, or when an org's rules change - create or adapt an organization (employer or client) for agents-config by extracting its policies, skills and commands from its repos into a private organizations/<name> repo that plugs into project-init. Triggers: "nueva organización", "nuevo cliente", "empiezo en una empresa", "armá la config de la empresa", "adapt to this company's policies", "new client setup". Reads the org's repos, asks, never invents policies.
 ---
 
 # Org creator

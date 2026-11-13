@@ -1,6 +1,6 @@
 ---
 name: image-annotations
-description: 'Annotate screenshots, diagrams, and images with callout rectangles, arrows, labels, and color-coded highlights using PIL. Includes rules for animated GIF annotations with timing and pacing.'
+description: 'Use when annotating screenshots, diagrams, or images with callout rectangles, arrows, labels, and color-coded highlights using PIL, or when comparing two images (diff_images). Includes rules for animated GIF annotations with timing and pacing.'
 ---
 
 # Image Annotations

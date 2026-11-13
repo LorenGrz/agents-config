@@ -1,6 +1,6 @@
 ---
 name: codex-workflows
-description: Example personal workflow-adapter skill (Loren's own setup, kept as a reference pattern). Reuses an existing Codex/local agent setup from Claude Code. Use when work involves existing Codex skills, migration from Codex to Claude, or other skill roots listed in your profile.
+description: Use when work involves existing Codex skills, migration from Codex to Claude, or other skill roots listed in your profile - reuses an existing Codex/local agent setup from Claude Code (a personal workflow adapter, kept as a reference pattern).
 ---
 
 # Codex Workflows Adapter

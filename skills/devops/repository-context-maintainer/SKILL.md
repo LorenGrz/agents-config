@@ -3,7 +3,7 @@ name: repository-context-maintainer
 description: Use this skill when entering a repository, preserving project-specific context, creating or updating a .agents/CONTEXT.md file, or deciding whether local repository context is missing, stale, or inaccurate.
 metadata:
   version: "0.1.0"
-  owner: "typescript-fullstack"
+  owner: "loren-local"
   focus:
     - repository context
     - onboarding
@@ -47,7 +47,7 @@ Use non-destructive inspection commands before writing:
 
 ```bash
 pwd
-find . -maxdepth 3 -type f \( -name package.json -o -name pnpm-lock.yaml -o -name package-lock.json -o -name tsconfig.json -o -name nest-cli.json -o -name 'next.config.*' -o -name app.json -o -name 'app.config.*' -o -name docker-compose.yml -o -name compose.yaml \)
+find . -maxdepth 3 -type f \( -name package.json -o -name pnpm-lock.yaml -o -name package-lock.json -o -name tsconfig.json -o -name nest-cli.json -o -name 'next.config.*' -o -name app.json -o -name 'app.config.*' -o -name docker-compose.yml -o -name compose.yaml -o -name pyproject.toml -o -name requirements.txt -o -name pom.xml -o -name 'build.gradle*' \)
 find . -maxdepth 3 -type d \( -name src -o -name app -o -name pages -o -name packages -o -name apps \)
 rg -n "\"scripts\"|next|nestjs|react-native|expo|typeorm|prisma|vitest|jest|playwright" -g package.json
 ```
