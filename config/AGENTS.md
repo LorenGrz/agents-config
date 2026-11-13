@@ -92,6 +92,7 @@ Claude Code's `intent-router` hook injects this automatically. Outbound actions 
 - `codex-review`: Codex review
 - `github-usage`: pull changes, new branch, commit, push, open PR, issues and PRs
 - `google-workspace-usage`: email, calendar, drive files
+- `jira-ticket-review`: review my tickets
 - `jira-usage`: Jira ticket
 - `mattpocock-skills:grilling`: stress-test an idea
 - `notebooklm-obsidian-sync`: NotebookLM

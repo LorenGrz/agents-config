@@ -28,6 +28,7 @@
     "./skills/integrations/codex-review",
     "./skills/integrations/github-usage",
     "./skills/integrations/google-workspace-usage",
+    "./skills/integrations/jira-ticket-review",
     "./skills/integrations/jira-usage",
     "./skills/integrations/notebooklm-obsidian-sync",
     "./skills/integrations/obsidian-vault",

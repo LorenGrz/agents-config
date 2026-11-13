@@ -80,6 +80,18 @@
       ]
     },
     {
+      "skill": "jira-ticket-review",
+      "tools": [],
+      "bash": [],
+      "intents": [
+        {
+          "label": "review my tickets",
+          "re": "revis[aá]r? (mis|los) tickets|analiz[aá]r? (mis|los) tickets|tom[aá]r? (mis|los) tickets|mis tickets asignados|review my tickets|my assigned tickets",
+          "cmd": "JQL assigned to me, read the code at origin/<base> without switching branches, publish one Artifact (diagram per cause, PR grouping, decisions); no tracker writes"
+        }
+      ]
+    },
+    {
       "skill": "jira-usage",
       "tools": [
         "^mcp__claude_ai_Atlassian_Rovo__"
