@@ -7,7 +7,7 @@ description: pytest conventions for Python projects - layout, naming, fixtures, 
 
 ## Objective
 
-Write pytest tests with a consistent layout, naming, fixtures, parametrization and fakes over mocks.
+One consistent way to lay out, name and isolate pytest tests.
 
 ## Rules
 

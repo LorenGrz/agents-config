@@ -48,9 +48,12 @@ Review changes like a senior engineer: prioritize bugs, regressions, security ri
 
 ### TypeScript Full-Stack Checks
 
-- Next.js: server/client boundary, cache choice, hydration risk, secret exposure.
-- React: unnecessary effects, stale closures, inaccessible controls, unclear state.
-- React Native: platform differences, permissions, cleanup, secure storage.
+Hard rule per line; the named skill has the full checks, if installed in the project.
+
+- Types and auth: no bypass of typing, validation or server-side authorization (`typescript-code-quality`, `auth-security-basics`).
+- Next.js: no secrets or server-only code in client paths (`nextjs-ssr-frontend`).
+- React: no unnecessary effects or missing cleanup (`react-component-validator`); accessible controls.
+- React Native: no secrets in plain async storage (`react-native-mobile`).
 - NestJS: controller thinness, validation, use-case boundaries, repository misuse.
 - API contracts: response stability, error shape consistency, client compatibility.
 

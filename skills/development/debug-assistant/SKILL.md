@@ -24,7 +24,7 @@ Diagnose a failing piece of code: name the real cause, not the symptom, and prop
 
 1. Read the full error: message plus stack trace. Locate the exact failing line.
 2. Inspect the context around it: variable values, types, async flow, recent changes.
-3. State what the error actually means in plain language, not a restatement of the text.
+3. State what the error means in plain language, not a restatement of the text.
 4. Identify the root cause. If several are plausible, list them most-likely first.
 5. Give the minimal fix as a code diff.
 6. Add one prevention tip: a type, a guard, a test, a lint rule.

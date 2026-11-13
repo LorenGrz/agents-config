@@ -52,7 +52,7 @@ Implement authentication and authorization with secure defaults and clear bounda
 - Read secrets from environment or secret managers, never hardcode them.
 - Validate environment variables at startup when the project has a validation pattern.
 - Validate all external input before domain logic.
-- Avoid logging tokens, passwords, personal data, or sensitive headers.
+- Do not log tokens, passwords, personal data, or sensitive headers.
 
 ## Verification
 

@@ -9,6 +9,16 @@ description: Modular monolith by feature on Spring - one package per business ca
 
 The structure is decided in the architecture ADR (`docs/decisions/`); this skill is the discipline inside it. One package per business capability: `{base-package}.{module}`.
 
+## Workflow
+
+Adding a module:
+
+1. Ask the user what the module owns and which other modules it must talk to.
+2. Create the package with `internal/` and the public API; start with the smallest API.
+3. Put its REST controller, service, repository and migration inside the module.
+4. Publish events instead of calling a module you would otherwise depend on cyclically.
+5. Add or extend the boundary test, then run the project's checks.
+
 ## Rules
 
 ### Shape
@@ -28,11 +38,3 @@ The structure is decided in the architecture ADR (`docs/decisions/`); this skill
 - Each module owns its tables; no cross-module joins or foreign keys. If data is needed elsewhere, expose a query on the API.
 - Enforce the boundaries with a test (Spring Modulith `ApplicationModules.verify()` or ArchUnit), not with convention alone.
 - Layering inside a module stays simple (controller -> service -> repository). Add ports and adapters only where a module talks to something external.
-
-### Adding a module
-
-1. Ask the user what the module owns and which other modules it must talk to.
-2. Create the package with `internal/` and the public API; start with the smallest API.
-3. Put its REST controller, service, repository and migration inside the module.
-4. Publish events instead of calling a module you would otherwise depend on cyclically.
-5. Add or extend the boundary test, then run the project's checks.

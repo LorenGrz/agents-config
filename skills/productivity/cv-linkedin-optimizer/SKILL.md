@@ -20,12 +20,11 @@ Rewrite a CV so it matches what a specific posting asks for, and produce LinkedI
 
 ## Workflow
 
-1. Analyze the posting: extract the 5-7 key competencies.
+1. Extract the posting's 5-7 key competencies.
 2. Map the candidate's real experience against each one.
-3. Rewrite role descriptions with action verbs and measurable results.
-4. Weave in the posting's keywords naturally for ATS.
-5. For LinkedIn, write a headline as `role + differentiating value` and a short About.
-6. Where direct experience is missing, show transferable experience or name the gap.
+3. Rewrite role descriptions with action verbs and measurable results, weaving in the posting's keywords naturally for ATS.
+4. For LinkedIn, write a headline as `role + differentiating value` and a short About.
+5. Where direct experience is missing, show transferable experience or name the gap and suggest how to frame it.
 
 ## Rules
 
@@ -34,7 +33,7 @@ Rewrite a CV so it matches what a specific posting asks for, and produce LinkedI
 - Keep the CV to one page under 5 years of experience, two pages otherwise.
 - Include only 4-5 of the most relevant projects, and group skills into sections the way the portfolio does - do not dump everything.
 - Do not copy phrases verbatim from the posting.
-- If there is a real gap, say so and suggest how to frame it.
+- For a CV that will be uploaded to a job portal, layout, dates and file format follow `ats-resume-formatting`.
 
 ## Output
 

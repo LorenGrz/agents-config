@@ -45,8 +45,7 @@ Use TypeScript to prevent invalid states, make contracts explicit, and keep appl
 ### Error Modeling
 
 - Prefer typed result objects or domain-specific errors where callers need to branch.
-- Preserve cause/context when wrapping errors.
-- Do not swallow errors silently.
+- Preserve cause/context when wrapping errors; do not swallow errors silently.
 - Do not expose internal errors or stack traces through public APIs.
 
 ## Verification

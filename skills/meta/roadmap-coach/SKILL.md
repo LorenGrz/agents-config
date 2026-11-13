@@ -9,7 +9,7 @@ description: Keep Loren's learning and project work aligned to the full-stack Ty
 
 Keep work scoped to the current learning stage and convert broad ideas into small, verifiable steps.
 
-The current stage lives only in the active profile (`config/profiles/<name>.md`, line `- Current stage (as of ...)`), which is already loaded in every session. For roadmap repo paths and the long-term product track, load `references/roadmap-detail.md`.
+The current stage lives only in the active profile (`config/profiles/<name>.md`, line `- Current stage (as of ...)`), which is already loaded in every session.
 
 ## Workflow
 
@@ -48,13 +48,5 @@ Write the full sentence in the existing style (what's active/pending, what's und
 
 ## Reference
 
-### Roadmap Order
-
-1. JavaScript fundamentals
-2. Node.js
-3. TypeScript
-4. React
-5. NestJS
-6. Supabase and WebSockets
-7. Next.js
-8. React Native
+- Roadmap order: JavaScript fundamentals → Node.js → TypeScript → React → NestJS → Supabase and WebSockets → Next.js → React Native.
+- `references/roadmap-detail.md`: read when planning the roadmap in depth (roadmap repo paths, long-term product track).

@@ -26,21 +26,20 @@ Produce a complete, runnable test file for one unit of code, covering the paths 
 
 ## Workflow
 
-1. Detect the test framework from the project: `pnpm-lock.yaml` plus a `test` script, `vitest.config`, `jest.config`, `pytest.ini`/`pyproject.toml`, `pom.xml`. Never introduce a new framework.
+1. Detect the test framework from the project: `pnpm-lock.yaml` plus a `test` script, `vitest.config`, `jest.config`, `pytest.ini`/`pyproject.toml`, `pom.xml`, `build.gradle(.kts)`. Never introduce a new framework.
 2. Read the unit's inputs, outputs, branches, and external dependencies.
 3. Generate at minimum: 2 happy-path tests, 2 edge cases (empty, null, boundary values), 1 error test.
 4. Mock external dependencies (network, filesystem, clock, DB) at the boundary.
-5. Name tests by behavior: `should <expected> when <condition>`.
+5. Name tests by behavior, in the project's existing convention; with none, `should <expected> when <condition>`.
 6. Add a one-line comment on each block saying why the case matters.
 
 ## Rules
 
 - Test observable behavior, not private implementation.
 - Each test is independent and order-free.
-- Do not weaken assertions or skip cases to make tests pass.
 - Match the project's existing test file layout and naming.
 - Treat a TypeScript typecheck failure in the test file as a failure to fix before finishing.
-- Hand off to `execute-test-suite` for the run-and-fix loop.
+- Hand off to `execute-test-suite` for the run-and-fix loop; its rule against masking failures (weakened assertions, skipped cases) applies here too.
 
 ## Output
 

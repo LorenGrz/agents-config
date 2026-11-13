@@ -20,11 +20,10 @@ Convert unstructured notes into a record where every decision and task is explic
 
 ## Workflow
 
-1. Process the raw notes.
-2. Separate discussion from decisions.
-3. Extract each action item with an owner and a due date.
-4. Write a 3-5 line executive summary.
-5. Move unresolved debates to an "open topics" section.
+1. Separate discussion from decisions.
+2. Extract each action item with an owner and a due date.
+3. Move unresolved debates to "open topics".
+4. Write the executive summary last.
 
 ## Rules
 

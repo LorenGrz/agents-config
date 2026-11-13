@@ -35,12 +35,12 @@ Build React Native apps that handle mobile constraints deliberately: navigation,
 - Use the repository's navigation library and route typing conventions.
 - Keep reusable UI components platform-aware but not business-aware.
 - Handle loading, empty, error, offline, and permission-denied states explicitly.
-- Avoid assuming iOS and Android behavior is identical; check platform-specific APIs and layout differences.
+- Do not assume iOS and Android behave the same; check platform-specific APIs and layout differences.
 
 ### Native And Device APIs
 
 - Request permissions at the point of need and explain denied states in the UI.
-- Clean up subscriptions, app-state listeners, geolocation watches, timers, and native event listeners.
+- Effect and listener cleanup: `react-component-validator`; here it also covers app-state listeners and geolocation watches.
 - Avoid blocking the JS thread with expensive synchronous work.
 - Use secure storage for sensitive tokens when the project provides it; do not store secrets in plain async storage.
 

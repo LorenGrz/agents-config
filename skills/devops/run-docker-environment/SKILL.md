@@ -25,76 +25,54 @@ Prepare and validate local Docker infrastructure for development, especially dat
 
 ## Workflow
 
-1. Verify Docker CLI availability:
+1. Verify the CLI and the daemon; never assume Docker is running:
 
    ```bash
    docker --version
    docker compose version
-   ```
-
-2. Check whether the Docker daemon is running:
-
-   ```bash
    docker info
    ```
 
-   If this fails with a daemon connection error, check service status:
+   If `docker info` fails with a daemon connection error, check the service and start it only when appropriate for the user environment:
 
    ```bash
    systemctl status docker
-   ```
-
-   On Ubuntu, start Docker only when appropriate for the user environment:
-
-   ```bash
    sudo systemctl start docker
    ```
 
-3. Locate the Compose file from the project root. Prefer files in this order:
+2. Locate the Compose file from the project root. `docker compose` picks the first of these by itself:
 
-   - `docker-compose.yml`
-   - `docker-compose.yaml`
-   - `compose.yml`
    - `compose.yaml`
+   - `compose.yml`
+   - `docker-compose.yaml`
+   - `docker-compose.yml`
 
-4. Start the local development environment:
+3. Start the local development environment. Pass `-f` only when the file has another name or location, or when several of the names above exist and the intended one is not the first:
 
    ```bash
    docker compose up -d
+   docker compose -f <file> up -d
    ```
 
-   If a non-default file is selected:
-
-   ```bash
-   docker compose -f compose.yaml up -d
-   ```
-
-5. Inspect container state:
+4. Inspect container state:
 
    ```bash
    docker compose ps
    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
    ```
 
-6. For failed or unhealthy containers, capture diagnostics:
+5. For failed or unhealthy containers, capture diagnostics:
 
    ```bash
    docker compose logs --tail=200
+   docker compose logs --tail=100 <service_name>
    docker inspect --format='{{json .State.Health}}' <container_name>
    ```
 
-7. For development databases, verify readiness before running migrations or backend tests:
-
-   ```bash
-   docker compose ps
-   docker compose logs --tail=100 <service_name>
-   ```
+6. For development databases, confirm the required ports and health checks before running migrations, backend tests or application commands. A running container is not a ready database: check health status, logs, or a project-specific readiness command.
 
 ## Rules
 
-- Do not assume Docker is running; always verify it first.
 - Do not use destructive cleanup commands such as `docker system prune`, `docker volume rm`, or `docker compose down -v` unless explicitly requested.
 - Prefer `docker compose` over legacy `docker-compose`.
 - If permissions fail with `permission denied` on `/var/run/docker.sock`, report that the user may need Docker group membership or `sudo`, then use the least invasive command that completes the task.
-- After startup, confirm that required database ports and health checks are available before moving on to application commands.
-- Do not assume a database is ready just because the container is running; check health status, logs, or a project-specific readiness command.

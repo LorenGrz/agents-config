@@ -25,18 +25,13 @@ Read and search Jira/Confluence freely; change anything only after the user appr
 
 ## Rules
 
-- In a repo that matches an organization, use that organization's replacement skill when one is installed (e.g. in `.claude/skills/`); its rules win.
+- In a repo that matches an organization, use that organization's replacement skill when one is installed (e.g. in `.claude/skills/`); its rules win. The org's `POLICIES.md` and the `github-usage` skill (Organizations) apply too: tracker writes need the user's OK on the exact text; a policy may add restrictions, never relax these.
 
 ### Write rules (approval required)
 
 - Create, edit, comment, transition, worklog, link, and Confluence create/update: show the exact text (fields, comment body, page content) and the target, then wait for an explicit OK.
 - Before a transition, call `getTransitionsForJiraIssue`, show the available transitions, and let the user pick.
 - Re-confirm if the text changes after approval.
-
-### Organization repos
-
-- In a repo that matches an organization, follow its `POLICIES.md` and the `github-usage` skill: tracker writes need the user's OK on the exact text.
-- A policy may add restrictions, never relax these.
 
 ### Operating Rules
 

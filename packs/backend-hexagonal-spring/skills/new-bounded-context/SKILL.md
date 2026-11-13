@@ -11,7 +11,7 @@ Add a new bounded context (module/aggregate) to a hexagonal Spring backend: stru
 
 ## Prerequisites
 
-Read `hexagonal-architecture` first. Ask the user (never assume) for: the aggregate and its states, what it needs from other contexts, and the persistence/auth decisions already recorded in `docs/decisions/`.
+Read `hexagonal-architecture` first: its layer and model rules apply to every step. Ask the user (never assume) for: the aggregate and its states, what it needs from other contexts, and the persistence/auth decisions already recorded in `docs/decisions/`.
 
 ## Workflow
 
@@ -33,10 +33,10 @@ Read `hexagonal-architecture` first. Ask the user (never assume) for: the aggreg
 1. **Domain model**: private constructor; `create(...)` enforces invariants, `restore(...)` does not; mutating methods start with `ensureStatus`/`ensureEditable`; unmodifiable collections.
 2. **Commands**: one immutable record per use case.
 3. **Ports**: `XRepository` in domain; `XSnapshot` + `XLookup` (read-only) for other contexts; a snapshot + lookup per dependency on another context.
-4. **Services**: one per use case; load, call the domain method, side effects via ports, save.
+4. **Services**: one per use case, orchestration only.
 5. **Persistence**: JPA entity separate from the domain model, `MapStruct`-style or hand-written mapper, `RepositoryAdapter` implements the port and delegates mapping to the mapper.
 6. **REST**: thin controller (authorize, bind a `@Valid` request DTO, call one service, map to a response DTO). Authorize with the project's authorization mechanism.
-7. **Errors**: use the project's exception types, mapped to HTTP status in one `@RestControllerAdvice`: not found -> 404, business rule/conflict -> 409, invalid argument -> 400, bean validation -> 400 with a consistent body.
+7. **Errors**: use the project's exception types (which one, and its status: `pre-delivery-review`, Exceptions), mapped to HTTP status in one `@RestControllerAdvice`; bean validation -> 400 with a consistent body.
 8. **Tests**: domain unit tests per rule, service tests with mocked ports, `@WebMvcTest` for the controller. Then run `pre-delivery-review`.
 
 ```java

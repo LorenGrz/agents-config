@@ -14,8 +14,6 @@ setup, copy it, point it at your own skill roots, and list them in your profile
 
 ## Workflow
 
-### First Step
-
 Identify the task category, then read only the relevant source skill files before acting.
 
 Skill roots: this hub's `skills/` folder (`~/.agents/skills`, linked by `install.sh`) plus any
@@ -24,20 +22,23 @@ extra roots listed under "Codex workflow adapter" in your profile
 
 ### Routing
 
-- New JS/TS project or standard scripts: `typescript-project-starter` skill in this hub.
-- Roadmap planning or learning project scope: `roadmap-coach` skill in this hub.
-- React UI build/review: `ui-builder` / `ui-review` (frontend-ui pack in this hub).
-- React component lifecycle review: `react-component-validator` skill in this hub.
-- TypeScript quality: `typescript-code-quality` skill in this hub.
-- API contracts: `api-contract-design` skill in this hub.
-- Auth/security implementation: `auth-security-basics` skill in this hub.
-- Security review by explicit request: check your profile's extra skill roots.
-- NestJS module generation: `nest-module-generator` skill in this hub.
-- Persistence/database work: `database-persistence-patterns` skill in this hub.
-- Docker-backed local environment: `run-docker-environment` skill in this hub.
-- Test-suite execution and fix loop: `execute-test-suite` skill in this hub.
-- Repository context maintenance: `repository-context-maintainer` skill in this hub.
-- Desktop/OS config, PDFs, browser automation: check your profile's extra skill roots.
+Skills in this hub:
+
+- New JS/TS project or standard scripts: `typescript-project-starter`.
+- Roadmap planning or learning project scope: `roadmap-coach`.
+- React UI build/review: `ui-builder` / `ui-review` (frontend-ui pack).
+- React component lifecycle review: `react-component-validator`.
+- TypeScript quality: `typescript-code-quality`.
+- API contracts: `api-contract-design`.
+- Auth/security implementation: `auth-security-basics`.
+- NestJS module generation: `nest-module-generator`.
+- Persistence/database work: `database-persistence-patterns`.
+- Docker-backed local environment: `run-docker-environment`.
+- Test-suite execution and fix loop: `execute-test-suite`.
+- Repository context maintenance: `repository-context-maintainer`.
+
+In your profile's extra skill roots: security review by explicit request; desktop/OS config, PDFs,
+browser automation.
 
 ## Rules
 
@@ -48,13 +49,6 @@ extra roots listed under "Codex workflow adapter" in your profile
   your profile.
 - For roadmap work, keep the next step small and aligned with the sequence in your profile
   or the `roadmap-coach` skill.
-
-### Startup Check For A Personal Roadmap Repo
-
-If your profile names a roadmap repo, read, when relevant:
-
-- `<roadmap-repo>/README.md`
-- `<roadmap-repo>/.agents/CONTEXT.md`
-- `pnpm-workspace.yaml` if package installation or workspace behavior is involved.
-
-Remember: `node_modules/` must stay untracked.
+- If your profile names a roadmap repo, read, when relevant: `<roadmap-repo>/README.md`,
+  `<roadmap-repo>/.agents/CONTEXT.md`, and `pnpm-workspace.yaml` if package installation or
+  workspace behavior is involved. `node_modules/` must stay untracked.

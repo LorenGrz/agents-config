@@ -26,18 +26,11 @@ Keep React components predictable, readable, and lifecycle-safe by avoiding unne
 
 ## Rules
 
-### Validation Checklist
+### Before adding or changing `useEffect`
 
-Before adding or changing `useEffect`, ask whether the logic can be expressed through:
+Ask whether the logic can be expressed through render-time derived values, event handlers, reducer state transitions, server state or query library APIs, a custom hook with explicit inputs and outputs, or a project-standard lifecycle helper such as `useOnInit`.
 
-- Render-time derived values.
-- Event handlers.
-- Reducer state transitions.
-- Server state or query library APIs.
-- A custom hook with explicit inputs and outputs.
-- A project-standard lifecycle helper such as `useOnInit`.
-
-### Effect Rules
+### Effects
 
 - Do not use `useEffect` to derive state that can be computed during render.
 - Do not use `useEffect` to mirror props into local state unless there is a clear reset or synchronization requirement.
@@ -46,11 +39,9 @@ Before adding or changing `useEffect`, ask whether the logic can be expressed th
 - Do not mix unrelated responsibilities in a single effect.
 - Always return cleanup functions for subscriptions, timers, observers, sockets, and external listeners.
 
-### `useOnInit` Standard
+### `useOnInit` standard
 
-Use `useOnInit` or the repository's equivalent lifecycle hook for intentional mount-only initialization when the codebase already provides that standard.
-
-Expected usage pattern:
+Use `useOnInit` or the repository's equivalent lifecycle hook for intentional mount-only initialization when the codebase already provides that standard:
 
 ```tsx
 useOnInit(() => {
@@ -60,25 +51,13 @@ useOnInit(() => {
 
 If the project does not provide `useOnInit`, prefer an explicit custom hook for the behavior rather than adding ad hoc lifecycle effects throughout components.
 
-### Custom Hook Guidance
+### Custom hooks
 
-Extract a hook when lifecycle logic:
+Extract a hook when lifecycle logic is reused by multiple components; coordinates async loading, subscriptions, timers, or browser APIs; makes the component difficult to scan; or requires cleanup or cancellation. Expose a small API: `const { data, status, retry } = useFeatureData(featureId);`
 
-- Is reused by multiple components.
-- Coordinates async loading, subscriptions, timers, or browser APIs.
-- Makes the component difficult to scan.
-- Requires cleanup or cancellation.
+### Components
 
-Custom hooks should expose a small API:
-
-```tsx
-const { data, status, retry } = useFeatureData(featureId);
-```
-
-### Component Rules
-
-- Keep components focused on rendering and user interaction.
-- Keep async orchestration, subscriptions, and integration logic outside presentational components.
+- Keep components focused on rendering and user interaction; async orchestration, subscriptions, and integration logic live outside presentational components.
 - Prefer controlled data flow over local synchronization effects.
 - Prefer explicit status states over boolean combinations that become ambiguous.
 - Preserve existing project conventions for state libraries, query clients, forms, and routing.
@@ -87,11 +66,7 @@ const { data, status, retry } = useFeatureData(featureId);
 
 ## Reference
 
-### Compatibility Notes
-
-- Pair this skill with `ui-builder` / `ui-review` (frontend-ui pack) for broad frontend build and review.
-- Pair this skill with `nextjs-ssr-frontend` when reviewing server/client boundaries.
-- Pair this skill with `react-native-mobile` when lifecycle behavior depends on mobile APIs.
+Related skills, each only when installed in the project: `ui-builder` / `ui-review` (frontend-ui pack) for broad frontend build and review; `nextjs-ssr-frontend` for server/client boundaries; `react-native-mobile` when lifecycle behavior depends on mobile APIs.
 
 ## Output
 

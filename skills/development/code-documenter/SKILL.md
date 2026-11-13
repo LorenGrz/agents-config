@@ -22,23 +22,22 @@ metadata:
 
 ## Objective
 
-Turn undocumented code into accurate reference docs in the format the language expects: TSDoc/JSDoc for TypeScript and JavaScript, docstrings for Python, KDoc for Kotlin, Javadoc for Java.
+Turn undocumented code into accurate reference docs in the language's native format: TSDoc/JSDoc for TypeScript and JavaScript, docstrings for Python, KDoc for Kotlin, Javadoc for Java.
 
 ## Workflow
 
 1. Read the whole unit: signature, body, control flow, thrown errors, external calls.
-2. Describe what it does in one sentence that does not just restate the name.
-3. List every parameter with its type, whether it is optional, and its default.
-4. Document the return type and what each variant means for union or result types.
+2. Describe what it does in one sentence that does not restate the name.
+3. List every parameter: type, optional or not, default.
+4. Document the return type, and what each variant means for union or result types.
 5. Write at least two runnable examples: the normal case and one special case.
-6. List edge cases the caller must handle: null or undefined input, empty arrays, out-of-range values, unexpected types, thrown errors.
-7. If numeric or unit assumptions exist (milliseconds, 0-based index, currency), state them.
+6. List the edge cases the caller must handle: null or undefined input, empty arrays, out-of-range values, unexpected types, thrown errors.
+7. State numeric or unit assumptions (milliseconds, 0-based index, currency).
 
 ## Rules
 
 - Do not document behavior that is not in the code. If intent is unclear, say so instead of guessing.
 - Do not restate the obvious ("returns a boolean").
-- Every parameter needs a type and a reason to exist in the docs.
 - Examples must run without modification against the real signature.
 - Match the surrounding file's existing doc style and comment density.
 - For deeper TypeScript typing concerns, defer to `typescript-code-quality`.
