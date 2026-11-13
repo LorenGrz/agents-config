@@ -99,7 +99,7 @@ check "--no-packs installs no pack commands" 'bash "$HUB/scripts/project-agents.
 # --- workspace.sh (personal mode)
 WS="$W/ws"; mkdir -p "$WS/front" "$WS/back"; git -C "$WS/front" init -q; git -C "$WS/back" init -q
 WA=(--dir "$WS" --name app --repo front:frontend:react-vite --repo back:backend:java-spring)
-WSH="$HUB/devops/project-init/scripts/workspace.sh"
+WSH="$HUB/skills/devops/project-init/scripts/workspace.sh"
 check "workspace.sh refuses fewer than 2 repos" '! bash "$WSH" --dir "$WS" --name app --repo front:frontend:- >/dev/null 2>&1'
 bash "$WSH" "${WA[@]}" >/dev/null 2>&1
 check "workspace.sh writes AGENTS.md with marker and CLAUDE.md" 'head -n 1 "$WS/AGENTS.md" | grep -q workspace-init && grep -q "@AGENTS.md" "$WS/CLAUDE.md"'

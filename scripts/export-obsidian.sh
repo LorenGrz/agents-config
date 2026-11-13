@@ -123,7 +123,7 @@ while IFS= read -r f; do
   cat="$(basename "$(dirname "$d")")"
   CAT_COUNT[$cat]=$(( ${CAT_COUNT[$cat]:-0} + 1 ))
   add_skill "$f" "$cat" 
-done < <(find "$HUB" -mindepth 3 -maxdepth 3 -name SKILL.md -not -path "$HUB/config/*" -not -path "$HUB/.git/*" | sort)
+done < <(find "$HUB/skills" -mindepth 3 -maxdepth 3 -name SKILL.md | sort)
 
 while IFS= read -r key; do
   pname="${key%@*}"
@@ -158,7 +158,7 @@ intro="$(awk 'NR > 1 && /^[A-Za-z*]/ && !/^#/ { p = 1 } p && /^$/ { exit } p { p
 routing="$(awk '/^## Agent Routing/ { s = 1; next } s && /^### / { exit } s && /^## / { exit } s' "$HUB/config/CLAUDE.md" | sed '/^$/N;/^\n$/D')"
 structure=""
 for c in $(printf '%s\n' "${!CAT_COUNT[@]}" | sort); do
-  structure+="- \`$c/\` — ${CAT_COUNT[$c]} skills"$'\n'
+  structure+="- \`skills/$c/\` — ${CAT_COUNT[$c]} skills"$'\n'
 done
 
 write_note "agents-config.md" <<NOTE
@@ -174,16 +174,16 @@ $intro
 
 ## Estructura de primer nivel
 
-Directorios de categoría con la cantidad de skills de cada uno:
+Categorías dentro de \`skills/\` con la cantidad de skills de cada una:
 
 $structure
 Además: \`config/\` (instrucciones, reglas, hooks, subagentes, settings base), \`scripts/\`, \`docs/\` (ADRs, specs, planes), \`organizations/\` y \`packs/\`.
 
 ## Flujo de instalación
 
-1. \`git clone https://github.com/LorenGrz/agents-config ~/.agents/skills\`
+1. \`git clone https://github.com/LorenGrz/agents-config\` (por ejemplo en \`~/projects/agents-config\`)
 2. \`install.sh --dry-run\` para previsualizar sin cambiar nada.
-3. \`install.sh --profile <nombre>\` instala config, reglas, hooks, subagentes y skills.
+3. \`install.sh --profile <nombre>\` instala config, reglas, hooks, subagentes y skills (enlaza \`~/.agents/skills\` a \`skills/\` del hub).
 
 Flags de \`install.sh\`:
 

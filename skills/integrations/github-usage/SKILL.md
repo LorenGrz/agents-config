@@ -50,8 +50,8 @@ scripts in `scripts/` (Playwright, run from that directory; first time: `pnpm ru
    --body-file`. Editing the PR body is a write: show the new body and get an OK unless the PR flow
    already approved it.
 
-Never commit screenshots to the repo (no `screenshots` branch either). Org rules still apply: in
-Reino the images go in `## Capturas` (no Artifact link since 2026-11-10). If a script
+Never commit screenshots to the repo (no `screenshots` branch either). Org rules still apply (an
+org's POLICIES.md may set where the images go). If a script
 fails on GitHub's markup, fix `SELECTORES` in `gh-upload-images.mjs` instead of falling back to
 asking the user to drag the files.
 

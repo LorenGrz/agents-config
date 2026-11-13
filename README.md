@@ -24,9 +24,9 @@ Pick **one** method per machine — they overlap and aren't meant to be combined
 ### Method 1 — `install.sh` (full: config + rules + hooks + subagents + skills)
 
 ```bash
-git clone https://github.com/LorenGrz/agents-config ~/.agents/skills
-~/.agents/skills/install.sh --dry-run    # preview, changes nothing
-~/.agents/skills/install.sh --profile <your-name>
+git clone https://github.com/LorenGrz/agents-config ~/projects/agents-config   # any path works
+~/projects/agents-config/install.sh --dry-run    # preview, changes nothing
+~/projects/agents-config/install.sh --profile <your-name>   # also links ~/.agents/skills -> <clone>/skills
 ```
 
 Inside a Claude Code or Codex session opened in the clone, you can instead just ask your
@@ -121,7 +121,7 @@ base (this repo, public) -> organization (private repo in organizations/) -> pro
 
 - Add a company or client: `scripts/orgs.sh add <name> <git-url>` or `--init`, or the `org-creator` skill. Details: `organizations/README.md`.
 - Packs: `packs/<name>/pack.json` says when it applies; `scripts/project-agents.sh --manifest <file> [--org <name>]` installs it.
-- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `scripts/test-intents.sh`, `devops/project-init/scripts/test-manifest.sh`, `test-docs-check.sh`, and `e2e.sh` per stack.
+- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `scripts/test-intents.sh`, `skills/devops/project-init/scripts/test-manifest.sh`, `test-docs-check.sh`, and `e2e.sh` per stack.
 - Guards: `scripts/leak-guard.sh` (blocklist stays local; hooks pre-commit, commit-msg, pre-push) and `scripts/gen-plugin.sh --check`; enable with `git config core.hooksPath .githooks`. Tests: add `scripts/test-leak-guard.sh`.
 - Requirements: bash 4+, `jq`, GNU sed/awk/xargs/tar (Linux; on macOS `brew install bash gnu-sed gawk findutils gnu-tar`).
 
@@ -139,7 +139,7 @@ base (this repo, public) -> organization (private repo in organizations/) -> pro
 | external (symlinked, not vendored) | `apexlang` (Oracle APEX), `omarchy`, `diagnose-crash` (ship with Omarchy) |
 
 Each skill's `SKILL.md` has the one-line purpose in its `description` frontmatter; browse
-the directories above for the full list with links, or run `rg description */*/SKILL.md`.
+the directories above for the full list with links, or run `rg description skills/*/*/SKILL.md`.
 
 ## How it works
 
@@ -206,7 +206,7 @@ an AGENTS.md "Base branch is `x`" rule, then the organization's `base_branch`, t
 
 The global layer only *guides* a model. It can't stop a human, a different AI, or a model
 having a bad day from skipping it — instructions are advisory, not enforced. `project-init`
-(`devops/project-init/`) scaffolds a repo so the standards hold regardless of who or what is
+(`skills/devops/project-init/`) scaffolds a repo so the standards hold regardless of who or what is
 driving:
 
 | Adds | Why |
@@ -248,7 +248,7 @@ stay global.
 
 A plain folder that groups repos (a frontend and a backend, say) is a **workspace**, marked by its own
 `AGENTS.md` (first line `<!-- workspace-init -->`). `project-init`'s workspace mode
-(`devops/project-init/scripts/workspace.sh`) writes it after an interview: repo map, how the repos talk,
+(`skills/devops/project-init/scripts/workspace.sh`) writes it after an interview: repo map, how the repos talk,
 cross-repo flow and, with `--org`, the organization's policies and skills. Stack skills stay in each repo, so
 opening Claude in the workspace gives the generic layer and each repo adds its own. Where it lives: with an
 organization, in `organizations/<org>/workspaces/<name>/` (private repo, symlinked into the folder); without

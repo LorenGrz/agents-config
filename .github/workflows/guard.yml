@@ -41,5 +41,5 @@ jobs:
           bash scripts/test-orgs.sh
           bash scripts/test-intents.sh
           bash scripts/test-cli-baselines.sh
-          bash devops/project-init/scripts/test-manifest.sh
-          bash devops/project-init/scripts/test-docs-check.sh
+          bash skills/devops/project-init/scripts/test-manifest.sh
+          bash skills/devops/project-init/scripts/test-docs-check.sh

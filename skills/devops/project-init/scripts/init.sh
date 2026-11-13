@@ -108,7 +108,7 @@ if [ -n "$MANIFEST" ]; then
   ORG="${ORG:-$(jq -r '.org // empty' "$MANIFEST")}"
   STACK="${STACK:-$(jq -r '.stacks[0]' "$MANIFEST")}"
   if [ -z "$WITH" ]; then
-    WITH="$(jq -r --slurpfile sc "$_sd/../../config/scopes.json" \
+    WITH="$(jq -r --slurpfile sc "$_sd/../../../config/scopes.json" \
       '[(.stacks[1:][]?), (.extras[]?)] | map(select($sc[0].stacks[.] != null)) | join(",")' "$MANIFEST")"
   fi
 fi
@@ -132,7 +132,7 @@ DATE="$(date +%Y-%m-%d)"
 # The org's POLICIES.md is private: never copy it into a repo owned by someone else by accident.
 if [ -n "$ORG" ]; then
   [[ "$ORG" =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "Error: invalid organization name '$ORG'" >&2; exit 1; }
-  _oj="$SKILL_DIR/../../organizations/$ORG/org.json"
+  _oj="$SKILL_DIR/../../../organizations/$ORG/org.json"
   if [ -f "$_oj" ] && ! jq -e --arg o "$OWNER" '(.match.gh_owners // []) | any(ascii_downcase == ($o | ascii_downcase))' "$_oj" >/dev/null; then
     echo "warning: project owner '$OWNER' is not one of organization '$ORG' GitHub owners ($(jq -r '(.match.gh_owners // []) | join(", ")' "$_oj"))." >&2
     echo "         Its private POLICIES.md would be copied into this project." >&2
@@ -580,7 +580,7 @@ run_stack_format() {
 # Skills, rules, MCP and packs (commands, keyword table, critical.json) from the hub.
 # Runs before the formatters so the copied markdown gets formatted with the rest.
 install_agent_scope() {
-  local hub; hub="$(cd "$SKILL_DIR/../.." && pwd)"
+  local hub; hub="$(cd "$SKILL_DIR/../../.." && pwd)"
   [ -x "$hub/scripts/project-agents.sh" ] || return 0
   bash "$hub/scripts/project-agents.sh" --stack "$STACK${WITH:+,$WITH}" ${MANIFEST:+--manifest "$MANIFEST"} ${ORG:+--org "$ORG"} --dir "$DIR"
 }

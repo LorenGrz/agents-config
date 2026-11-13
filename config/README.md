@@ -93,7 +93,7 @@ Path-scoped — each loads only when Claude touches a matching file.
 
 This `config/` tree is global (machine-wide). Per-repo agent config — `AGENTS.md`,
 `.claude/settings.json` with superpowers, branch/lint hooks, CI, GitHub Project —
-comes from the `devops/project-init` skill, run once per new repo.
+comes from the `skills/devops/project-init` skill, run once per new repo.
 
 **`scopes.json`** — which skills/rules/MCP belong to which stack. Unlisted = global. Per-project
 install: `scripts/project-agents.sh --stack <a,b> --dir <repo>` (ADR 0011).

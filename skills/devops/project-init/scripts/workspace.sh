@@ -21,7 +21,7 @@
 # this script only receives the answers.
 set -euo pipefail
 
-HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 DIR="" NAME="" ORG="" COMM="" CROSS="" DRY=0
 REPOS=()
 die() { echo "Error: $*" >&2; exit 1; }

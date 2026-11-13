@@ -19,7 +19,7 @@ touches `~/.claude/` and `~/.codex/`.
    - If the user already has `config/profiles/<name>.md`, confirm that's the one to use.
    - If not, ask: their name, preferred language for replies, whether they want a 2-line
      `English note` + `Better` line added when they write partly/fully in English, their
-     GitHub owner/username (for `devops/project-init` defaults), and a short line on their
+     GitHub owner/username (for `skills/devops/project-init` defaults), and a short line on their
      current stack/learning stage. Create `config/profiles/<name>.md` from
      `config/profiles/_template.md` with their answers filled in. Don't put any of this in
      `config/AGENTS.md` or `config/CLAUDE.md` — those must stay shareable.

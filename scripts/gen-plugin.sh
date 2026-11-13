@@ -19,7 +19,7 @@ command -v jq >/dev/null || { echo "Error: jq is required" >&2; exit 1; }
 
 project_skills="$(jq -r '[.stacks[].skills[]] | unique[]' "$SCOPES")"
 skills="$(
-  find "$HUB" -mindepth 3 -maxdepth 3 -name SKILL.md -not -path "$HUB/config/*" -not -path "$HUB/.git/*" \
+  find "$HUB/skills" -mindepth 3 -maxdepth 3 -name SKILL.md \
     | while read -r f; do
         d="$(dirname "$f")"
         grep -qxF -- "$(basename "$d")" <<<"$project_skills" && continue

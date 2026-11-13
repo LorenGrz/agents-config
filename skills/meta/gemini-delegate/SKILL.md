@@ -21,7 +21,7 @@ Sends a task to Gemini through the Antigravity CLI so the volume of reading/gene
 
 1. Write the spec to a file (scratchpad or `docs/superpowers/plans/…`): goal, exact files, constraints, and the acceptance command. Gemini has no other context.
 2. Make sure the worktree is clean (commit/stash). For big jobs prefer a git worktree.
-3. Run: `meta/gemini-delegate/scripts/gemini-delegate.sh run -f <spec.md>` (options: `--model`, `--timeout 20m`, `--allow-dirty`). It runs `agy -p … --dangerously-skip-permissions`, so the clean-worktree check is the safety net: everything Gemini did is the diff.
+3. Run: `~/.agents/skills/meta/gemini-delegate/scripts/gemini-delegate.sh run -f <spec.md>` (options: `--model`, `--timeout 20m`, `--allow-dirty`). It runs `agy -p … --dangerously-skip-permissions`, so the clean-worktree check is the safety net: everything Gemini did is the diff.
 4. Review `git diff`, run the acceptance command yourself. If it fails, fix inline or re-run with the failure pasted into a new spec. If the diff is wrong, discard it with the user's OK.
 5. Report: files changed, verification command and result, anything unverified.
 

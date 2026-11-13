@@ -9,7 +9,7 @@
     {
       "name": "agents-config",
       "source": "./",
-      "description": "Skill library (aws/development/devops/meta/productivity/quality/security), the scout/worker/reasoner subagents, and generic lifecycle hooks. For rules and the generated CLAUDE.md/AGENTS.md, use install.sh instead — see the README."
+      "description": "Skill library (skills/: aws, development, devops, integrations, meta, productivity, quality, security), the scout/worker/reasoner subagents, and generic lifecycle hooks. For rules and the generated CLAUDE.md/AGENTS.md, use install.sh instead — see the README."
     }
   ]
 }

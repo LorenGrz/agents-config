@@ -92,8 +92,7 @@ fi
 
 find_skill() {
   local name="$1" d
-  d="$(find "$HUB" -mindepth 2 -maxdepth 2 -name "$name" \( -type d -o -type l \) -not -path "$HUB/config/*" -not -path "$HUB/.git/*" | head -1)"
-  [ -n "$d" ] || { [ -e "$HUB/$name/SKILL.md" ] && d="$HUB/$name"; }
+  d="$(find "$HUB/skills" -mindepth 2 -maxdepth 2 -name "$name" \( -type d -o -type l \) | head -1)"
   printf '%s' "$d"
 }
 

@@ -28,7 +28,7 @@
     "kotlin": { "skills": [], "rules": ["kotlin"] },
     "java-spring": { "skills": [], "rules": ["java"] },
     "kotlin-spring": { "skills": [], "rules": [] },
-    "apex": { "skills": ["apexlang"], "rules": [] },
+    "apex": { "skills": [], "rules": [] },
     "docker": { "skills": ["run-docker-environment"], "rules": [] },
     "llm": { "skills": ["prompt-injection-defense"], "rules": [] },
     "office": {

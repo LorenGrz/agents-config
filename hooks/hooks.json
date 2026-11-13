@@ -27,6 +27,15 @@
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/config/hooks/intent-router.sh\""
           }
         ]
+      },
+      {
+        "matcher": "AskUserQuestion|ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/config/hooks/lane-guard.sh\""
+          }
+        ]
       }
     ],
     "PostToolUse": [

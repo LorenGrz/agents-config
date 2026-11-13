@@ -14,7 +14,7 @@ setup, copy it, point it at your own skill roots, and list them in your profile
 
 Identify the task category, then read only the relevant source skill files before acting.
 
-Skill roots: this hub (`~/.agents/skills`, i.e. wherever this repo is cloned) plus any
+Skill roots: this hub's `skills/` folder (`~/.agents/skills`, linked by `install.sh`) plus any
 extra roots listed under "Codex workflow adapter" in your profile
 (`config/profiles/<your-name>.md`) — e.g. `~/.codex/skills` or an OS-specific skill path.
 

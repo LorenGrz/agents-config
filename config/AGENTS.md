@@ -55,7 +55,7 @@ PR flow, tracker writes, issue suggestions). An org's `POLICIES.md` may add to t
 
 Learning roadmap and current stage are personal — see your profile
 (`config/profiles/<your-name>.md`) and the `roadmap-coach` skill
-(`meta/roadmap-coach/references/roadmap-detail.md`).
+(`skills/meta/roadmap-coach/references/roadmap-detail.md`).
 
 ## Git
 

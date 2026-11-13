@@ -11,7 +11,7 @@ DRY_RUN=0
 stage="${1:-}"
 [[ -n "$stage" ]] || { echo "usage: $0 [--dry-run] \"<stage text>\"" >&2; exit 2; }
 
-hub=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
+hub=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)
 cfg_dir="${XDG_CONFIG_HOME:-$HOME/.config}"
 profile_file="$cfg_dir/agents-config/profile"
 [[ -f "$profile_file" ]] || profile_file="$cfg_dir/agent-config/profile" # legacy path

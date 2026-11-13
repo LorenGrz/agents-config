@@ -8,7 +8,7 @@ picture; this file is the map for an agent working *in this repo*, not the confi
 
 ## If the user asks to install or set up this repo
 
-Use the `agents-config-setup` skill (`meta/agents-config-setup/SKILL.md`) if it's available;
+Use the `agents-config-setup` skill (`skills/meta/agents-config-setup/SKILL.md`) if it's available;
 otherwise follow the same steps by hand:
 
 1. Read this repo's `README.md` "Install" section.
@@ -28,8 +28,9 @@ writing. Don't hand-edit those generated files; edit the repo and re-run `instal
 
 ## Adding or editing a skill
 
-1. Create or edit `<category>/<skill>/SKILL.md` (categories: `aws/`, `development/`,
-   `devops/`, `meta/`, `productivity/`, `quality/`, `security/`). Each skill is a directory
+1. Create or edit `skills/<category>/<skill>/SKILL.md` (categories: `aws/`, `development/`,
+   `devops/`, `integrations/`, `meta/`, `productivity/`, `quality/`, `security/`; `external/`
+   holds gitignored symlinks to skills installed outside the hub). Each skill is a directory
    with its own `SKILL.md`; frontmatter needs `name` and a `description` that states when to
    use it.
 2. Decide its scope: generic skills are global by default; stack-specific ones go under a stack in
@@ -43,7 +44,7 @@ writing. Don't hand-edit those generated files; edit the repo and re-run `instal
 - Structural/trade-off decisions about this hub's own layout go in `docs/decisions/` as
   ADRs (copy the newest one's shape; see `docs/decisions/0001-single-repo.md` onward).
 - `config/` is the global, machine-wide layer — see `config/README.md`. Per-repo scaffolding
-  (for repos *other than this one*) is `devops/project-init`.
+  (for repos *other than this one*) is `skills/devops/project-init`.
 - Personal content (names, paths, learning stage, GitHub owner) belongs in
   `config/profiles/<name>.md`, never in `config/AGENTS.md` or `config/CLAUDE.md` — those two
   must stay shareable with anyone who clones this repo.
