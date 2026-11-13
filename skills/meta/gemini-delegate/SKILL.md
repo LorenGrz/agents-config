@@ -5,6 +5,8 @@ description: Use when the user asks to use Gemini / Google / Antigravity (`agy`)
 
 # gemini-delegate
 
+## Objective
+
 Sends a task to Gemini through the Antigravity CLI so the volume of reading/generation runs on Google's quota instead of Anthropic's. Gemini sees the repo and the shared skills/rules (rulesync, ADR 0002) but **not this conversation** — everything it needs must be in the spec.
 
 ## When to use
@@ -12,12 +14,12 @@ Sends a task to Gemini through the Antigravity CLI so the volume of reading/gene
 - Large mechanical writing from an already-decided plan, bulk tests/boilerplate, wide read-and-summarize passes.
 - The user explicitly asks for Gemini / Google / Antigravity.
 
-## When not to
+### When not to
 
 - Architecture, security, migrations, unknown-cause bugs → `reasoner` / plan mode. Gemini executes decisions, it does not make them.
 - Small changes (≤3 known files) → inline; the spec costs more than the edit.
 
-## Flow
+## Workflow
 
 1. Write the spec to a file (scratchpad or `docs/superpowers/plans/…`): goal, exact files, constraints, and the acceptance command. Gemini has no other context.
 2. Make sure the worktree is clean (commit/stash). For big jobs prefer a git worktree.
@@ -25,7 +27,7 @@ Sends a task to Gemini through the Antigravity CLI so the volume of reading/gene
 4. Review `git diff`, run the acceptance command yourself. If it fails, fix inline or re-run with the failure pasted into a new spec. If the diff is wrong, discard it with the user's OK.
 5. Report: files changed, verification command and result, anything unverified.
 
-## Hand-off to the user
+### Hand-off to the user
 
 `gemini-delegate.sh open -f <spec.md>` opens an interactive `agy -i` session (tmux split if inside tmux, otherwise the default terminal) with the prompt loaded, and returns immediately. Use it when the user wants to drive Gemini themselves.
 

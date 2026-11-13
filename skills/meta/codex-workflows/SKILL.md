@@ -5,12 +5,16 @@ description: Example personal workflow-adapter skill (Loren's own setup, kept as
 
 # Codex Workflows Adapter
 
+## Objective
+
 Adapts Claude Code to an existing Codex setup without duplicating stale instructions. This
 skill is Loren's own example, not a generic tool — if you're adapting it for your own
 setup, copy it, point it at your own skill roots, and list them in your profile
 (`config/profiles/<your-name>.md`) instead of hardcoding them here.
 
-## First Step
+## Workflow
+
+### First Step
 
 Identify the task category, then read only the relevant source skill files before acting.
 
@@ -18,7 +22,7 @@ Skill roots: this hub's `skills/` folder (`~/.agents/skills`, linked by `install
 extra roots listed under "Codex workflow adapter" in your profile
 (`config/profiles/<your-name>.md`) — e.g. `~/.codex/skills` or an OS-specific skill path.
 
-## Routing
+### Routing
 
 - New JS/TS project or standard scripts: `typescript-project-starter` skill in this hub.
 - Roadmap planning or learning project scope: `roadmap-coach` skill in this hub.
@@ -45,7 +49,7 @@ extra roots listed under "Codex workflow adapter" in your profile
 - For roadmap work, keep the next step small and aligned with the sequence in your profile
   or the `roadmap-coach` skill.
 
-## Startup Check For A Personal Roadmap Repo
+### Startup Check For A Personal Roadmap Repo
 
 If your profile names a roadmap repo, read, when relevant:
 

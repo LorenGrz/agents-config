@@ -5,6 +5,8 @@ description: Use this skill when starting a new project or repo, or when adoptin
 
 # Project Init
 
+## Objective
+
 Scaffold a new repo once, correctly, instead of re-deciding workflow per project.
 
 ## Workflow
@@ -48,36 +50,13 @@ Scaffold a new repo once, correctly, instead of re-deciding workflow per project
 
 5. **Verify and report**: repo URL, dev as default branch, Project URL, CI green on the first PR.
 
-## Daily workflow (what the generated AGENTS.md documents)
+### Daily workflow (what the generated AGENTS.md documents)
 
 Everything starts as an issue in the Project. Non-trivial `feat`/`refactor` work goes through superpowers `brainstorming` -> a spec in `docs/superpowers/specs/` -> `writing-plans` -> a plan in `docs/superpowers/plans/`. `fix` work goes through `systematic-debugging` and only gets a spec if behavior changes. Then `scripts/gh-flow.sh start <type> <slug> --issue N`, implement with `subagent-driven-development` + `test-driven-development`, `verification-before-completion`, `scripts/gh-flow.sh pr`, wait for CI, `scripts/gh-flow.sh merge`. Base branch is always `dev`; `main` only moves via `scripts/gh-flow.sh release`. Agents without superpowers installed follow the same steps manually.
 
 The generated `AGENTS.md` is the source of truth for the new repo - read it there, not here, once a project exists. If the code and the doc disagree, fix the doc.
 
-## Standards and enforcement
-
-Every scaffolded repo carries Loren's engineering standards two ways: as conventions any AI reads (`AGENTS.md`'s "Engineering standards" section plus the stack's `AGENTS.stack.md`), and as mechanical enforcement wherever a tool can actually check it:
-
-- **ESLint** (`eslint.config.*`, `typescript-eslint@8.71.1` as of writing): `no-explicit-any`, `no-floating-promises`, `no-misused-promises`, `consistent-type-imports`, `switch-exhaustiveness-check`, `no-unnecessary-condition` (all type-aware via `projectService: true`), plus `eqeqeq` and `no-console` (errors, allowing `console.warn`/`console.error`). react-vite/next also get `eslint-plugin-jsx-a11y@6.10.2` recommended rules and keep the existing zero-useEffect config (`eslint-plugin-react-hooks` + `eslint-plugin-react-you-might-not-need-an-effect`).
-  - react-vite and nestjs: `pnpm create vite` and `nest new` both default to `oxlint` with no ESLint config at all now - this skill writes a flat `eslint.config.js`/`.mjs` that supersedes it (same pattern the zero-useEffect override already used for vite). `--install` points `lint` at `eslint` instead of the generator's `oxlint` default.
-  - next: `eslint-config-next` already registers the `jsx-a11y` plugin itself (a handful of rules at `warn`). The template merges in `eslint-plugin-jsx-a11y`'s recommended **rules** object only, not its flat-config object (which would try to re-register the same plugin and crash with "Cannot redefine plugin"), and does not need `typescript-eslint` as a direct dependency - `eslint-config-next/typescript` already registers `@typescript-eslint`.
-  - node-ts: has no generator, so the template ships the config outright, plus a pinned `typescript@^5` (typescript-eslint 8.x doesn't yet support TypeScript 7, which is now `npm`'s `latest` tag) and `@types/node`.
-- **tsconfig strictness**: `init.sh --install` runs `scripts/ensure-tsconfig-strict.js` to turn on `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, and `noFallthroughCasesInSwitch` in the project's tsconfig (`tsconfig.app.json` for react-vite, `tsconfig.json` for next/nestjs; node-ts's template ships all four already). All four flags were verified against the stock `pnpm create vite@latest --template react-ts`, `pnpm create next-app@latest`, and `pnpm dlx @nestjs/cli new` scaffolds (October 2026) - none needed to be skipped. The script uses the project's own installed `typescript` to parse the file (comments and all) before deciding what's missing, and only inserts the missing flags as text so existing comments/formatting survive; without `--install` it only prints what it would do.
-- **CI** (`.github/workflows/ci.yml`): the `ci` job (kept as-is, branch protection depends on that check name) gains a non-blocking `pnpm audit --audit-level high` step (`continue-on-error: true`) and a `docs-check` step (see below). A new `secret-scan` job runs `gitleaks/gitleaks-action@v3` with `fetch-depth: 0` - free for personal GitHub accounts, no `GITLEAKS_LICENSE` needed. (The task that commissioned this used `@v2`; v2 is EOL as of September 2026 per the project's own README, so this scaffolds `@v3` instead - same inputs/behavior, different Node runtime underneath.)
-
-## AGENTS.md only (no CLAUDE.md)
-
-New and adopted repos get `AGENTS.md` as the single source and **no `CLAUDE.md`**. Claude Code >= 2.1.277 reads `AGENTS.md` natively (main session and subagents) as long as there is no `CLAUDE.md` in the working directory or any parent directory; one in a parent directory disables that, which is why none is generated. `AGENTS.md` carries a `## Critical rules` block (between `<!-- baseline:start -->` and `<!-- baseline:end -->`, the agents-config baseline) and points every session at `.agents/CONTEXT.md` first.
-
-- `init.sh --claude-shim` / `adopt.sh --claude-shim` write a `CLAUDE.md` whose whole content is `@AGENTS.md`, for older Claude Code versions. It is optional and harmless.
-- An existing `CLAUDE.md` is never deleted or overwritten. One that only says `@AGENTS.md` can stay.
-- `adopt.sh` on a repo whose `AGENTS.md` lacks the markers appends the Critical rules block once; a second run changes nothing.
-
-## Documentation layer
-
-Every scaffolded repo carries enough documentation for a new agent session to work from docs alone: `AGENTS.md`'s "Documentation map" points, in order, to `.agents/CONTEXT.md` (current stack/architecture snapshot), `docs/plans/HANDOFF.md` (current state + how to resume mid-flight work), `docs/architecture.md` (overview/modules/data model/flows/env/deploy skeleton), `docs/decisions/` (ADRs for trade-offs, starting at `0001-record-architecture-decisions.md`, new ones copied from `0000-template.md`), `docs/superpowers/specs|plans/` (the existing spec-driven workflow - every plan and worker spec created in a session, not only the first), and `docs/prompts.md` (every AI prompt the app sends, verbatim, with its history; deleted if the app calls no model). `AGENTS.md`'s "Documentation rules" section says when each gets written and keeps `AGENTS.md` itself capped at ~150 lines. The PR template checklist and a non-blocking `docs-check` step in CI (`scripts/docs-check.sh`, warns via `::warning::` when a PR touches deps/env/docker/workflows/top-level folders without touching docs) nudge toward keeping it current; neither blocks a merge.
-
-## Workspace mode
+### Workspace mode
 
 Use `scripts/workspace.sh` when the target is a plain folder (not a git repo) that holds **2 or more repos side by side** - a frontend and a backend of one product, say. Per-repo setup (init or adopt) is unchanged and stays inside each repo; the workspace layer only adds what is shared: a map of the repos, how they talk, the cross-repo flow and, for an organization, its policies and skills.
 
@@ -94,7 +73,7 @@ Use `scripts/workspace.sh` when the target is a plain folder (not a git repo) th
 
 Open Claude in the workspace folder for cross-repo work. For code changes, work inside the right repo: its own `AGENTS.md`, `.claude/skills` and hooks apply there. SessionStart tells the agent when it starts in a workspace folder.
 
-## Adopting an existing repo
+### Adopting an existing repo
 
 Use `scripts/adopt.sh` instead of `init.sh` when the repo was **not** generated by this skill and already has its own history, CI, and flow. Adopt is docs-only: it never adds hooks, CI, ESLint, pre-push, or branch protection - any of those would break whatever the repo already does. It documents the repo's CURRENT reality (a "Workflow contract" table that may legitimately say "nothing (convention only)" in every row) and only RECOMMENDS stronger enforcement in its output, capped at 3 bullets.
 
@@ -110,7 +89,32 @@ Use `scripts/adopt.sh` instead of `init.sh` when the repo was **not** generated 
 5. Push and land the change following the **repo's own** workflow, not this skill's: open a PR if the repo already uses PRs or has branch protection, otherwise `git merge --no-ff` straight into the default branch.
 6. Remove the worktree: `git -C <repo> worktree remove ../<repo>-adopt` (and delete the branch if it wasn't merged with `--no-ff` locally first).
 
-## Notes
+## Rules
+
+### Standards and enforcement
+
+Every scaffolded repo carries Loren's engineering standards two ways: as conventions any AI reads (`AGENTS.md`'s "Engineering standards" section plus the stack's `AGENTS.stack.md`), and as mechanical enforcement wherever a tool can actually check it:
+
+- **ESLint** (`eslint.config.*`, `typescript-eslint@8.71.1` as of writing): `no-explicit-any`, `no-floating-promises`, `no-misused-promises`, `consistent-type-imports`, `switch-exhaustiveness-check`, `no-unnecessary-condition` (all type-aware via `projectService: true`), plus `eqeqeq` and `no-console` (errors, allowing `console.warn`/`console.error`). react-vite/next also get `eslint-plugin-jsx-a11y@6.10.2` recommended rules and keep the existing zero-useEffect config (`eslint-plugin-react-hooks` + `eslint-plugin-react-you-might-not-need-an-effect`).
+  - react-vite and nestjs: `pnpm create vite` and `nest new` both default to `oxlint` with no ESLint config at all now - this skill writes a flat `eslint.config.js`/`.mjs` that supersedes it (same pattern the zero-useEffect override already used for vite). `--install` points `lint` at `eslint` instead of the generator's `oxlint` default.
+  - next: `eslint-config-next` already registers the `jsx-a11y` plugin itself (a handful of rules at `warn`). The template merges in `eslint-plugin-jsx-a11y`'s recommended **rules** object only, not its flat-config object (which would try to re-register the same plugin and crash with "Cannot redefine plugin"), and does not need `typescript-eslint` as a direct dependency - `eslint-config-next/typescript` already registers `@typescript-eslint`.
+  - node-ts: has no generator, so the template ships the config outright, plus a pinned `typescript@^5` (typescript-eslint 8.x doesn't yet support TypeScript 7, which is now `npm`'s `latest` tag) and `@types/node`.
+- **tsconfig strictness**: `init.sh --install` runs `scripts/ensure-tsconfig-strict.js` to turn on `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, and `noFallthroughCasesInSwitch` in the project's tsconfig (`tsconfig.app.json` for react-vite, `tsconfig.json` for next/nestjs; node-ts's template ships all four already). All four flags were verified against the stock `pnpm create vite@latest --template react-ts`, `pnpm create next-app@latest`, and `pnpm dlx @nestjs/cli new` scaffolds (October 2026) - none needed to be skipped. The script uses the project's own installed `typescript` to parse the file (comments and all) before deciding what's missing, and only inserts the missing flags as text so existing comments/formatting survive; without `--install` it only prints what it would do.
+- **CI** (`.github/workflows/ci.yml`): the `ci` job (kept as-is, branch protection depends on that check name) gains a non-blocking `pnpm audit --audit-level high` step (`continue-on-error: true`) and a `docs-check` step (see below). A new `secret-scan` job runs `gitleaks/gitleaks-action@v3` with `fetch-depth: 0` - free for personal GitHub accounts, no `GITLEAKS_LICENSE` needed. (The task that commissioned this used `@v2`; v2 is EOL as of September 2026 per the project's own README, so this scaffolds `@v3` instead - same inputs/behavior, different Node runtime underneath.)
+
+### AGENTS.md only (no CLAUDE.md)
+
+New and adopted repos get `AGENTS.md` as the single source and **no `CLAUDE.md`**. Claude Code >= 2.1.277 reads `AGENTS.md` natively (main session and subagents) as long as there is no `CLAUDE.md` in the working directory or any parent directory; one in a parent directory disables that, which is why none is generated. `AGENTS.md` carries a `## Critical rules` block (between `<!-- baseline:start -->` and `<!-- baseline:end -->`, the agents-config baseline) and points every session at `.agents/CONTEXT.md` first.
+
+- `init.sh --claude-shim` / `adopt.sh --claude-shim` write a `CLAUDE.md` whose whole content is `@AGENTS.md`, for older Claude Code versions. It is optional and harmless.
+- An existing `CLAUDE.md` is never deleted or overwritten. One that only says `@AGENTS.md` can stay.
+- `adopt.sh` on a repo whose `AGENTS.md` lacks the markers appends the Critical rules block once; a second run changes nothing.
+
+### Documentation layer
+
+Every scaffolded repo carries enough documentation for a new agent session to work from docs alone: `AGENTS.md`'s "Documentation map" points, in order, to `.agents/CONTEXT.md` (current stack/architecture snapshot), `docs/plans/HANDOFF.md` (current state + how to resume mid-flight work), `docs/architecture.md` (overview/modules/data model/flows/env/deploy skeleton), `docs/decisions/` (ADRs for trade-offs, starting at `0001-record-architecture-decisions.md`, new ones copied from `0000-template.md`), `docs/superpowers/specs|plans/` (the existing spec-driven workflow - every plan and worker spec created in a session, not only the first), and `docs/prompts.md` (every AI prompt the app sends, verbatim, with its history; deleted if the app calls no model). `AGENTS.md`'s "Documentation rules" section says when each gets written and keeps `AGENTS.md` itself capped at ~150 lines. The PR template checklist and a non-blocking `docs-check` step in CI (`scripts/docs-check.sh`, warns via `::warning::` when a PR touches deps/env/docker/workflows/top-level folders without touching docs) nudge toward keeping it current; neither blocks a merge.
+
+### Notes
 
 - `init.sh` never overwrites an existing file unless `--force`; it prints `skip <path> (exists)` instead. Safe to re-run (verified by diffing the tree before/after a second run with no flags changed). Two files are a deliberate exception: `eslint.config.js`/`.mjs` and `AGENTS.md` still get overlaid even if a file already exists there, as long as that file doesn't carry this skill's own marker text yet - `create-next-app --eslint` writes its own `eslint.config.mjs`, and Next 16+ also writes a short `AGENTS.md` (regenerated by `next dev` regardless, per its own comment), both at the exact paths this skill needs to own. Once this skill's version is in place (marker present), normal skip-if-exists behavior resumes.
 - `nest new`'s current scaffold ships Vitest, not Jest (`init.sh`'s default `test` script for nestjs follows suit: `vitest run --passWithNoTests`, only used when the generator's own `package.json` is missing a `test` script, which it currently never is).

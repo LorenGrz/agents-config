@@ -1,4 +1,5 @@
 # Roadmap Detail
+Read when: planning or discussing the learning roadmap in depth (roadmap repo paths, long-term product track), beyond the stage line in the profile.
 
 Moved from `config/AGENTS.md` ("## Roadmap") so the always-loaded global
 instructions stay short. Load this file when planning or discussing

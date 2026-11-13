@@ -5,6 +5,8 @@ description: Create or adapt an organization (employer or client) for agents-con
 
 # Org creator
 
+## Objective
+
 Read `organizations/README.md` (the contract) first. The org lives in its own private repo; nothing about it goes into this public repo.
 
 ## Workflow

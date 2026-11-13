@@ -24,7 +24,9 @@ metadata:
 
 Keep one concise, repo-local context file that helps agents understand the project before editing code. The default file is `.agents/CONTEXT.md`.
 
-## Entry Workflow
+## Workflow
+
+### Entry Workflow
 
 When starting work in a repository:
 
@@ -34,7 +36,7 @@ When starting work in a repository:
 4. If it is missing or stale, create or update it by analyzing the actual project.
 5. Do not treat the context file as more authoritative than current code.
 
-## Staleness Signals
+### Staleness Signals
 
 Refresh `.agents/CONTEXT.md` when any of these are true:
 
@@ -45,7 +47,7 @@ Refresh `.agents/CONTEXT.md` when any of these are true:
 - New apps, packages, modules, or services were added.
 - The user says the context is outdated.
 
-## Context Discovery
+### Context Discovery
 
 Use non-destructive inspection commands before writing:
 
@@ -61,7 +63,7 @@ Prefer `rg` for targeted searches:
 rg -n "\"scripts\"|next|nestjs|react-native|expo|typeorm|prisma|vitest|jest|playwright" package.json .
 ```
 
-## Required File Shape
+### Required File Shape
 
 Create or update `.agents/CONTEXT.md` with these sections:
 
@@ -87,7 +89,9 @@ Create or update `.agents/CONTEXT.md` with these sections:
 ## Last Reviewed
 ```
 
-## Writing Rules
+## Rules
+
+### Writing Rules
 
 - Keep the file concise and factual.
 - Prefer bullets over long explanations.
@@ -97,7 +101,7 @@ Create or update `.agents/CONTEXT.md` with these sections:
 - Update `Last Reviewed` with the current date and a short note about what was inspected.
 - Do not include secrets, credentials, tokens, private keys, or machine-specific absolute paths.
 
-## Agent Behavior
+### Agent Behavior
 
 - Before editing code, use this context file to choose relevant skills.
 - If the file is stale, update it as a small preparatory change before larger implementation work.

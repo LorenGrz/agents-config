@@ -5,6 +5,8 @@ description: Use this skill when the user wants to install, set up, update, or p
 
 # agents-config Setup
 
+## Objective
+
 Guide a user through installing or updating this repo's config on their machine. Never run
 a real (non-dry-run) install without the user confirming the plan first — `install.sh`
 touches `~/.claude/` and `~/.codex/`.
@@ -57,14 +59,14 @@ touches `~/.claude/` and `~/.codex/`.
      reduction tool, and runs `rtk init -g`. Explain it's unrelated to the config above —
      skip unless the user specifically wants it.
 
-## Alternative: the plugin marketplace
+### Alternative: the plugin marketplace
 
 If the user only wants skills/agents/hooks (not rules, not the generated `CLAUDE.md`/
 `AGENTS.md`, not `settings.json` merging), point them at
 `claude plugin marketplace add <this-repo>` instead of `install.sh` — see `README.md`'s
 Install section. The two methods aren't meant to be combined on the same machine.
 
-## Notes
+## Rules
 
 - `install.sh` never deletes a real file; it backs up anything it doesn't already own
   before writing over it. If something looks wrong after install, check for a

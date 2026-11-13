@@ -90,7 +90,7 @@ Prepare and validate local Docker infrastructure for development, especially dat
    docker compose logs --tail=100 <service_name>
    ```
 
-## Operating Rules
+## Rules
 
 - Do not assume Docker is running; always verify it first.
 - Do not use destructive cleanup commands such as `docker system prune`, `docker volume rm`, or `docker compose down -v` unless explicitly requested.

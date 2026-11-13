@@ -28,6 +28,14 @@ Produce commit messages in `type(scope): description` form so history stays read
 6. If changes are unrelated, propose separate commits.
 7. Mark breaking changes with a `BREAKING CHANGE:` footer.
 
+## Rules
+
+- Imperative mood: "add", not "added" or "adds".
+- One commit is one logical change; never mix `feat` and `fix`.
+- Do not invent a scope or motive; ask if the type is ambiguous.
+- Keep any trailers a repo or workflow requires (e.g. `Co-Authored-By`, sign-off) below the body.
+- Follow the repo's existing commit style if it diverges from this.
+
 ## Output
 
 ```
@@ -37,11 +45,3 @@ Optional body explaining why, wrapped at ~72 columns.
 
 BREAKING CHANGE: description, if any.
 ```
-
-## Operating Rules
-
-- Imperative mood: "add", not "added" or "adds".
-- One commit is one logical change; never mix `feat` and `fix`.
-- Do not invent a scope or motive; ask if the type is ambiguous.
-- Keep any trailers a repo or workflow requires (e.g. `Co-Authored-By`, sign-off) below the body.
-- Follow the repo's existing commit style if it diverges from this.

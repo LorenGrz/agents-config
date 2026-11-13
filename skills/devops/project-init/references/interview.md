@@ -1,4 +1,5 @@
 # Project interview
+Read when: running the project-init interview, building or validating the manifest, or checking what `init.sh --manifest` does with it.
 
 Run before generating anything. Output: a manifest (`.agents/project.json`, schema below) that `init.sh --manifest` consumes.
 
