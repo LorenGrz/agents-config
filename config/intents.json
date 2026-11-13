@@ -101,7 +101,7 @@
         {
           "label": "Jira ticket",
           "re": "\\bjira\\b|\\bticket\\b|\\b[a-z]{2,10}-[0-9]+\\b|\\bsprint\\b|\\bconfluence\\b",
-          "cmd": "getJiraIssue or JQL search; writes (create, edit, transition, comment) only after showing the exact text and getting an OK"
+          "cmd": "getJiraIssue or JQL search; writes (create, edit, transition, comment) only after showing the exact text and getting an OK; in an org repo, the transitions its skill marks as automatic go without asking"
         }
       ]
     },
