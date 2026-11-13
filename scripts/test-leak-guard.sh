@@ -100,6 +100,8 @@ git -C "$R" rm -q tmp.txt; commit "drop notes"
 guard --log "HEAD~2..HEAD" >/dev/null; rc=$?
 check "--log scans patches (term added then removed)" '[ $rc -ne 0 ]'
 out="$(guard --log "HEAD~2..HEAD")"; check "--log patch hits do not print the term" '! grep -qi "$T" <<<"$out"'
+guard --log "HEAD~1..HEAD" >/dev/null; rc=$?
+check "--log passes a commit that only removes a term" '[ $rc -eq 0 ]'
 
 guard --refs "feat-$T" >/dev/null; rc=$?
 check "--refs rejects a branch name with the term" '[ $rc -ne 0 ]'
