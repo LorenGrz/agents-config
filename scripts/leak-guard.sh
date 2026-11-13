@@ -87,8 +87,11 @@ case "$MODE" in
     if ! out="$(git log --format='%H%n%B%n%D%n--' "$@" 2>/dev/null)"; then
       echo "leak-guard: git log failed for the given range (unknown commit?); nothing was checked" >&2; exit 2
     fi
-    # patches too: a term added in one commit and removed in the next is still in the pushed history
+    # patches too: a term added in one commit and removed in the next is still in the pushed history.
+    # Only added lines count: a removed line was already in the parent tree (public, or added by
+    # another commit of the same range, whose patch is scanned too), so removing a leak never fails.
     if ! patches="$(git log -p --format= "$@" 2>/dev/null)"; then echo "leak-guard: git log -p failed" >&2; exit 2; fi
+    patches="$(grep -a '^+' <<<"$patches" | grep -av '^+++ ' || true)"
     [ "$have_terms" -eq 1 ] && { grep -aniF -f "$tf" <<<"$out" | cut -d: -f1 | sed 's|^|log line |' | hit_list "blocklist term in commit messages or ref names"; }
     [ "$have_terms" -eq 1 ] && { grep -aiF -f "$tf" <<<"$patches" | sed 's|.*|patch|' | hit_list "blocklist term in the patches of the range"; }
     grep -anE "$SECRETS" <<<"$out" | cut -d: -f1 | sed 's|^|log line |' | hit_list "possible secret in commit messages"
