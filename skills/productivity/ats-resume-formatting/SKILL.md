@@ -1,6 +1,6 @@
 ---
 name: ats-resume-formatting
-description: Use this skill whenever a resume needs to be formatted, reviewed, or debugged for upload to Workday, Greenhouse, Lever, iCIMS, or any other ATS (applicant tracking system). Trigger on requests like "format my resume for ATS," "is my resume ATS-friendly," "why is Workday leaving fields blank," "clean up my resume for online applications," or "make my resume parse-safe." Also trigger proactively any time a user is building or editing a resume that will be uploaded to a job portal, even if they don't mention "ATS" by name — most resume-formatting requests have this failure mode lurking under the surface. Prevents the most common cause of silent application failure — a resume that looks perfect to a human but leaves the Company, Dates, or Title field blank or wrong in the parsed record, which means the candidate never surfaces in recruiter search regardless of how strong the resume is.
+description: Use when a resume needs to be formatted, reviewed, or debugged for upload to Workday, Greenhouse, Lever, iCIMS, or any other ATS - "format my resume for ATS", "is my resume ATS-friendly", "why is Workday leaving fields blank", "make my resume parse-safe" - and proactively whenever a resume is built or edited for a job portal. Prevents parsed records with blank or wrong Company, Dates, or Title fields.
 ---
 
 # ATS / Workday Parse-Safe Resume Formatting

@@ -1,6 +1,5 @@
 ---
 name: serverless-scanner
-version: 1
 description: >-
   Use when analyzing an application, screenshots, workflows, architecture,
   product description, or migration plan to identify high-ROI partial AWS

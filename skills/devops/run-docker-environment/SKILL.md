@@ -1,12 +1,11 @@
 ---
 name: run-docker-environment
-description: Use this skill when an agent must verify Docker daemon availability on Linux Ubuntu, start a local docker-compose.yml or compose.yaml for development databases, and inspect container health and logs from the terminal.
+description: Use this skill when an agent must verify Docker daemon availability on Linux (systemd), start a local docker-compose.yml or compose.yaml for development databases, and inspect container health and logs from the terminal.
 metadata:
   version: "0.1.0"
   owner: "platform-automation"
   platforms:
     - linux
-    - ubuntu
   tools:
     - docker
     - docker compose

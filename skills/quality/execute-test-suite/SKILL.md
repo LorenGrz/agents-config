@@ -1,6 +1,6 @@
 ---
 name: execute-test-suite
-description: Use this skill when an agent must detect npm, pnpm, Gradle, or Maven projects, run the correct test suite for NestJS, React, Kotlin, or Spring Boot, capture failing console logs, and enter an automated correction loop after exit code 1.
+description: Use this skill when an agent must detect npm, pnpm, Gradle, or Maven projects, run the correct test suite for NestJS, React, Next.js, React Native, Kotlin, or Spring Boot, capture failing console logs, and enter an automated correction loop after a failing (non-zero) run.
 metadata:
   version: "0.1.0"
   owner: "platform-automation"

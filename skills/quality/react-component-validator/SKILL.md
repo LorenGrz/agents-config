@@ -1,6 +1,6 @@
 ---
 name: react-component-validator
-description: Use this skill when an agent must review or edit React components as an architectural linter, avoiding unnecessary or malformed effects, extracting lifecycle logic into custom hooks, and applying the team's useOnInit-style lifecycle standard.
+description: Use this skill when an agent must review or edit React components as an architectural linter, avoiding unnecessary or malformed effects, extracting lifecycle logic into custom hooks, and applying the project's useOnInit-style lifecycle standard.
 paths:
   - "**/*.tsx"
 metadata:

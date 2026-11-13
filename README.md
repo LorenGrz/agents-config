@@ -148,7 +148,7 @@ of the global mirror and `scripts/project-agents.sh` installs it per project (se
 | `development/` | `api-contract-design`*, `code-documenter`, `database-persistence-patterns`*, `debug-assistant`, `frontend-design`, `nest-module-generator`*, `nextjs-ssr-frontend`*, `react-native-mobile`*, `regex-builder-explainer`, `typescript-code-quality`, `typescript-project-starter` |
 | `devops/` | `conventional-commit-generator`, `project-init`, `repository-context-maintainer`, `run-docker-environment`* |
 | `integrations/` | `github-usage` (git and GitHub), `jira-usage`, `slack-usage`, `google-workspace-usage`, `obsidian-vault`, `notebooklm-obsidian-sync`, `codex-review` |
-| `meta/` | `agents-config-setup`, `codex-workflows`, `english-prompt-coach`, `gemini-delegate`, `orca-cli`, `orchestration`, `org-creator`, `roadmap-coach`, `team-architect-agent`, `team-implementer-agent`, `team-reviewer-agent` |
+| `meta/` | `agents-config-setup`, `codex-workflows`, `english-prompt-coach`, `gemini-delegate`, `orca-cli`, `orchestration`, `org-creator`, `roadmap-coach`, `team-roles` |
 | `productivity/` | `ats-resume-formatting`*, `cv-linkedin-optimizer`*, `image-annotations`, `meeting-notes-organizer`*, `presentation-prep`*, `professional-email-drafter`* (the five marked are stack `office`) |
 | `quality/` | `code-review-safety`, `execute-test-suite`, `react-component-validator`*, `unit-test-generator` |
 | `security/` | `auth-security-basics`*, `prompt-injection-defense`* |

@@ -28,7 +28,7 @@ Produce a complete, runnable test file for one unit of code, covering the paths 
 
 1. Detect the test framework from the project: `pnpm-lock.yaml` plus a `test` script, `vitest.config`, `jest.config`, `pytest.ini`/`pyproject.toml`, `pom.xml`, `build.gradle(.kts)`. Never introduce a new framework.
 2. Read the unit's inputs, outputs, branches, and external dependencies.
-3. Generate at minimum: 2 happy-path tests, 2 edge cases (empty, null, boundary values), 1 error test.
+3. Aim for 2 happy-path tests, 2 edge cases (empty, null, boundary values) and 1 error test as a guide, not a quota: cover each real behavior and branch, and skip a case the unit cannot actually hit rather than inventing one for the count.
 4. Mock external dependencies (network, filesystem, clock, DB) at the boundary.
 5. Name tests by behavior, in the project's existing convention; with none, `should <expected> when <condition>`.
 6. Add a one-line comment on each block saying why the case matters.
