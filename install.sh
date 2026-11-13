@@ -242,9 +242,14 @@ write_generated() {
   fi
 
   # Keep blocks other installers own (an org's <!-- name:start --> … <!-- name:end -->), so a re-run does not drop them.
+  # Blocks whose name is already in the generated content (e.g. the intents block of config/AGENTS.md) are ours: skip them.
   if [ -f "$dest" ]; then
-    local blocks
-    blocks="$(awk '/^<!-- [A-Za-z0-9_.-]+:start -->$/{b=1} b{print} /^<!-- [A-Za-z0-9_.-]+:end -->$/{b=0}' "$dest")"
+    local blocks own
+    own=" $(sed -n 's/^<!-- \([A-Za-z0-9_.-]*\):start -->$/\1/p' <<<"$content" | tr '\n' ' ')"
+    blocks="$(awk -v own="$own" '
+      /^<!-- [A-Za-z0-9_.-]+:start -->$/ { n = $2; sub(/:start$/, "", n); b = (index(own, " " n " ") == 0) }
+      b { print }
+      /^<!-- [A-Za-z0-9_.-]+:end -->$/ { b = 0 }' "$dest")"
     [ -z "$blocks" ] || content="$content"$'\n\n'"$blocks"
   fi
 
