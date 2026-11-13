@@ -45,7 +45,7 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 
 ## OS / desktop config
 
-- Desktop: Omarchy (Arch-based Linux). Settings repo: `~/projects/omarchy-settings`. Never edit Omarchy source under `~/.local/share/omarchy/` (the generic rules are in `AGENTS.md` "OS and desktop config").
+- Desktop: Omarchy (Arch-based Linux). Settings repo: `~/projects/omarchy/settings`. Never edit Omarchy source under `~/.local/share/omarchy/` (the generic rules are in `AGENTS.md` "OS and desktop config").
 
 ## Codex workflow adapter
 
