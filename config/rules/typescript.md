@@ -6,6 +6,8 @@ paths:
 
 # TypeScript
 
+## Types and boundaries
+
 - No `any`. Use `unknown` at untrusted boundaries (HTTP, env, storage, 3rd-party) and narrow it.
 - Validate external input at the boundary; convert to domain types before business logic.
 - Discriminated unions for state machines, async states, and result variants.

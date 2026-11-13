@@ -53,6 +53,14 @@
 
 - <tool name>: `<absolute or ~-relative path>`
 
+## Skill routing
+
+<!-- Personal skill routing: which skill to load for which of your tools
+     or workflows (e.g. a desktop environment, a database tool). Delete this
+     section if you have none. -->
+
+- <area>: `<skill>` before <doing what>.
+
 ## OS / desktop config
 
 <!-- Only if you use a specific desktop environment (e.g. Omarchy) with its
