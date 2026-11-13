@@ -24,5 +24,14 @@ check "with the block, a re-run is a no-op" '[ "$before" = "$(sha1sum "$F")" ] &
 sed -i '/acme:start/,/acme:end/d' "$F"; run >/dev/null
 check "removing the block by hand is respected" '! grep -q "acme" "$F"'
 
+# ~/.codex/AGENTS.md pastes config/AGENTS.md, which carries its own <!-- intents:start --> block: it must not be duplicated.
+C="$W/home/.codex/AGENTS.md"
+own="$(grep -c '^<!-- intents:start -->$' "$HUB/config/AGENTS.md")"
+run >/dev/null; before="$(sha1sum "$C")"; out="$(run)"
+check "a block that is part of the generated content is not duplicated" '[ "$(grep -c "^<!-- intents:start -->$" "$C")" -eq "$own" ]'
+check "codex file: a re-run is a no-op" '[ "$before" = "$(sha1sum "$C")" ] && grep -q "ok:      .*AGENTS.md already up to date" <<<"$out"'
+printf '\n<!-- intents:start -->\nstale copy\n<!-- intents:end -->\n' >>"$C"; run >/dev/null
+check "a stale copy of our own block is cleaned up" '[ "$(grep -c "^<!-- intents:start -->$" "$C")" -eq "$own" ] && ! grep -q "stale copy" "$C"'
+
 echo; echo "passed $pass, failed $failn"
 [ "$failn" -eq 0 ]
