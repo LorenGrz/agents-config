@@ -167,6 +167,34 @@ bash "$H/skills/devops/project-init/scripts/workspace.sh" "${WSA[@]}" >/dev/null
 check "workspace --org re-run is safe and the org still validates" 'bash "$ORGS" validate acme >/dev/null 2>&1'
 check "workspace --org refuses an org that is not installed" '! bash "$H/skills/devops/project-init/scripts/workspace.sh" --dir "$WSD" --name prod --org nope --repo front:frontend:- --repo back:backend:- >/dev/null 2>&1'
 
+# products: one folder per product with its own skills/, commands/ and POLICIES.md
+mkorg prd; PD="$H/organizations/prd"
+for p in alpha beta; do
+  mkdir -p "$PD/$p/skills/prd-$p" "$PD/$p/skills/prd-common"; cp "$PD/POLICIES.md" "$PD/$p/POLICIES.md"; echo "product $p" >> "$PD/$p/POLICIES.md"
+  printf -- '---\nname: prd-%s\ndescription: x\n---\n' "$p" > "$PD/$p/skills/prd-$p/SKILL.md"
+  printf -- '---\nname: prd-common\ndescription: x\n---\n' > "$PD/$p/skills/prd-common/SKILL.md"
+done
+setj prd '.products = {"alpha":{"remote_patterns":["prd-inc/alpha-"]},"beta":{"remote_patterns":["prd-inc/beta-"]}} | .replaces = {"ui-builder":"prd-alpha"}'
+check "an org with products validates (replaces target in one product)" 'bash "$ORGS" validate prd >/dev/null 2>&1'
+cp "$PD/org.json" "$W/prd.bak"
+setj prd '.products.gamma = {"remote_patterns":["x"]}'
+check "a product without its folder does not validate" '! bash "$ORGS" validate prd >/dev/null 2>&1'
+cp "$W/prd.bak" "$PD/org.json"; setj prd '.products.alpha.remote_patterns = "x"'
+check "product remote_patterns must be an array" '! bash "$ORGS" validate prd >/dev/null 2>&1'
+cp "$W/prd.bak" "$PD/org.json"
+PP="$W/prd-a"; mkp "$PP"
+bash "$PA" --stack react-vite --org prd --product alpha --dir "$PP" >/dev/null 2>&1
+check "--product installs that product's skills and POLICIES only" '[ -d "$PP/.claude/skills/prd-alpha" ] && [ -d "$PP/.claude/skills/prd-common" ] && [ ! -d "$PP/.claude/skills/prd-beta" ] && grep -q "product alpha" "$PP/.agents/POLICIES.md"'
+PB="$W/prd-b"; mkp "$PB"; git -C "$PB" init -q; git -C "$PB" remote add origin https://github.com/prd-inc/beta-api.git
+bash "$PA" --stack react-vite --org prd --dir "$PB" >/dev/null 2>&1
+check "the product comes from the project's origin" '[ -d "$PB/.claude/skills/prd-beta" ] && [ ! -d "$PB/.claude/skills/prd-alpha" ]'
+PW="$W/prd-ws"; mkdir -p "$PW/one"; git -C "$PW/one" init -q; git -C "$PW/one" remote add origin https://github.com/prd-inc/alpha-web.git
+bash "$PA" --no-packs --org prd --dir "$PW" >/dev/null 2>&1
+check "a workspace folder gets the product of its child repos" '[ -d "$PW/.claude/skills/prd-alpha" ]'
+PN="$W/prd-none"; mkp "$PN"
+check "no product match fails closed" '! bash "$PA" --stack react-vite --org prd --dir "$PN" >/dev/null 2>&1 && [ ! -d "$PN/.claude/skills/prd-common" ]'
+check "--product on an org without products is an error" '! bash "$PA" --stack react-vite --org rw --product alpha --dir "$PN" >/dev/null 2>&1'
+
 # status / remove / push safety
 st="$(bash "$ORGS" status 2>&1)"
 check "status reports the org" 'grep -q "^acme: 0.1.0" <<<"$st"'

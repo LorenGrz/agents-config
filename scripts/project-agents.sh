@@ -3,7 +3,8 @@
 # of one or more stacks into a project's .claude/ and .mcp.json.
 #
 # Usage: project-agents.sh --stack <name>[,<name>...] [--pack <name>[,...]] [--manifest <file>]
-#                           [--plugin <name>[,...]] [--no-packs] [--org <name>] [--dir <path>] [--dry-run]
+#                           [--plugin <name>[,...]] [--no-packs] [--org <name>] [--product <name>]
+#                           [--dir <path>] [--dry-run]
 #
 # --no-packs skips every pack, even the "always" ones (used for workspace folders, which have no repo flow).
 #
@@ -14,6 +15,9 @@
 # --org installs an organization (organizations/<name>, see organizations/README.md) on top of the
 # packs: its skills and commands (per-stack filters and "replaces" from org.json), its index and
 # critical entries, and POLICIES.md as .agents/POLICIES.md. Same-name org files win over packs.
+# An org whose org.json has "products" keeps skills/, commands/ and POLICIES.md in one folder per
+# product; the product comes from --product or from the project's origin (or its child repos)
+# matching a product's remote_patterns.
 #
 # Packs (packs/<name>/: pack.json, skills/, commands/) bundle skills and slash commands by
 # architecture. "always" packs are installed with any run; others when the project manifest
@@ -32,7 +36,7 @@ set -euo pipefail
 
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCOPES="$HUB/config/scopes.json"
-STACKS="" PACKS="" MANIFEST="" ORG="" PLUGINS="" NO_PACKS=0 DIR="$(pwd)" DRY=0
+STACKS="" PACKS="" MANIFEST="" ORG="" PRODUCT="" PLUGINS="" NO_PACKS=0 DIR="$(pwd)" DRY=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -42,9 +46,10 @@ while [ $# -gt 0 ]; do
     --no-packs) NO_PACKS=1; shift ;;
     --manifest) MANIFEST="$2"; shift 2 ;;
     --org) ORG="$2"; shift 2 ;;
+    --product) PRODUCT="$2"; shift 2 ;;
     --dir) DIR="$2"; shift 2 ;;
     --dry-run) DRY=1; shift ;;
-    -h|--help) sed -n '2,24p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,28p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown flag: $1" >&2; exit 1 ;;
   esac
 done
@@ -79,6 +84,23 @@ if [ -n "$ORG" ]; then
   [ -f "$OJ" ] || die "organization '$ORG' is not installed (scripts/orgs.sh add)"
   bash "$HUB/scripts/orgs.sh" validate "$OD" >/dev/null || die "organization '$ORG' does not validate (scripts/orgs.sh validate $ORG)"
   [ -z "$(find "$OD" -path "$OD/.git" -prune -o -type l -print -quit)" ] || die "organization '$ORG' contains symlinks"
+  # OSRC: where the org's skills/, commands/ and POLICIES.md come from (the org, or one of its products)
+  OSRC="$OD"
+  if jq -e '.products | type == "object"' "$OJ" >/dev/null; then
+    if [ -z "$PRODUCT" ]; then
+      remotes="$(git -C "$DIR" remote get-url origin 2>/dev/null || true)"
+      [ -n "$remotes" ] || for _r in "$DIR"/*/; do
+        [ -e "$_r.git" ] && remotes+="$(git -C "$_r" remote get-url origin 2>/dev/null || true)"$'\n'
+      done
+      PRODUCT="$(jq -r --arg r "$remotes" '[.products | to_entries[] | select(any(.value.remote_patterns[]?; . as $p | $r | test($p))) | .key] | if length == 1 then .[0] else empty end' "$OJ")"
+      [ -n "$PRODUCT" ] || die "organization '$ORG' has products ($(jq -r '.products | keys | join(", ")' "$OJ")): pass --product"
+    fi
+    valid_name "$PRODUCT" && jq -e --arg p "$PRODUCT" '.products[$p]' "$OJ" >/dev/null || die "organization '$ORG' has no product '$PRODUCT'"
+    OSRC="$OD/$PRODUCT"
+    echo "== org product: $PRODUCT =="
+  elif [ -n "$PRODUCT" ]; then
+    die "organization '$ORG' has no products"
+  fi
   while IFS=$'\t' read -r from to; do
     [ -n "$from" ] || continue
     valid_name "${from#/}" && valid_name "${to#/}" || die "invalid replaces entry '$from' -> '$to' in organization '$ORG'"
@@ -86,8 +108,8 @@ if [ -n "$ORG" ]; then
     [ "${from#/}" = "$from" ] && [ "${to#/}" = "$to" ] || { [ "${from#/}" != "$from" ] && [ "${to#/}" != "$to" ]; } \
       || die "replaces entry '$from' -> '$to' mixes a skill and a command in organization '$ORG'"
   done < <(jq -r '(.replaces // {}) | to_entries[] | [.key, .value] | @tsv' "$OJ")
-  for _s in "$OD"/skills/*/; do [ -d "$_s" ] && { valid_name "$(basename "$_s")" || die "invalid skill name '$(basename "$_s")' in '$ORG'"; }; done
-  for _c in "$OD"/commands/*.md; do [ -f "$_c" ] && { valid_file "$(basename "$_c")" || die "invalid command name '$(basename "$_c")' in '$ORG'"; }; done
+  for _s in "$OSRC"/skills/*/; do [ -d "$_s" ] && { valid_name "$(basename "$_s")" || die "invalid skill name '$(basename "$_s")' in '$ORG'"; }; done
+  for _c in "$OSRC"/commands/*.md; do [ -f "$_c" ] && { valid_file "$(basename "$_c")" || die "invalid command name '$(basename "$_c")' in '$ORG'"; }; done
 fi
 
 find_skill() {
@@ -252,13 +274,13 @@ if [ -n "$ORG" ]; then
     ROWS="$(replace_literal "\`$from\`" "\`$to\`" <<<"$ROWS")"
     CRITICAL="$(jq -c --arg f "${from#/}" --arg t "${to#/}" 'map(if .skill == $f then .skill = $t else . end)' <<<"$CRITICAL")"
   done < <(jq -r '(.replaces // {}) | to_entries[] | [.key, .value] | @tsv' "$OJ")
-  for sk in "$OD"/skills/*/; do
+  for sk in "$OSRC"/skills/*/; do
     [ -f "$sk/SKILL.md" ] || continue
     n="$(basename "$sk")"; wanted "skills/$n" || continue
     echo "skill:   .claude/skills/$n (org)"
     run mkdir -p "$DIR/.claude/skills"; run rm -rf "$DIR/.claude/skills/$n"; run cp -r "${sk%/}" "$DIR/.claude/skills/$n"; rec_s "$n"
   done
-  for cmd in "$OD"/commands/*.md; do
+  for cmd in "$OSRC"/commands/*.md; do
     [ -f "$cmd" ] || continue
     wanted "commands/$(basename "$cmd")" || continue
     echo "command: .claude/commands/$(basename "$cmd") (org)"
@@ -269,7 +291,7 @@ if [ -n "$ORG" ]; then
   CRITICAL="$(jq -c --slurpfile o "$OJ" --arg all "$ALL" "$APPLIES"' ($o[0].critical // [] | map(applies) | map(del(.stacks))) + .' <<<"$CRITICAL")"
   ORG_ROWS="$(jq -r --arg all "$ALL" --arg bt '`' "$APPLIES"' .index[]? | applies | "| " + .when + " | " + $bt + .use + $bt + " |"' "$OJ")"
   ROWS="| Org policies ($ORG): workflow, architecture, UI, integrations | \`.agents/POLICIES.md\` |"$'\n'"${ORG_ROWS:+$ORG_ROWS$'\n'}$ROWS"
-  if [ "$DRY" -eq 0 ] && [ -f "$OD/POLICIES.md" ]; then mkdir -p "$DIR/.agents"; cp "$OD/POLICIES.md" "$DIR/.agents/POLICIES.md"; echo "wrote .agents/POLICIES.md"; fi
+  if [ "$DRY" -eq 0 ] && [ -f "$OSRC/POLICIES.md" ]; then mkdir -p "$DIR/.agents"; cp "$OSRC/POLICIES.md" "$DIR/.agents/POLICIES.md"; echo "wrote .agents/POLICIES.md"; fi
 fi
 
 if [ "${#SELECTED[@]}" -gt 0 ] && [ "$DRY" -eq 0 ]; then

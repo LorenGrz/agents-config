@@ -29,7 +29,8 @@ An org repo can also be **self-sufficient**, so a teammate can use it without th
   README.md         the two ways to install it
 ```
 
-The hub reads only `org.json`, `POLICIES.md`, `skills/`, `commands/`, `interview.md` and `workspaces/`; the
+The hub reads only `org.json`, `POLICIES.md`, `skills/`, `commands/` (or, with `products`, those of each
+`<product>/` folder), `interview.md` and `workspaces/`; the
 self-sufficient files are ignored by `orgs.sh` and `project-agents.sh`. `project-agents.sh` refuses an org
 directory that contains symlinks, so keep dependencies out of the repo (install them elsewhere, e.g. under
 `~/.cache`).
@@ -74,6 +75,7 @@ directory that contains symlinks, so keep dependencies out of the repo (install 
 | `blocklist_terms` | no | `orgs.sh` | Words that must never appear in the public repo; merged into the local leak-guard blocklist together with `name` and `match.gh_owners` |
 | `replaces` | no | `orgs.sh validate`, `project-agents.sh` | Flat map `base name -> org name`. A skill is a plain name, a command starts with `/`; a skill can only be replaced by a skill and a command by a command. The target must exist in the org's `skills/` or `commands/`. The base item can be a pack skill, a stack skill or a hub integration skill (`github-usage`, `jira-usage`, ...) |
 | `assets` | no | `project-agents.sh` | Per-file stack filter, keyed `skills/<name>` or `commands/<name>.md`; a file without an entry is installed for every stack |
+| `products` | no | `orgs.sh validate`, `project-agents.sh` | For an org with several product lines: `{"<product>": {"remote_patterns": [regex, ...]}}`. Each product keeps its own `skills/`, `commands/` and a full `POLICIES.md` in `<product>/`; the root `POLICIES.md` stays (the org-wide core the global index points to). `project-agents.sh` takes `--product <name>` or picks the one whose patterns match the project's `origin` (in a workspace folder, its child repos); no single match fails closed. `replaces` targets, `assets` keys and `index`/`critical` rows refer to whichever product is installed |
 | `index` / `critical` | no | `project-agents.sh` | Rows for the project's keyword table and `.agents/critical.json`, merged before the packs' own. A row may carry `"stacks": [...]` |
 
 Notes:

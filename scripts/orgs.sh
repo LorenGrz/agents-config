@@ -86,6 +86,8 @@ SHAPE_JQ='def arr_str: type == "array" and all(.[]; type == "string");
     (if has("replaces") and ((.replaces | type) != "object") then "replaces must be an object" else empty end),
     ((.replaces // {}) | if type == "object" then to_entries[] | select(.value | type != "string") | "replaces values must be strings" else empty end),
     (if has("assets") and ((.assets | type) != "object") then "assets must be an object" else empty end),
+    (if has("products") and ((.products | type) != "object" or (.products | length) == 0) then "products must be a non-empty object" else empty end),
+    ((.products // {}) | if type == "object" then to_entries[] | select((.value | type) != "object" or ((.value.remote_patterns // []) | arr_str | not)) | "product \(.key) needs an object with remote_patterns as an array of strings" else empty end),
     ((.assets // {}) | if type == "object" then to_entries[] | select((.value | type) != "object" or ((.value.stacks // []) | arr_str | not)) | "asset stacks must be an array of strings" else empty end)
   ] | .[]'
 BASELINE_RE='skip (the )?(tests|verification)|commit (the )?\.env|force.push to (main|dev|master)'
@@ -105,26 +107,47 @@ cmd_validate() {
   fi
   local e
   while IFS= read -r e; do [ -n "$e" ] && fail "org.json: $e"; done < <(jq -r "$SHAPE_JQ" "$d/org.json" 2>/dev/null)
+  # srcs: where skills/, commands/ and POLICIES.md live; the org root, or one folder per product
+  local srcs=() p src found
+  if jq -e '.products | type == "object"' "$d/org.json" >/dev/null 2>&1; then
+    while IFS= read -r p; do
+      valid_name "$p" || { fail "product name '$p' is not a valid name"; continue; }
+      [ -d "$d/$p" ] || { fail "product '$p' has no folder $p/"; continue; }
+      [ -f "$d/$p/POLICIES.md" ] || fail "product '$p' has no $p/POLICIES.md"
+      srcs+=("$d/$p")
+    done < <(jq -r '.products | keys[]' "$d/org.json")
+  else
+    srcs=("$d")
+  fi
   while IFS=$'\t' read -r _f t; do
     [ -n "$t" ] || continue
-    case "$t" in /*) [ -f "$d/commands/${t#/}.md" ] || fail "replaces target '$t' does not exist in the org" ;;
-                 *) [ -f "$d/skills/$t/SKILL.md" ] || fail "replaces target '$t' does not exist in the org" ;; esac
+    found=0
+    for src in "${srcs[@]}"; do
+      case "$t" in /*) [ -f "$src/commands/${t#/}.md" ] && found=1 ;;
+                   *) [ -f "$src/skills/$t/SKILL.md" ] && found=1 ;; esac
+    done
+    [ "$found" -eq 1 ] || fail "replaces target '$t' does not exist in the org"
   done < <(jq -r '(.replaces // {}) | to_entries[] | select(.value | type == "string") | [.key, .value] | @tsv' "$d/org.json" 2>/dev/null)
   [ -f "$d/POLICIES.md" ] || fail "POLICIES.md is missing"
   if [ -f "$d/POLICIES.md" ] && grep -q '^## ' "$d/POLICIES.md" && [ "$(awk '/^## /{print NR - 1; exit}' "$d/POLICIES.md")" -gt 15 ]; then
     fail "POLICIES.md must start with a summary of 15 lines or fewer before the first ## section"
   fi
-  for s in "$d"/skills/*/; do
-    [ -d "$s" ] || continue
-    { [ -f "$s/SKILL.md" ] && grep -q '^name: ' "$s/SKILL.md" && grep -q '^description: ' "$s/SKILL.md"; } \
-      || fail "skill $(basename "$s") needs SKILL.md with name and description"
-  done
-  for c in "$d"/commands/*.md; do
-    [ -f "$c" ] || continue
-    grep -q '^description: ' "$c" || fail "command $(basename "$c") needs a description"
+  for src in "${srcs[@]}"; do
+    for s in "$src"/skills/*/; do
+      [ -d "$s" ] || continue
+      { [ -f "$s/SKILL.md" ] && grep -q '^name: ' "$s/SKILL.md" && grep -q '^description: ' "$s/SKILL.md"; } \
+        || fail "skill $(basename "$s") needs SKILL.md with name and description"
+    done
+    for c in "$src"/commands/*.md; do
+      [ -f "$c" ] || continue
+      grep -q '^description: ' "$c" || fail "command $(basename "$c") needs a description"
+    done
   done
   local files=() f
-  for f in "$d/POLICIES.md" "$d"/commands/*.md "$d"/skills/*/SKILL.md; do [ -f "$f" ] && files+=("$f"); done
+  for src in "${srcs[@]}"; do
+    for f in "$src/POLICIES.md" "$src"/commands/*.md "$src"/skills/*/SKILL.md; do [ -f "$f" ] && files+=("$f"); done
+  done
+  [ -f "$d/POLICIES.md" ] && files+=("$d/POLICIES.md")
   if [ "${#files[@]}" -gt 0 ] && { grep -hiE "$BASELINE_RE" "${files[@]}" || true; } | { grep -viE "$NEGATION_RE" || true; } | grep -q .; then
     fail "policies, skills or commands appear to weaken the baseline (skip verification, commit .env, force-push)"
   fi
