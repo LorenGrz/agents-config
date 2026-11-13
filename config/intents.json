@@ -14,10 +14,13 @@
       ]
     },
     {
-      "skill": "git-workflow",
-      "tools": [],
+      "skill": "github-usage",
+      "tools": [
+        "^mcp__claude_ai_GitHub__"
+      ],
       "bash": [
-        "^git (commit|push|merge|rebase)|^gh pr (create|merge)"
+        "^git (commit|push|merge|rebase)|^gh pr (create|merge)",
+        "^gh (issue|repo|release|api|pr (view|list|review|checkout|comment|diff))"
       ],
       "intents": [
         {
@@ -44,18 +47,7 @@
           "label": "open PR",
           "re": "abr[ií] (un )?pr|cre[aá] (un )?pr|open (a )?pr|create (a )?pull request",
           "cmd": "gh pr create --base <base>"
-        }
-      ]
-    },
-    {
-      "skill": "github-usage",
-      "tools": [
-        "^mcp__claude_ai_GitHub__"
-      ],
-      "bash": [
-        "^gh (issue|repo|release|api|pr (view|list|review|checkout|comment|diff))"
-      ],
-      "intents": [
+        },
         {
           "label": "issues and PRs",
           "re": "\\bissues?\\b|\\bpr #?[0-9]+|pull request #?[0-9]+|revis[aá] (el|la) pr|review (the )?pr|list(a|ar)? (los )?prs",

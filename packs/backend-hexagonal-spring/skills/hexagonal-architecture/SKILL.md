@@ -5,9 +5,13 @@ description: Layer rules and design guidance for hexagonal (ports and adapters) 
 
 # Hexagonal architecture (Spring)
 
+## Objective
+
 The package layout comes from the project's architecture ADR (`docs/decisions/`); this skill is the layer discipline. Below, `{bc}` is a bounded context.
 
-## Layers
+## Rules
+
+### Layers
 
 | Layer | May depend on | Forbidden |
 |---|---|---|
@@ -15,7 +19,7 @@ The package layout comes from the project's architecture ADR (`docs/decisions/`)
 | `application/` | `domain/` | JPA, SQL, web types (only `@Component`/`@Transactional` allowed) |
 | `infrastructure/` | `application/`, `domain/`, Spring, JPA | business rules |
 
-## Domain model
+### Domain model
 
 - All business rules and invariants live in the model, not in services or controllers.
 - Rich model: behavior on the object, named in business language (`formalize()`, `cancel()`), never `setStatus()`. No public setters.
@@ -24,11 +28,11 @@ The package layout comes from the project's architecture ADR (`docs/decisions/`)
 - Expose collections unmodifiable. Use value objects (`Money`, `Quantity`, enums) instead of raw `BigDecimal`/`String` for validated concepts; validate in the constructor.
 - No framework annotations in the model.
 
-## Application services
+### Application services
 
 One class per use case; it only orchestrates: load aggregate, call the domain method, trigger side effects through a port, save, return. No rules, no input re-validation that records/DTOs already guarantee, no calls to other application services (use a shared port or a domain event).
 
-## Ports
+### Ports
 
 ```
 domain/repository/XRepository          read+write of the aggregate
@@ -40,11 +44,11 @@ application/port/in/CreateXUseCase     only when needed for tests or several imp
 
 Other contexts depend on `XLookup`/`XSnapshot`, never on another context's repository or entities.
 
-## SOLID here
+### SOLID here
 
 SRP: one service per use case, one domain method per business operation. OCP: new behavior = new command + service, not edits to existing ones. ISP: read-only `Lookup` split from `Repository`. DIP: `application/` depends on ports; `infrastructure/` implements them.
 
-## Anti-patterns
+### Anti-patterns
 
 | Anti-pattern | Instead |
 |---|---|

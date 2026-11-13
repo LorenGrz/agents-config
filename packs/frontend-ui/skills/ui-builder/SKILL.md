@@ -5,9 +5,13 @@ description: Workflow to build pages and components from a design (Figma, screen
 
 # UI builder
 
+## Objective
+
 Goal: from the design to a verified implementation with no drift. The project's design-system skill or docs (if any) are authoritative for tokens, spacing and typography; this skill is the workflow. On conflict, the design system wins.
 
-## Workflow (never skip 0, 2 or 6)
+## Workflow
+
+Never skip steps 0, 2 or 6.
 
 0. **Read the rules**: the project's design-system skill/docs, `AGENTS.md`, the architecture skill if present (`feature-architecture` or `frontend-ports-adapters`).
 1. **Parse the design**: regions, visual hierarchy, states (loading, empty, error), breakpoints.

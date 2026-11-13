@@ -11,8 +11,9 @@ Two things live here, and they're both "always available, loaded only when neede
 - **Config** (`config/`) — instructions, path-scoped rules, lifecycle hooks, and the three
   model-pinned subagents. Generated/symlinked into `~/.claude/` and `~/.codex/` by
   `install.sh`.
-- **Skills** (category directories below) — `SKILL.md` files loaded on demand when their
-  `description` matches the task, mirrored flat into `~/.claude/skills` by `sync.sh`.
+- **Skills** (`skills/<category>/<skill>/`, see [Categories](#categories)) — `SKILL.md` files
+  loaded on demand when their `description` matches the task, mirrored flat into
+  `~/.claude/skills` by `sync.sh`.
 
 Neither of these makes a project well-run on its own — see ["How it works"](#how-it-works)
 for the second, per-project layer (`project-init`) that does the actual enforcement.
@@ -24,10 +25,13 @@ Pick **one** method per machine — they overlap and aren't meant to be combined
 ### Method 1 — `install.sh` (full: config + rules + hooks + subagents + skills)
 
 ```bash
-git clone https://github.com/LorenGrz/agents-config ~/.agents/skills
-~/.agents/skills/install.sh --dry-run    # preview, changes nothing
-~/.agents/skills/install.sh --profile <your-name>
+git clone https://github.com/LorenGrz/agents-config ~/projects/agents-config   # clone anywhere
+~/projects/agents-config/install.sh --dry-run    # preview, changes nothing
+~/projects/agents-config/install.sh --profile <your-name>
 ```
+
+Besides the config symlinks, `install.sh` links `~/.agents/skills` to `<clone>/skills` (the shared
+skill root other agents read) and runs `sync.sh` to build the flat `~/.claude/skills` mirror.
 
 Inside a Claude Code or Codex session opened in the clone, you can instead just ask your
 agent to "install this repo" — see `AGENTS.md` and the `agents-config-setup` skill, which
@@ -63,45 +67,50 @@ the generated `CLAUDE.md`/`AGENTS.md`/`settings.json` merge — use Method 1 for
 .
 ├── AGENTS.md              # map for an agent working IN this repo (install flow, conventions)
 ├── CLAUDE.md               # @AGENTS.md + Claude Code-only pointer to agents-config-setup
-├── install.sh                # generates CLAUDE.md/AGENTS.md, symlinks rules/hooks/agents,
-│                               merges settings.json, runs sync.sh — see --profile below
-├── sync.sh                    # rebuilds the flat ~/.claude/skills mirror from <category>/<skill>/
+├── install.sh                # generates CLAUDE.md/AGENTS.md, symlinks rules/hooks/agents and
+│                               ~/.agents/skills, merges settings.json, runs sync.sh (--profile)
+├── sync.sh                    # rebuilds the flat ~/.claude/skills mirror from skills/<category>/<skill>/
 ├── README.md                   # this file
 │
-├── .claude-plugin/              # plugin marketplace (skills + agents + hooks only — see Install)
-│   ├── marketplace.json
-│   └── plugin.json
-├── hooks/
-│   └── hooks.json                # plugin hooks (generic subset of config/hooks/*.sh)
+├── skills/                     # the skill library, see skills/README.md
+│   ├── aws/                      # AWS serverless (project-scoped, see skills/aws/README.md)
+│   ├── development/              # building features (React, Next.js, NestJS, TS quality, ...)
+│   ├── devops/                   # repo/release lifecycle, includes project-init
+│   ├── integrations/             # one skill per tool: GitHub (and git), Jira, Slack, Google, ...
+│   ├── meta/                     # workflow/process skills, incl. agents-config-setup
+│   ├── productivity/             # non-code deliverables (CV, email, meeting notes, ...)
+│   ├── quality/                  # review and tests
+│   ├── security/                 # auth, prompt-injection defense
+│   └── external/                 # per-machine symlinks (omarchy, ...), gitignored
+├── packs/                      # skills + slash commands bundled by architecture (ADR 0014)
 │
-├── config/                     # global, agent-facing config — see config/README.md
+├── config/                     # global, agent-facing config, see config/README.md
 │   ├── AGENTS.md                # generic, shareable instructions (no personal content)
 │   ├── CLAUDE.md                # Claude Code-only sections, kept ≤60 lines, also generic
 │   ├── profiles/                  # personal content, one file per person
-│   │   ├── _template.md             # commented template — copy this to get started
+│   │   ├── _template.md             # commented template, copy this to get started
 │   │   └── loren.md                 # Lorenzo's own profile (identity, paths, stage, ...)
 │   ├── settings.base.json         # sanitized base merged into ~/.claude/settings.json
-│   ├── agents/                     # scout.md, worker.md, reasoner.md — model-pinned subagents
+│   ├── scopes.json                # which skills/rules/MCPs are global and which per stack
+│   ├── agents/                     # scout.md, worker.md, reasoner.md: model-pinned subagents
 │   ├── rules/                      # path-scoped conventions (typescript.md, react.md, ...)
 │   ├── hooks/                       # lifecycle shell scripts wired in settings.base.json
-│   └── rulesync/                     # multi-AI generation for Cursor / Antigravity — see below
+│   └── rulesync/                     # multi-AI generation for Cursor / Antigravity, see below
 │
+├── scripts/                    # orgs.sh, project-agents.sh, gen-plugin.sh, gen-intents.sh,
+│                                 leak-guard.sh, lint-docs.sh, eval-skills.sh, test-*.sh
+├── evals/                      # trigger evals for `claude plugin eval` (see Skill evals)
 ├── docs/
-│   └── decisions/                 # ADRs for this hub's own structure (0001-single-repo.md, ...)
-│
-├── aws/                        # AWS skills, folded in via `git subtree` (ADR 0001)
-├── packs/                      # skills + slash commands bundled by architecture (ADR 0014)
+│   ├── decisions/                 # ADRs for this hub's own structure (0001-single-repo.md, ...)
+│   └── superpowers/plans/          # approved plans, one file per plan
 ├── organizations/              # private org repos (ignored) + contract and _template (ADR 0012)
-├── development/                # building features (React, Next.js, NestJS, TS quality, ...)
-├── devops/                     # repo/release lifecycle — includes project-init (see below)
-├── quality/                    # review and tests
-├── security/                   # auth, prompt-injection defense
-├── productivity/               # non-code deliverables (CV, email, meeting notes, ...)
-├── meta/                       # workflow/process skills, incl. agents-config-setup (see Install)
-│
-├── apexlang -> ~/projects/oracle-skills/apex/apexlang   # external, gitignored
-├── omarchy -> /usr/share/omarchy/.../omarchy             # external, ships with Omarchy
-└── diagnose-crash -> /usr/share/omarchy/.../diagnose-crash
+├── .agents/                    # CONTEXT.md: current state of this repo
+├── .githooks/                  # pre-commit, commit-msg, pre-push (leak guard)
+├── .claude-plugin/             # plugin marketplace (skills + agents + hooks only, see Install)
+│   ├── marketplace.json
+│   └── plugin.json
+└── hooks/
+    └── hooks.json                # plugin hooks (generic subset of config/hooks/*.sh)
 ```
 
 Profiles: everything personal (identity, preferred language, GitHub owner, learning stage,
@@ -121,25 +130,31 @@ base (this repo, public) -> organization (private repo in organizations/) -> pro
 
 - Add a company or client: `scripts/orgs.sh add <name> <git-url>` or `--init`, or the `org-creator` skill. Details: `organizations/README.md`.
 - Packs: `packs/<name>/pack.json` says when it applies; `scripts/project-agents.sh --manifest <file> [--org <name>]` installs it.
-- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `scripts/test-intents.sh`, `devops/project-init/scripts/test-manifest.sh`, `test-docs-check.sh`, and `e2e.sh` per stack.
-- Guards: `scripts/leak-guard.sh` (blocklist stays local; hooks pre-commit, commit-msg, pre-push) and `scripts/gen-plugin.sh --check`; enable with `git config core.hooksPath .githooks`. Tests: add `scripts/test-leak-guard.sh`.
+- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `scripts/test-intents.sh`, `scripts/test-cli-baselines.sh`, `scripts/test-lane-guard.sh`, `skills/devops/project-init/scripts/test-manifest.sh`, `skills/devops/project-init/scripts/test-docs-check.sh`, and `e2e.sh` per stack under `skills/devops/project-init/scripts/`.
+- Guards: `scripts/leak-guard.sh` (blocklist stays local; hooks pre-commit, commit-msg, pre-push), `scripts/gen-plugin.sh --check`, `scripts/gen-intents.sh --check` and `scripts/lint-docs.sh` (markdown templates, see `skills/README.md`); enable the hooks with `git config core.hooksPath .githooks`. Test: `scripts/test-leak-guard.sh`.
 - Requirements: bash 4+, `jq`, GNU sed/awk/xargs/tar (Linux; on macOS `brew install bash gnu-sed gawk findutils gnu-tar`).
 
 ## Categories
 
+Skills live in `skills/<category>/<skill>/SKILL.md` (see `skills/README.md`). A `*` marks a
+project-scoped skill: it is listed under a stack in `config/scopes.json`, so `sync.sh` leaves it out
+of the global mirror and `scripts/project-agents.sh` installs it per project (see
+[Global vs project scope](#global-vs-project-scope)).
+
 | Category | Skills |
 |---|---|
-| `aws/` | `sam-deploy`, `lambda-patterns`, `iam-least-privilege`, `cost-optimizer`, `serverless-scanner` |
-| `development/` | `api-contract-design`, `code-documenter`, `database-persistence-patterns`, `debug-assistant`, `frontend-design`, `nest-module-generator`, `nextjs-ssr-frontend`, `react-native-mobile`, `regex-builder-explainer`, `typescript-code-quality`, `typescript-project-starter` |
-| `quality/` | `code-review-safety`, `execute-test-suite`, `react-component-validator`, `unit-test-generator` |
-| `devops/` | `conventional-commit-generator`, `project-init`, `repository-context-maintainer`, `run-docker-environment` |
-| `security/` | `auth-security-basics`, `prompt-injection-defense` |
-| `productivity/` | `ats-resume-formatting`, `cv-linkedin-optimizer`, `meeting-notes-organizer`, `presentation-prep`, `professional-email-drafter` |
-| `meta/` | `agents-config-setup`, `codex-workflows`, `english-prompt-coach`, `roadmap-coach`, `team-architect-agent`, `team-implementer-agent`, `team-reviewer-agent` |
-| external (symlinked, not vendored) | `apexlang` (Oracle APEX), `omarchy`, `diagnose-crash` (ship with Omarchy) |
+| `aws/` | `sam-deploy`*, `lambda-patterns`*, `iam-least-privilege`*, `cost-optimizer`*, `serverless-scanner`* (stack `aws`) |
+| `development/` | `api-contract-design`*, `code-documenter`, `database-persistence-patterns`*, `debug-assistant`, `frontend-design`, `nest-module-generator`*, `nextjs-ssr-frontend`*, `react-native-mobile`*, `regex-builder-explainer`, `typescript-code-quality`, `typescript-project-starter` |
+| `devops/` | `conventional-commit-generator`, `project-init`, `repository-context-maintainer`, `run-docker-environment`* |
+| `integrations/` | `github-usage` (git and GitHub), `jira-usage`, `slack-usage`, `google-workspace-usage`, `obsidian-vault`, `notebooklm-obsidian-sync`, `codex-review` |
+| `meta/` | `agents-config-setup`, `codex-workflows`, `english-prompt-coach`, `gemini-delegate`, `orca-cli`, `orchestration`, `org-creator`, `roadmap-coach`, `team-architect-agent`, `team-implementer-agent`, `team-reviewer-agent` |
+| `productivity/` | `ats-resume-formatting`*, `cv-linkedin-optimizer`*, `image-annotations`, `meeting-notes-organizer`*, `presentation-prep`*, `professional-email-drafter`* (the five marked are stack `office`) |
+| `quality/` | `code-review-safety`, `execute-test-suite`, `react-component-validator`*, `unit-test-generator` |
+| `security/` | `auth-security-basics`*, `prompt-injection-defense`* |
+| `external/` (symlinked, gitignored, not vendored) | `omarchy`, `omarchy-app`, `diagnose-crash` (ship with Omarchy), `superwhisper` (ships with SuperWhisper) |
 
-Each skill's `SKILL.md` has the one-line purpose in its `description` frontmatter; browse
-the directories above for the full list with links, or run `rg description */*/SKILL.md`.
+Each skill's `SKILL.md` has the one-line purpose in its `description` frontmatter; run
+`rg '^description' skills/*/*/SKILL.md` for the list.
 
 ## How it works
 
@@ -152,7 +167,7 @@ What's active depends on when it loads, not whether it's "installed":
 | Loads | When | Where it comes from |
 |---|---|---|
 | `CLAUDE.md` / `AGENTS.md` | Every session, in full, before the first message | `config/CLAUDE.md` (Claude Code), `config/AGENTS.md` (Codex, others) |
-| Skills | Description only, until the task matches and the model invokes it | `~/.claude/skills/<name>/SKILL.md`, flat mirror of `<category>/<skill>/` |
+| Skills | Description only, until the task matches and the model invokes it | `~/.claude/skills/<name>/SKILL.md`, flat mirror of `skills/<category>/<skill>/` |
 | Rules | Only when a touched file matches `paths:` frontmatter | `config/rules/*.md` |
 | Hooks | Executed by the harness at a lifecycle event — **not** read by the model | `config/hooks/*.sh`, wired in `~/.claude/settings.json` |
 | Subagents (`scout`/`worker`/`reasoner`) | Dispatched explicitly, each with its own model pin | `config/agents/*.md` |
@@ -188,12 +203,13 @@ for the full list — `<repo>` is wherever you cloned this):
 ~/.claude/rules ───────┐
 ~/.claude/hooks ───────┼──► <repo>/config/{rules,hooks,agents}
 ~/.claude/agents ──────┘
-~/.claude/skills/<name> ──► <repo>/<category>/<name>/   (flat mirror, via sync.sh)
+~/.claude/skills/<name> ──► <repo>/skills/<category>/<name>/   (flat mirror, via sync.sh)
+~/.agents/skills ──────────► <repo>/skills                      (shared root for other agents)
 ```
 
 #### Shortcuts: phrases and integrations to skills (ADR [0017](docs/decisions/0017-intent-router-and-workspaces.md))
 
-A skill that owns an integration or a flow (`git-workflow`, `github-usage`, `slack-usage`, `jira-usage`,
+A skill that owns an integration or a flow (`github-usage`, `slack-usage`, `jira-usage`,
 `google-workspace-usage`, `obsidian-vault`, `notebooklm-obsidian-sync`, `codex-review`) ends with a `## Shortcuts`
 section: `tools:`/`bash:` patterns that identify its tool calls and `intent:` lines (label, phrase regex in
 Spanish and English, command). Skills that come from plugins can't be edited, so their shortcuts live in
@@ -206,7 +222,7 @@ an AGENTS.md "Base branch is `x`" rule, then the organization's `base_branch`, t
 
 The global layer only *guides* a model. It can't stop a human, a different AI, or a model
 having a bad day from skipping it — instructions are advisory, not enforced. `project-init`
-(`devops/project-init/`) scaffolds a repo so the standards hold regardless of who or what is
+(`skills/devops/project-init/`) scaffolds a repo so the standards hold regardless of who or what is
 driving:
 
 | Adds | Why |
@@ -248,7 +264,7 @@ stay global.
 
 A plain folder that groups repos (a frontend and a backend, say) is a **workspace**, marked by its own
 `AGENTS.md` (first line `<!-- workspace-init -->`). `project-init`'s workspace mode
-(`devops/project-init/scripts/workspace.sh`) writes it after an interview: repo map, how the repos talk,
+(`skills/devops/project-init/scripts/workspace.sh`) writes it after an interview: repo map, how the repos talk,
 cross-repo flow and, with `--org`, the organization's policies and skills. Stack skills stay in each repo, so
 opening Claude in the workspace gives the generic layer and each repo adds its own. Where it lives: with an
 organization, in `organizations/<org>/workspaces/<name>/` (private repo, symlinked into the folder); without
@@ -364,8 +380,10 @@ Results go to `evals/results/` (gitignored).
 Adding or changing a skill:
 
 ```bash
-# 1. create/edit <repo>/<category>/<skill>/SKILL.md
+# 1. create/edit <repo>/skills/<category>/<skill>/SKILL.md (template: skills/README.md)
 # 2. ./sync.sh                              # refresh ~/.claude/skills
+#    scripts/gen-plugin.sh and scripts/gen-intents.sh when the skill list or its Shortcuts changed
+#    bash scripts/lint-docs.sh               # frontmatter and heading template
 # 3. git add -A && git commit -m "..." && git push
 # 4. keep any personal mirror clone you maintain in sync (your profile, not this file)
 ```

@@ -37,13 +37,11 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 ## Local tool paths
 
 - MarkItDown (PDF conversion, use first for PDF work): `~/projects/markitdown/.venv/bin/markitdown`.
-- Oracle APEX (`apexlang`) skill source: `~/projects/oracle-skills/apex/apexlang`.
-- AWS skills history: `aws/` in this hub (folded in via `git subtree`, no longer a separate `~/projects/aws-skills` clone — see ADR 0001).
+- AWS skills history: `skills/aws/` in this hub (folded in via `git subtree`, no longer a separate `~/projects/aws-skills` clone — see ADR 0001).
 
 ## Skill routing (personal)
 
 - Omarchy/Linux desktop: `omarchy` before editing terminal, Hyprland, Waybar, Mako, Walker, theme, or desktop config.
-- Oracle APEX: `apexlang` for `.apx` apps and APEXlang workflows.
 
 ## OS / desktop config
 
@@ -51,7 +49,7 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 
 ## Codex workflow adapter
 
-`meta/codex-workflows` adapts Claude Code to this existing personal setup. Its extra skill roots, beyond this hub, are:
+`skills/meta/codex-workflows` adapts Claude Code to this existing personal setup. Its extra skill roots, beyond this hub, are:
 
 - `~/.codex/skills`
 - `~/.local/share/omarchy/default/omarchy-skill/SKILL.md`

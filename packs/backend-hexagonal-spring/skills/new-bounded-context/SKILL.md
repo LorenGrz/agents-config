@@ -5,9 +5,17 @@ description: Workflow to add a new bounded context (module/aggregate) to a hexag
 
 # New bounded context
 
+## Objective
+
+Add a new bounded context (module/aggregate) to a hexagonal Spring backend: structure, domain model, ports, services, persistence, REST and tests.
+
+## Prerequisites
+
 Read `hexagonal-architecture` first. Ask the user (never assume) for: the aggregate and its states, what it needs from other contexts, and the persistence/auth decisions already recorded in `docs/decisions/`.
 
-## Structure
+## Workflow
+
+### Structure
 
 ```
 {base-package}/{bc}/
@@ -20,7 +28,7 @@ Read `hexagonal-architecture` first. Ask the user (never assume) for: the aggreg
   infrastructure/rest/     XController, dto/request, dto/response
 ```
 
-## Steps
+### Steps
 
 1. **Domain model**: private constructor; `create(...)` enforces invariants, `restore(...)` does not; mutating methods start with `ensureStatus`/`ensureEditable`; unmodifiable collections.
 2. **Commands**: one immutable record per use case.

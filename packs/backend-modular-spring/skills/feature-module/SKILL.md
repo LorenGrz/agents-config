@@ -5,9 +5,13 @@ description: Modular monolith by feature on Spring - one package per business ca
 
 # Feature module (modular monolith)
 
+## Objective
+
 The structure is decided in the architecture ADR (`docs/decisions/`); this skill is the discipline inside it. One package per business capability: `{base-package}.{module}`.
 
-## Shape
+## Rules
+
+### Shape
 
 ```
 {module}/
@@ -16,7 +20,7 @@ The structure is decided in the architecture ADR (`docs/decisions/`); this skill
   internal/                  everything else, package-private: controller, service, repository, entities, mappers
 ```
 
-## Rules
+### Module boundaries
 
 - Other modules touch only the public API and the published events, never `internal/`, never another module's repository or entities.
 - Pass data across modules as immutable records, not as another module's entity.
@@ -25,7 +29,7 @@ The structure is decided in the architecture ADR (`docs/decisions/`); this skill
 - Enforce the boundaries with a test (Spring Modulith `ApplicationModules.verify()` or ArchUnit), not with convention alone.
 - Layering inside a module stays simple (controller -> service -> repository). Add ports and adapters only where a module talks to something external.
 
-## Adding a module
+### Adding a module
 
 1. Ask the user what the module owns and which other modules it must talk to.
 2. Create the package with `internal/` and the public API; start with the smallest API.

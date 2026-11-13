@@ -8,12 +8,31 @@ An org adds its policies, skills, commands and interview questions on top of the
 
 ```
 organizations/<name>/
-  org.json        required
-  POLICIES.md     required: a summary of about 10 lines first, then one section per topic
+  org.json          required
+  POLICIES.md       required: a summary of 15 lines or fewer first, then one section per topic
   skills/<name>/SKILL.md
   commands/<name>.md
-  interview.md    extra questions for project-init (optional)
+  interview.md      extra questions for project-init (optional)
+  scripts/          helper scripts the org's skills and commands call (optional, not copied into projects)
+  workspaces/<slug>/  multi-repo workspace configs, written by project-init's workspace.sh (optional)
 ```
+
+An org repo can also be **self-sufficient**, so a teammate can use it without this hub. It then adds:
+
+```
+  .claude-plugin/   plugin.json + marketplace.json: install it as a Claude Code plugin
+  hooks/            hooks.json + scripts: a SessionStart hook that shows the POLICIES.md summary
+  install.sh        installs skills, commands and POLICIES.md into ~/.claude, or into a project with
+                    --project <path>; keeps a manifest, supports --dry-run and --uninstall; refuses
+                    a project that already runs agents-config
+  AGENTS.md         map of the org repo for any agent
+  README.md         the two ways to install it
+```
+
+The hub reads only `org.json`, `POLICIES.md`, `skills/`, `commands/`, `interview.md` and `workspaces/`; the
+self-sufficient files are ignored by `orgs.sh` and `project-agents.sh`. `project-agents.sh` refuses an org
+directory that contains symlinks, so keep dependencies out of the repo (install them elsewhere, e.g. under
+`~/.cache`).
 
 `org.json`:
 
@@ -23,22 +42,49 @@ organizations/<name>/
   "version": "0.1.0",
   "extends": "agents-config>=0.1.0",
   "match": { "gh_owners": ["acme-inc"], "remote_patterns": [] },
-  "defaults": { "base_branch": "dev", "pr_language": "en", "tracker": "none" },
+  "agent_providers": ["claude_code"],
+  "defaults": {
+    "base_branch": "dev",
+    "commit_language": "en",
+    "pr_title_language": "en",
+    "pr_body_language": "en",
+    "tracker": "none",
+    "tracker_project": ""
+  },
   "blocklist_terms": ["acme"],
-  "replaces": { "ui-builder": "acme-ui-builder", "/smart-commit": "/acme-commit" },
+  "replaces": {
+    "ui-builder": "acme-ui-builder",
+    "github-usage": "acme-github",
+    "/smart-commit": "/acme-commit"
+  },
   "assets": { "commands/acme-commit.md": { "stacks": ["react-vite"] } },
   "index": [{ "when": "Create a ticket", "use": "acme-ticket" }],
   "critical": [{ "skill": "acme-erp", "keywords": "erp|invoice sync" }]
 }
 ```
 
-- `match`: how project-init and the global index recognize the org (GitHub owner or a regex on the remote URL).
-- `agent_providers` (optional): CAO providers allowed for agents in the org's repos (e.g. `["claude_code"]`); caolg's leader only opens workers of these providers (`caolg-providers`). Missing = all.
-- `blocklist_terms`: words that must never appear in the public repo; `orgs.sh` merges them into the local leak-guard blocklist.
-- `replaces`: base pack skills (`name`) or commands (`/name`) that the org replaces with its own, so both do not trigger.
-- `assets`: optional per-file filter by stack; a file without an entry is installed for every stack.
-- `index` / `critical`: rows for the project's keyword table and `.agents/critical.json`, merged before the packs' own. A row may carry `"stacks": [...]` to apply only to projects of those stacks.
-- Commands installed from packs that point at a replaced skill are rewritten to point at the org's replacement.
+| Key | Required | Read by | Meaning |
+|---|---|---|---|
+| `name` | yes | `orgs.sh`, `project-agents.sh` | Same as the directory name; lowercase letters, digits and `-` |
+| `version` | yes | `orgs.sh status`, `.agents/skills.lock` | The org's own version; projects freeze it |
+| `extends` | no | `orgs.sh status` | Minimum base version, `agents-config>=x.y.z`; status warns when the base is older |
+| `match` | yes | `orgs.sh detect`, `init.sh`, the global index | `gh_owners` (GitHub owners) and `remote_patterns` (regex on the remote URL); at least one entry in total |
+| `agent_providers` | no | caolg | CAO providers allowed for agents in the org's repos (e.g. `["claude_code"]`); caolg's leader only opens workers of these providers. Missing means all, so drop the key to allow any model |
+| `defaults` | no | agents (and `intent-router.sh` for `base_branch`) | Org conventions in one place: `base_branch`, `commit_language`, `pr_title_language`, `pr_body_language`, `tracker`, `tracker_project`, and any extra descriptive key (stack summary, tracker projects by repo, ...). Only `base_branch` is read by a script; `POLICIES.md` is the human-readable source for the rest |
+| `blocklist_terms` | no | `orgs.sh` | Words that must never appear in the public repo; merged into the local leak-guard blocklist together with `name` and `match.gh_owners` |
+| `replaces` | no | `orgs.sh validate`, `project-agents.sh` | Flat map `base name -> org name`. A skill is a plain name, a command starts with `/`; a skill can only be replaced by a skill and a command by a command. The target must exist in the org's `skills/` or `commands/`. The base item can be a pack skill, a stack skill or a hub integration skill (`github-usage`, `jira-usage`, ...) |
+| `assets` | no | `project-agents.sh` | Per-file stack filter, keyed `skills/<name>` or `commands/<name>.md`; a file without an entry is installed for every stack |
+| `index` / `critical` | no | `project-agents.sh` | Rows for the project's keyword table and `.agents/critical.json`, merged before the packs' own. A row may carry `"stacks": [...]` |
+
+Notes:
+
+- `pr_title_language` and `pr_body_language` are separate on purpose: an org can ask for English
+  Conventional Commit titles and a Spanish body, or the other way round. They replace the older single
+  `pr_language`.
+- `blocklist_terms` must not keep the template's `acme` placeholder (validation fails).
+- When a replacement applies to a project, `project-agents.sh` removes the replaced skill or command from
+  the project's `.claude/`, rewrites references to it in the skills and commands it installed, and points
+  the index and critical rows at the replacement.
 
 ## Use
 

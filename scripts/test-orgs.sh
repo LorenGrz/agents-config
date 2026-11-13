@@ -64,7 +64,7 @@ check "unknown org is an error" '! bash "$PA" --stack react-vite --org nope --di
 
 # init.sh --manifest picks the org from the manifest
 Q="$W/app"; mkdir -p "$Q"; jq -n '{version:1,name:"Web",org:"acme",stacks:["node-ts"],decisions:[{key:"data",value:"none"},{key:"auth",value:"none"},{key:"testing",value:"vitest"},{key:"deploy",value:"none"},{key:"sdd",value:"light"}],pending:[]}' > "$W/init.json"
-bash "$H/devops/project-init/scripts/init.sh" --manifest "$W/init.json" --dir "$Q" --owner acme-inc >"$W/init.log" 2>&1
+bash "$H/skills/devops/project-init/scripts/init.sh" --manifest "$W/init.json" --dir "$Q" --owner acme-inc >"$W/init.log" 2>&1
 check "init.sh installs the manifest's org" '[ -f "$Q/.agents/POLICIES.md" ] && jq -e ".org.name == \"acme\"" "$Q/.agents/skills.lock" >/dev/null'
 
 
@@ -149,23 +149,23 @@ check "install.sh --org without a url explains itself" '[ $rc -ne 0 ] && grep -q
 
 # org / owner mismatch
 Q2="$W/app2"; mkdir -p "$Q2"
-bash "$H/devops/project-init/scripts/init.sh" --manifest "$W/init.json" --dir "$Q2" --owner someone-else </dev/null >"$W/mm.log" 2>&1; rc=$?
+bash "$H/skills/devops/project-init/scripts/init.sh" --manifest "$W/init.json" --dir "$Q2" --owner someone-else </dev/null >"$W/mm.log" 2>&1; rc=$?
 check "init.sh refuses an org/owner mismatch when non-interactive" '[ $rc -ne 0 ] && [ ! -f "$Q2/.agents/POLICIES.md" ]'
 Q3="$W/app3"; mkdir -p "$Q3"
-bash "$H/devops/project-init/scripts/init.sh" --manifest "$W/init.json" --dir "$Q3" --owner someone-else --allow-org-mismatch </dev/null >/dev/null 2>&1
+bash "$H/skills/devops/project-init/scripts/init.sh" --manifest "$W/init.json" --dir "$Q3" --owner someone-else --allow-org-mismatch </dev/null >/dev/null 2>&1
 check "--allow-org-mismatch proceeds" '[ -f "$Q3/.agents/POLICIES.md" ]'
 
 # workspace mode with an org: config lives in the org repo, the workspace folder gets symlinks
 WSD="$W/wsorg"; mkdir -p "$WSD/front" "$WSD/back"; git -C "$WSD/front" init -q; git -C "$WSD/back" init -q
 WSA=(--dir "$WSD" --name prod --org acme --repo front:frontend:react-vite --repo back:backend:java-spring)
-bash "$H/devops/project-init/scripts/workspace.sh" "${WSA[@]}" >/dev/null 2>&1
+bash "$H/skills/devops/project-init/scripts/workspace.sh" "${WSA[@]}" >/dev/null 2>&1
 check "workspace --org writes the config inside the org repo" '[ -f "$A/workspaces/prod/AGENTS.md" ] && [ -f "$A/workspaces/prod/.agents/POLICIES.md" ] && [ -d "$A/workspaces/prod/.claude/skills/acme-ui-builder" ]'
 check "workspace --org installs no pack commands" '[ ! -d "$A/workspaces/prod/.claude/commands" ] || [ -z "$(ls "$A/workspaces/prod/.claude/commands" 2>/dev/null)" ]'
 check "workspace --org links the folder to the org copy" '[ "$(readlink "$WSD/AGENTS.md")" = "$A/workspaces/prod/AGENTS.md" ] && [ -L "$WSD/.claude" ] && [ -L "$WSD/.agents" ]'
 check "workspace --org mentions the policies and does not git init the folder" 'grep -q "\.agents/POLICIES.md" "$A/workspaces/prod/AGENTS.md" && [ ! -d "$WSD/.git" ]'
-bash "$H/devops/project-init/scripts/workspace.sh" "${WSA[@]}" >/dev/null 2>&1
+bash "$H/skills/devops/project-init/scripts/workspace.sh" "${WSA[@]}" >/dev/null 2>&1
 check "workspace --org re-run is safe and the org still validates" 'bash "$ORGS" validate acme >/dev/null 2>&1'
-check "workspace --org refuses an org that is not installed" '! bash "$H/devops/project-init/scripts/workspace.sh" --dir "$WSD" --name prod --org nope --repo front:frontend:- --repo back:backend:- >/dev/null 2>&1'
+check "workspace --org refuses an org that is not installed" '! bash "$H/skills/devops/project-init/scripts/workspace.sh" --dir "$WSD" --name prod --org nope --repo front:frontend:- --repo back:backend:- >/dev/null 2>&1'
 
 # status / remove / push safety
 st="$(bash "$ORGS" status 2>&1)"

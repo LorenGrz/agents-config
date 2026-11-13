@@ -1,12 +1,6 @@
-# Skills linked in from other repos — tracked in their own source, not here.
-# (These paths exist as symlinks in ~/.agents/skills and resolve at runtime.)
-# AWS skills (cost-optimizer, iam-least-privilege, lambda-patterns, sam-deploy,
-# serverless-scanner) moved into aws/ via git subtree — they are tracked here now.
-/omarchy
-/diagnose-crash
-/apexlang
-/omarchy-app
-/superwhisper
+# Skills linked in from other repos or the system (omarchy, omarchy-app,
+# diagnose-crash, superwhisper) — symlinks recreated per machine, never tracked.
+/skills/external/
 
 # Local git metadata when this tree is also the working hub
 /.claude

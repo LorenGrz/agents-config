@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # test-intents.sh - offline checks for the intent router: gen-intents.sh, intent-router.sh, detect-stack.sh,
 # the SessionStart project checks, per-project plugins (project-agents.sh) and workspace.sh (personal mode).
-# Never touches ~/.config or organizations/: state is redirected to a temp dir and no org is used.
+# Never touches ~/.config or organizations/: state is redirected to a temp dir; the org checks run a copy of the
+# router inside a temp hub with a fake org.
 set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 W="$(mktemp -d)"; trap 'rm -rf "$W"' EXIT
@@ -23,7 +24,7 @@ mkrepo() { mkdir -p "$1" && git -C "$1" init -q; }
 # --- generated table
 check "gen-intents --check is up to date" 'bash "$HUB/scripts/gen-intents.sh" --check >/dev/null 2>&1'
 check "every skill with intents has a label, regex and command" '[ "$(jq "[.skills[].intents[] | select(.label == \"\" or .re == \"\" or .cmd == \"\")] | length" "$HUB/config/intents.json")" -eq 0 ]'
-check "AGENTS.md table lists git-workflow" 'sed -n "/intents:start/,/intents:end/p" "$HUB/config/AGENTS.md" | grep -q "git-workflow"'
+check "AGENTS.md table lists github-usage" 'sed -n "/intents:start/,/intents:end/p" "$HUB/config/AGENTS.md" | grep -q "github-usage"'
 
 # --- hook: base branch resolution
 mkrepo "$W/flow"; mkdir -p "$W/flow/scripts"; : >"$W/flow/scripts/gh-flow.sh"
@@ -45,12 +46,31 @@ check "hook never blocks: exit 0 on garbage input" 'echo "not json" | bash "$ROU
 check "Slack MCP tool -> slack-usage" 'tool mcp__claude_ai_Slack__slack_read_channel | grep -q "slack-usage"'
 check "Jira MCP tool -> jira-usage" 'tool mcp__claude_ai_Atlassian_Rovo__getJiraIssue | grep -q "jira-usage"'
 check "Obsidian MCP tool -> obsidian-vault" 'tool mcp__obsidian__read_note | grep -q "obsidian-vault"'
-check "Bash 'cd x && git push' -> git-workflow" 'tool Bash "cd /tmp && git push origin x" | grep -q "git-workflow"'
+check "Bash 'cd x && git push' -> github-usage" 'tool Bash "cd /tmp && git push origin x" | grep -q "github-usage"'
 check "Bash 'gh issue list' -> github-usage" 'tool Bash "gh issue list" | grep -q "github-usage"'
 check "Bash 'ls' is silent" '[ -z "$(tool Bash "ls -la")" ]'
 check "unknown tool is silent" '[ -z "$(tool Read)" ]'
 check "Jira key in a prompt (lowercased) -> jira-usage" 'prompt "mirá el ticket abc-123" "$W/plain" | grep -q "jira-usage"'
 check "plugin shortcut: unknown-cause bug -> systematic-debugging" 'prompt "no sé por qué falla el login" "$W/plain" | grep -q "systematic-debugging"'
+
+# --- hook: organization replacement skills (router copied into a temp hub; HUB is derived from its location)
+OH="$W/orghub"; mkdir -p "$OH/config/hooks" "$OH/scripts" "$OH/organizations/acme/skills/acme-github"
+cp "$HUB/config/hooks/intent-router.sh" "$OH/config/hooks/"; cp "$HUB/config/intents.json" "$OH/config/"; cp "$HUB/scripts/orgs.sh" "$OH/scripts/"
+printf '%s\n' '{"name":"acme","match":{"gh_owners":["acme-inc"],"remote_patterns":[]},"replaces":{"github-usage":"acme-github","jira-usage":"acme-jira","/smart-commit":"/acme-commit"}}' >"$OH/organizations/acme/org.json"
+printf -- '---\nname: acme-github\n---\n' >"$OH/organizations/acme/skills/acme-github/SKILL.md"
+bash "$OH/scripts/orgs.sh" index >/dev/null 2>&1; jq '.orgs = [{name:"acme",remote:"x"}]' "$AGENTS_CONFIG_STATE_DIR/organizations.json" >"$W/reg.json" && mv "$W/reg.json" "$AGENTS_CONFIG_STATE_DIR/organizations.json"
+mkrepo "$W/acme-repo"; git -C "$W/acme-repo" remote add origin https://github.com/acme-inc/shop.git
+mkrepo "$W/other-repo"; git -C "$W/other-repo" remote add origin https://github.com/someone/shop.git
+oprompt() { jq -n --arg p "$1" --arg c "$2" --arg s "s$RANDOM$RANDOM" '{hook_event_name:"UserPromptSubmit",prompt:$p,cwd:$c,session_id:$s}' \
+  | bash "$OH/config/hooks/intent-router.sh" | jq -r '.hookSpecificOutput.additionalContext // empty'; }
+otool() { jq -n --arg t "$1" --arg cmd "${2:-}" --arg c "$3" --arg s "s$RANDOM$RANDOM" '{hook_event_name:"PreToolUse",tool_name:$t,tool_input:{command:$cmd},cwd:$c,session_id:$s}' \
+  | bash "$OH/config/hooks/intent-router.sh" | jq -r '.hookSpecificOutput.additionalContext // empty'; }
+check "org repo: git phrase hints the org skill, not github-usage, and keeps the run command" 'out="$(oprompt "traete los cambios" "$W/acme-repo")"; grep -q "acme-github" <<<"$out" && grep -q "rules win" <<<"$out" && grep -q "git pull origin" <<<"$out" && ! grep -q "skill \`github-usage\`" <<<"$out"'
+check "org repo: Bash git push hints the org skill" 'otool Bash "git push origin x" "$W/acme-repo" | grep -q "acme-github"'
+check "org repo: replacement the org does not ship falls back to the hub skill" 'otool mcp__claude_ai_Atlassian_Rovo__getJiraIssue "" "$W/acme-repo" | grep -q "jira-usage"'
+check "repo of another owner: still github-usage" 'out="$(oprompt "traete los cambios" "$W/other-repo")"; grep -q "github-usage" <<<"$out" && ! grep -q "acme-github" <<<"$out"'
+check "repo without a remote: still github-usage" 'oprompt "traete los cambios" "$W/plain" | grep -q "github-usage"'
+check "org with an unreadable org.json: falls back silently" 'echo "{" >"$OH/organizations/acme/org.json"; oprompt "traete los cambios" "$W/acme-repo" | grep -q "github-usage"'
 
 # --- detect-stack
 mkdir -p "$W/ds/next" "$W/ds/nest" "$W/ds/none"
@@ -99,7 +119,7 @@ check "--no-packs installs no pack commands" 'bash "$HUB/scripts/project-agents.
 # --- workspace.sh (personal mode)
 WS="$W/ws"; mkdir -p "$WS/front" "$WS/back"; git -C "$WS/front" init -q; git -C "$WS/back" init -q
 WA=(--dir "$WS" --name app --repo front:frontend:react-vite --repo back:backend:java-spring)
-WSH="$HUB/devops/project-init/scripts/workspace.sh"
+WSH="$HUB/skills/devops/project-init/scripts/workspace.sh"
 check "workspace.sh refuses fewer than 2 repos" '! bash "$WSH" --dir "$WS" --name app --repo front:frontend:- >/dev/null 2>&1'
 bash "$WSH" "${WA[@]}" >/dev/null 2>&1
 check "workspace.sh writes AGENTS.md with marker and CLAUDE.md" 'head -n 1 "$WS/AGENTS.md" | grep -q workspace-init && grep -q "@AGENTS.md" "$WS/CLAUDE.md"'

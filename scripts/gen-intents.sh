@@ -46,7 +46,7 @@ rows="$(mktemp)"; trap 'rm -f "$rows" "$rows.json" "$rows.agents" "$rows.agents.
 
 while IFS= read -r f; do
   parse "$f" "$(basename "$(dirname "$f")")" section
-done < <(find "$HUB" -mindepth 3 -maxdepth 3 -name SKILL.md -not -path "$HUB/organizations/*" | sort) >"$rows"
+done < <(find "$HUB/skills" -mindepth 3 -maxdepth 3 -name SKILL.md | sort) >"$rows"
 
 [ -f "$PLUGINS_MD" ] && parse "$PLUGINS_MD" "" plugins >>"$rows"
 

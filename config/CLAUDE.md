@@ -18,8 +18,8 @@ Where skills overlap, one default per task:
   unknown-cause bugs `superpowers:systematic-debugging` (`debug-assistant` only for a pasted stack trace).
 - TypeScript review `code-review-safety` (acting on feedback: `superpowers:receiving-code-review`);
   stress-testing an idea `mattpocock-skills:grilling`. New repo `project-init`; new company `org-creator`.
-- Any git action goes through `git-workflow` first, not `superpowers:finishing-a-development-branch`.
-- Integrations (ADR 0016): Slack `slack-usage`; Jira/Confluence `jira-usage`; GitHub remote `github-usage`;
+- Any git or GitHub action goes through `github-usage` first, not `superpowers:finishing-a-development-branch`.
+- Integrations (ADR 0016): Slack `slack-usage`; Jira/Confluence `jira-usage`; git and GitHub `github-usage`;
   Gmail/Calendar/Drive `google-workspace-usage`; Obsidian `obsidian-vault`; NotebookLM
   `notebooklm-obsidian-sync`; cross-model review `codex-review`. Anything that sends, schedules, creates,
   merges, shares or deletes is shown and approved first.

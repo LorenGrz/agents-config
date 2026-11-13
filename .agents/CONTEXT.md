@@ -4,7 +4,7 @@ Public hub of personal agent config, skills and project scaffolding. Detail: `RE
 
 ## Layers
 
-- Base (this repo): `config/` (AGENTS.md, CLAUDE.md, baseline.md, profiles, hooks, rules, agents), skills by category, `packs/`, `devops/project-init`.
+- Base (this repo): `config/` (AGENTS.md, CLAUDE.md, baseline.md, profiles, hooks, rules, agents), skills by category under `skills/`, `packs/`, `skills/devops/project-init`.
 - Organizations: `organizations/<name>/`, each a private repo cloned here and ignored by git (`scripts/orgs.sh`). Never commit them or their terms here.
 - Project: `.agents/project.json`, `POLICIES.md`, `stack.env`, `critical.json`, `skills.lock` written by `project-init` and `project-agents.sh`.
 
@@ -17,13 +17,13 @@ Public hub of personal agent config, skills and project scaffolding. Detail: `RE
 - Workflow lanes (ADR 0022): punctual change direct; otherwise one question Continuar / Plan S / Plan L (`config/CLAUDE.md`). PonyTail (ADR 0023) is installed but off (`PONYTAIL_DEFAULT_MODE=off`, ledger and band off); Plan S loads `ponytail:ponytail`. `install.sh` merges `env` and `pluginConfigs` from `settings.base.json`.
 - Main session: Opus at high effort (ADR 0024, supersedes the medium of 0018). `CLAUDE_CODE_FORCE_TERMINAL_IMAGES=1` in settings `env` so caolg panes (tmux) show pasted-image thumbnails; CAO unsets `CLAUDE*` shell vars, so it must live in settings.
 - Derived files: `scripts/gen-plugin.sh` and `scripts/gen-intents.sh` (`--check` in CI; `sync.sh` runs the latter).
-- Intent router (ADR 0017): `## Shortcuts` in each integration skill + `config/intents.plugins.md` -> `config/intents.json` -> `config/hooks/intent-router.sh`; project checks in `config/hooks/session-start.sh` + `scripts/detect-stack.sh`; plugins per stack in `config/scopes.json`; workspace mode `devops/project-init/scripts/workspace.sh`.
-- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `scripts/test-intents.sh`, `scripts/test-cli-baselines.sh`, `devops/project-init/scripts/test-manifest.sh`, `devops/project-init/scripts/test-docs-check.sh`, `devops/project-init/scripts/e2e.sh --stack <name|all>` (network).
+- Intent router (ADR 0017): `## Shortcuts` in each integration skill + `config/intents.plugins.md` -> `config/intents.json` -> `config/hooks/intent-router.sh`; project checks in `config/hooks/session-start.sh` + `scripts/detect-stack.sh`; plugins per stack in `config/scopes.json`; workspace mode `skills/devops/project-init/scripts/workspace.sh`.
+- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `scripts/test-intents.sh`, `scripts/test-cli-baselines.sh`, `skills/devops/project-init/scripts/test-manifest.sh`, `skills/devops/project-init/scripts/test-docs-check.sh`, `skills/devops/project-init/scripts/e2e.sh --stack <name|all>` (network).
 - Guard: `scripts/leak-guard.sh --staged|--all`; hooks via `git config core.hooksPath .githooks`.
 
 ## Known issues
 
-- `~/.agents/skills` is a symlink to the whole hub (Codex may list every skill, packs and org ones included); the profile calls a script through that path, so curating it needs its own change.
+- `~/.agents/skills` is a symlink to `<hub>/skills` (install.sh links it; skipped when the hub itself was cloned there). The profile calls `~/.agents/skills/meta/roadmap-coach/scripts/update-stage.sh` through that path.
 - `workspace.sh` still writes a `CLAUDE.md` with `@AGENTS.md` in workspace folders (a CLAUDE.md above a repo disables the native AGENTS.md read; revisit).
 - Not verified: agy reading `~/.gemini/GEMINI.md` under CAO; whether SessionStart/UserPromptSubmit output reaches subagents.
 - `kotlin.md` rule (layered reference) is not attached to `kotlin-spring`.

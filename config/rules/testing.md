@@ -9,6 +9,8 @@ paths:
 
 # Tests
 
+## Writing tests
+
 - Test observable behavior, not private implementation.
 - Each test is independent and order-free.
 - Name by behavior: `should <expected> when <condition>`.

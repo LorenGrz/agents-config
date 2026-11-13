@@ -5,9 +5,13 @@ description: Accessibility floor and change-completeness gate for a reusable UI 
 
 # Component a11y + completeness guard
 
+## Objective
+
 Run it when you change what a component renders or exports. Reuse the project's existing tokens, focus-ring class and primitives (a headless library such as Radix supplies name/role/keyboard; do not strip what it provides). A missing token is a design-token issue, not a local workaround.
 
-## Accessibility floor (what the component author controls)
+## Rules
+
+### Accessibility floor (what the component author controls)
 
 | WCAG | Rule |
 |---|---|
@@ -27,7 +31,7 @@ Run it when you change what a component renders or exports. Reuse the project's 
 
 Not the library's job (do not "fix" them in a component): skip links, page titles, language, focus on route change, app-wide live regions, timeouts, page reflow.
 
-## Complete the change
+### Complete the change
 
 - [ ] Folder shape (`<Name>/{<Name>.tsx, stories, index.ts}`) and re-export from the package entry, including the `${Name}Props` type
 - [ ] JSDoc on every public prop, with `@default` where applicable

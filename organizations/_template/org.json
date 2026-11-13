@@ -6,10 +6,16 @@
     "gh_owners": [],
     "remote_patterns": []
   },
+  "agent_providers": [
+    "claude_code"
+  ],
   "defaults": {
     "base_branch": "dev",
-    "pr_language": "en",
-    "tracker": "none"
+    "commit_language": "en",
+    "pr_title_language": "en",
+    "pr_body_language": "en",
+    "tracker": "none",
+    "tracker_project": ""
   },
   "blocklist_terms": [],
   "replaces": {},

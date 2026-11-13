@@ -5,7 +5,13 @@ description: Paginated GET list endpoints on a hexagonal Spring backend - two-st
 
 # Paginated list endpoint
 
-## Two-step query (never one paginated query with fetch-joined children)
+## Objective
+
+Add a paginated GET list endpoint without N+1 queries or broken page sizes.
+
+## Rules
+
+### Two-step query (never one paginated query with fetch-joined children)
 
 A join over children multiplies rows and breaks the page size. Instead:
 
@@ -30,7 +36,7 @@ Map<UUID, XJpa> byId = jpaRepo.findAllWithItemsByIdIn(ids.getContent()).stream()
 return ids.map(id -> mapper.toDomain(byId.get(id)));
 ```
 
-## Layers
+### Layers
 
 - **Repository port** (domain): `Page<X> findByOwnerId(UUID ownerId, Pageable pageable)` plus one method per filter combination that is really needed; no speculative filters.
 - **Query service** (application): one class for reads; `findById` throws not-found, list methods return `Page<X>`.
@@ -38,7 +44,7 @@ return ids.map(id -> mapper.toDomain(byId.get(id)));
 - **Response DTO**: an immutable record with a static `from(domain)`; expose only what the client needs.
 - Bound the page size (`spring.data.web.pageable.max-page-size`) and whitelist sortable fields.
 
-## Test
+### Test
 
 ```java
 when(queryService.findByOwnerId(eq(ownerId), any())).thenReturn(new PageImpl<>(List.of(entity)));

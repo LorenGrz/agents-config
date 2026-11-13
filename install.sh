@@ -5,6 +5,8 @@
 #   your profile + config/CLAUDE.md) and ~/.codex/AGENTS.md (config/AGENTS.md +
 #   baseline + your profile, concatenated — Codex has no @-import) from this repo.
 # - Symlinks ~/.claude/{rules,hooks,agents} and ~/.claude/keybindings.json into this repo.
+# - Symlinks ~/.agents/skills -> <hub>/skills (the shared skill root for other agents);
+#   skipped when the hub itself was cloned to ~/.agents/skills.
 # - Runs sync.sh to (re)build the flat ~/.claude/skills mirror.
 # - Merges config/settings.base.json into ~/.claude/settings.json (jq):
 #     * hooks / statusLine / model / theme: base wins (full overwrite).
@@ -322,6 +324,12 @@ link_rules
 link "$HUB/config/hooks"     "$CLAUDE_DIR/hooks"
 link "$HUB/config/agents"    "$CLAUDE_DIR/agents"
 link "$HUB/config/keybindings.json" "$CLAUDE_DIR/keybindings.json"
+AGENTS_SKILLS="$HOME/.agents/skills"
+if [ ! -L "$AGENTS_SKILLS" ] && [ -d "$AGENTS_SKILLS" ] && [ "$(cd "$AGENTS_SKILLS" && pwd -P)" = "$(cd "$HUB" && pwd -P)" ]; then
+  echo "skip:    $AGENTS_SKILLS is the hub itself (cloned there); not linking $HUB/skills"
+else
+  link "$HUB/skills" "$AGENTS_SKILLS"
+fi
 
 echo
 echo "== skills mirror (sync.sh) =="

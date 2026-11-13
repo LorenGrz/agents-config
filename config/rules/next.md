@@ -9,6 +9,8 @@ paths:
 
 # Next.js (App Router)
 
+## Server and client boundaries
+
 - Server Components by default. Add `'use client'` only on the interactive leaf
   (the button, the form, the thing with state/handlers) — not on a whole page.
 - Fetch data in Server Components or route handlers, not in a client-side

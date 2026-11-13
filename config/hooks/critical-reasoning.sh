@@ -68,7 +68,7 @@ fi
 
 msg=""
 if [ -n "$reason" ]; then
-  msg="Razonamiento crítico (agents-config): $reason. Esto parece Plan L: antes de editar, hacé una sola pregunta con las opciones Continuar / Plan S / Plan L, siempre en ese orden (marcá la que recomendás con \"(Recomendado)\" sin moverla). En Plan S y Plan L, la entrevista con `mattpocock-skills:grilling` es obligatoria antes del plan. En Plan L, la decisión de fondo va al subagente \`reasoner\` (Opus, effort high) con el contexto y la pregunta concreta. Si ya hay un plan aprobado para esto, ignorá este aviso."
+  msg="Razonamiento crítico (agents-config): $reason. Esto parece Plan L: antes de editar, hacé una sola pregunta con las opciones Continuar / Plan S / Plan L, siempre en ese orden (marcá la que recomendás con \"(Recomendado)\" sin moverla). En Plan S y Plan L, la entrevista con \`mattpocock-skills:grilling\` es obligatoria antes del plan. En Plan L, la decisión de fondo va al subagente \`reasoner\` (Opus, effort high) con el contexto y la pregunta concreta. Si ya hay un plan aprobado para esto, ignorá este aviso."
 fi
 if [ -n "$hint" ]; then
   msg="${msg:+$msg }Skill del proyecto para esto: leé$hint antes de implementar."
