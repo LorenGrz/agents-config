@@ -46,7 +46,7 @@ some repos use `master`). Use that name wherever `<default>` appears.
    - backend (Kotlin/Spring): `./gradlew test`
    - other stacks: the project's own lint + typecheck + unit tests
 
-   Then review `git status --short`; if unrelated changes are mixed in, ask before continuing. Otherwise `git add .` then `git commit -m "<Conventional Commit subject>"`.
+   Then review `git status --short`; if unrelated changes are mixed in, ask before continuing. Otherwise `git add .` then `git commit -m "<subject>"` (message format: `conventional-commit-generator`).
 
 6. **Push the branch:** `git push -u origin <type>/<slug>`.
 
@@ -59,7 +59,7 @@ some repos use `master`). Use that name wherever `<default>` appears.
    git push origin --delete <type>/<slug>
    ```
 
-8. **Update project context after merging into `<default>`/`main`/`master`.** If the merged changes alter stack, architecture, modules, env vars, deploy/infra, commands, or known issues, update the project's `AGENTS.md` (and `CLAUDE.md` only if it holds Claude-specific content, plus `.agents/CONTEXT.md` if present) to match the code, commit it as `docs: update AGENTS.md after <branch> merge`, and push it in the same session. Skip only when nothing documented changed, and say so.
+8. **Update project context after merging into `<default>`/`main`/`master`.** If the merged changes alter stack, architecture, modules, env vars, deploy/infra, commands, or known issues, update the project's `AGENTS.md` (and `CLAUDE.md` only if it holds Claude-specific content) to match the code, refresh `.agents/CONTEXT.md` per `repository-context-maintainer`, commit it as `docs: update AGENTS.md after <branch> merge`, and push it in the same session. Skip only when nothing documented changed, and say so.
 
 If the repo has branch protection or a PR-based flow, stop after step 6 and open a PR with `gh pr create` instead of merging locally.
 

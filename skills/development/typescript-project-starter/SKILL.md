@@ -13,18 +13,17 @@ Create minimal, reproducible JS/TS projects that match the roadmap and do not ov
 
 1. Inspect the existing project before choosing tooling.
 2. Select the smallest setup that supports the task.
-3. Add or update `README.md` with purpose, commands, stack, and next steps.
+3. Add or update `README.md` per AGENTS.md.
 4. Add tests when there is reusable logic or expected behavior.
 5. Run the relevant verification command and report failures clearly.
 
 ## Rules
 
-- Use `pnpm` for package management.
-- Keep tooling project-local: install TypeScript, Vitest, ESLint, Prettier, tsx, Playwright, Nest CLI, or Supabase CLI as dev dependencies only when the project needs them. Do not install global npm packages for project tooling.
+- Package manager, script names and project-local tooling per AGENTS.md. Install TypeScript, Vitest, ESLint, Prettier, tsx, Playwright, Nest CLI, or Supabase CLI as dev dependencies only when the project needs them.
 - Prefer `type: "module"` unless the project already uses CommonJS.
 - Add scripts before adding complex tooling, and only scripts that the installed dependencies support.
 - Do not create monorepos before there are multiple real packages/apps.
-- Do not add React, NestJS, Next.js, or React Native unless the roadmap stage or user request explicitly calls for it.
+- Frameworks (React, NestJS, Next.js, React Native): only when `roadmap-coach` or the user's request calls for them.
 
 ## Reference
 

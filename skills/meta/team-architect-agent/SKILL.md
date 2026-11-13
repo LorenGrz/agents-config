@@ -34,7 +34,7 @@ Act as the small-team architect. Convert product or engineering intent into a de
 
 - Do not overdesign for hypothetical scale.
 - Do not invent a parallel architecture when the repository already has conventions.
-- Do not delegate business rules to repositories or UI components.
+- Do not delegate business rules to repositories or UI components (repository rules: `database-persistence-patterns`, if installed).
 - Do not skip validation, auth, or contract compatibility in plans that touch public behavior.
 
 ## Output

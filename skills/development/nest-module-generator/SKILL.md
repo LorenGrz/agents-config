@@ -69,7 +69,7 @@ Use the global `nest` command only when the project has no local executable and 
 - Application services orchestrate use cases and transactions, but do not become procedural domain models.
 - Infrastructure adapters implement persistence, messaging, HTTP clients, and external integrations behind interfaces.
 - Validate DTOs at the presentation/API boundary, then map them into application commands or domain-friendly input. DTOs must not leak into domain objects.
-- Repositories persist and retrieve data; they do not decide domain behavior. Keep repository ports separate from ORM-specific implementations, and do not create a generic repository abstraction unless the project already uses that pattern. Full repository, migration, and transaction rules: `database-persistence-patterns` (same `nestjs` stack).
+- Repository, migration, and transaction rules: `database-persistence-patterns` (same `nestjs` stack). Do not create a generic repository abstraction unless the project already uses that pattern.
 
 ## Reference
 

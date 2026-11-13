@@ -41,7 +41,7 @@ Pick the mode first:
 
 3. **Local git setup** (do this, do not delegate it):
    - `git init -b main` if the directory is not already a repo.
-   - Confirm `.gitignore` exists and covers: `node_modules/`, `.pnp*`, `.venv/`, `__pycache__/`, `*.py[cod]`, `.env` and `.env.*` (keep `!.env.example`), `*.pem`, `*.key`, `*credentials*.json`, `*secret*.json`, `dist/`, `build/`, `out/`, `.next/`, `.turbo/`, `coverage/`, `*.tsbuildinfo`, `*.log`, `.cache/`, `tmp/`, `.DS_Store`, `Thumbs.db`, `.idea/`, `.vscode/*` (keep `!.vscode/extensions.json`), `.superpowers/`. `init.sh` merges any missing baseline lines into the generator's `.gitignore`; only fix it if something is still missing.
+   - Confirm `.gitignore` exists and covers the minimum list in the `github-usage` skill (`references/gitignore-gate.md`) plus `.superpowers/`. `init.sh` writes it: it merges any missing baseline lines into the generator's `.gitignore`; only fix it if something is still missing.
    - `git config core.hooksPath .githooks`
    - `git add -A && git commit -m "chore: initial project setup"`
    - `bash scripts/verify-ci.sh --dir <path>` - clones the committed HEAD and runs CI's steps (install --frozen-lockfile, format:check, lint, typecheck, test, build). Fix anything red before step 4.

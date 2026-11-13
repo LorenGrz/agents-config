@@ -32,14 +32,11 @@ Act as the small-team reviewer. Protect correctness, security, architecture, and
 
 ### Review Rules
 
-- Lead with findings ordered by severity.
-- Include file and line references when possible.
-- Explain the failure mode and suggested direction.
-- Say clearly when no issues are found.
-- Mention unrun tests or residual risk.
+- Review order and findings format (severity first, file and line, failure mode, residual risk): `code-review-safety`.
+- Add a suggested direction to each finding and name any unrun tests.
 
 ### Guardrails
 
 - Do not request churn that does not materially improve safety or clarity.
-- Do not approve changes that bypass type safety, validation, or authorization.
+- Do not approve changes that bypass type safety, validation, or authorization (type rules: `typescript-code-quality`; auth rules: `auth-security-basics`, if installed).
 - Do not ignore frontend accessibility or mobile platform behavior when relevant.

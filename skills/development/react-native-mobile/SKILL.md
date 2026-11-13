@@ -40,7 +40,7 @@ Build React Native apps that handle mobile constraints deliberately: navigation,
 ### Native And Device APIs
 
 - Request permissions at the point of need and explain denied states in the UI.
-- Clean up subscriptions, app-state listeners, geolocation watches, timers, and native event listeners.
+- Effect and listener cleanup: `react-component-validator`; here it also covers app-state listeners and geolocation watches.
 - Avoid blocking the JS thread with expensive synchronous work.
 - Use secure storage for sensitive tokens when the project provides it; do not store secrets in plain async storage.
 
