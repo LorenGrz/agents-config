@@ -48,6 +48,28 @@ resolve_base() {
   echo "${b:-main}"
 }
 
+# Organization of the repo at $cwd (same detection as resolve_base); prints its name or nothing.
+resolve_org() {
+  local root remote
+  root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" || return 0
+  remote="$(git -C "$root" remote get-url origin 2>/dev/null || true)"
+  [ -n "$remote" ] && [ -x "$HUB/scripts/orgs.sh" ] || return 0
+  bash "$HUB/scripts/orgs.sh" detect "$remote" 2>/dev/null | head -n 1
+}
+
+# org_skill <skill>: inside an organization repo, the org's replacement (org.json `replaces`, commands
+# starting with "/" ignored) when the org ships it; otherwise the skill itself. Any failure -> unchanged.
+org_known=""; org=""  # org is filled by the caller (a $(...) here would lose the cache)
+org_skill() {
+  local rep
+  [ -n "$org" ] && [ -f "$HUB/organizations/$org/org.json" ] || { echo "$1"; return; }
+  rep="$(jq -r --arg s "$1" '.replaces[$s] // empty | select(type == "string")' "$HUB/organizations/$org/org.json" 2>/dev/null)"
+  case "$rep" in
+    ""|/*|*[!A-Za-z0-9_-]*) echo "$1" ;;
+    *) if [ -f "$HUB/organizations/$org/skills/$rep/SKILL.md" ]; then echo "$rep"; else echo "$1"; fi ;;
+  esac
+}
+
 # matches: lines of "skill<TAB>label<TAB>cmd" (label/cmd empty for tool and bash matches).
 matches=""
 case "$event" in
@@ -97,15 +119,18 @@ while IFS=$'\t' read -r skill label cmd; do
   [ -n "$skill" ] || continue
   [ ! -e "$seen_dir/$skill" ] || continue  # once per session per skill
   mkdir -p "$seen_dir" 2>/dev/null && : >"$seen_dir/$skill" 2>/dev/null
+  [ -n "$org_known" ] || { org_known=1; org="$(resolve_org)"; }
+  hub_skill="$skill"; skill="$(org_skill "$hub_skill")"
+  note=""; [ "$skill" = "$hub_skill" ] || note=" (organization skill, its rules win over the hub's \`$hub_skill\`)"
   if [ -n "$label" ]; then
     case "$cmd" in
       *"<base>"*) [ -n "$base" ] || base="$(resolve_base)"; cmd="${cmd//<base>/$base}" ;;
     esac
     msg="${msg:+$msg
-}Shortcut (agents-config): \"$label\" -> skill \`$skill\`; run: $cmd. Follow that skill's rules; outbound actions (push, PR, send, create, delete) still need the user's OK."
+}Shortcut (agents-config): \"$label\" -> skill \`$skill\`$note; run: $cmd. Follow that skill's rules; outbound actions (push, PR, send, create, delete) still need the user's OK."
   else
     msg="${msg:+$msg
-}Integration (agents-config): \`${what}\` is covered by skill \`$skill\`. If you have not loaded it this session, read it first: its Shortcuts section lists the approved commands. Outbound actions still need the user's OK."
+}Integration (agents-config): \`${what}\` is covered by skill \`$skill\`$note. If you have not loaded it this session, read it first: its Shortcuts section lists the approved commands. Outbound actions still need the user's OK."
   fi
 done <<<"$matches"
 
