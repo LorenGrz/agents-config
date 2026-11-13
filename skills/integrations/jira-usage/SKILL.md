@@ -31,7 +31,7 @@ Read and search Jira/Confluence freely; change anything only after the user appr
 
 ## Organization repos
 
-- In a repo that matches an organization, follow its `POLICIES.md` and the `git-workflow` skill: tracker writes need the user's OK on the exact text.
+- In a repo that matches an organization, follow its `POLICIES.md` and the `github-usage` skill: tracker writes need the user's OK on the exact text.
 - A policy may add restrictions, never relax these.
 
 ## Operating Rules

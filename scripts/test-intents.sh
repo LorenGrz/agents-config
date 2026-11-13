@@ -23,7 +23,7 @@ mkrepo() { mkdir -p "$1" && git -C "$1" init -q; }
 # --- generated table
 check "gen-intents --check is up to date" 'bash "$HUB/scripts/gen-intents.sh" --check >/dev/null 2>&1'
 check "every skill with intents has a label, regex and command" '[ "$(jq "[.skills[].intents[] | select(.label == \"\" or .re == \"\" or .cmd == \"\")] | length" "$HUB/config/intents.json")" -eq 0 ]'
-check "AGENTS.md table lists git-workflow" 'sed -n "/intents:start/,/intents:end/p" "$HUB/config/AGENTS.md" | grep -q "git-workflow"'
+check "AGENTS.md table lists github-usage" 'sed -n "/intents:start/,/intents:end/p" "$HUB/config/AGENTS.md" | grep -q "github-usage"'
 
 # --- hook: base branch resolution
 mkrepo "$W/flow"; mkdir -p "$W/flow/scripts"; : >"$W/flow/scripts/gh-flow.sh"
@@ -45,7 +45,7 @@ check "hook never blocks: exit 0 on garbage input" 'echo "not json" | bash "$ROU
 check "Slack MCP tool -> slack-usage" 'tool mcp__claude_ai_Slack__slack_read_channel | grep -q "slack-usage"'
 check "Jira MCP tool -> jira-usage" 'tool mcp__claude_ai_Atlassian_Rovo__getJiraIssue | grep -q "jira-usage"'
 check "Obsidian MCP tool -> obsidian-vault" 'tool mcp__obsidian__read_note | grep -q "obsidian-vault"'
-check "Bash 'cd x && git push' -> git-workflow" 'tool Bash "cd /tmp && git push origin x" | grep -q "git-workflow"'
+check "Bash 'cd x && git push' -> github-usage" 'tool Bash "cd /tmp && git push origin x" | grep -q "github-usage"'
 check "Bash 'gh issue list' -> github-usage" 'tool Bash "gh issue list" | grep -q "github-usage"'
 check "Bash 'ls' is silent" '[ -z "$(tool Bash "ls -la")" ]'
 check "unknown tool is silent" '[ -z "$(tool Read)" ]'

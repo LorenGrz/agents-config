@@ -48,7 +48,7 @@ your profile (`config/profiles/<your-name>.md`, imported alongside this file) â€
 
 In a repo that matches an organization (`organizations/INDEX.md`): never commit on `main`/`master`/`dev`,
 ask before every push or PR, and nothing goes to the tracker without the user's OK on the exact text.
-Load the `git-workflow` skill before the first git action there: it has the full org rules (branch naming,
+Load the `github-usage` skill before the first git action there: it has the full org rules (branch naming,
 PR flow, tracker writes, issue suggestions). An org's `POLICIES.md` may add to these rules, never relax them.
 
 ## Roadmap
@@ -65,7 +65,7 @@ Learning roadmap and current stage are personal â€” see your profile
 - Prefer non-interactive git commands: inline `-m` messages, never open an editor, never `-i`.
 - Never use destructive commands like `git reset --hard` or checkout-based reverts unless the user explicitly asks.
 - Never `git push --force` to `main`/`master` or any shared branch.
-- Before committing, pushing, merging or opening a PR, follow the `git-workflow` skill (gitignore gate,
+- Before committing, pushing, merging or opening a PR, follow the `github-usage` skill (gitignore gate,
   branch, verify, commit, push, merge, update `AGENTS.md` after merging).
 
 ## Verification
@@ -90,8 +90,7 @@ Natural phrases map to a skill. Load the skill and use the command in its `## Sh
 Claude Code's `intent-router` hook injects this automatically. Outbound actions still need the user's OK.
 
 - `codex-review`: Codex review
-- `git-workflow`: pull changes, new branch, commit, push, open PR
-- `github-usage`: issues and PRs
+- `github-usage`: pull changes, new branch, commit, push, open PR, issues and PRs
 - `google-workspace-usage`: email, calendar, drive files
 - `jira-usage`: Jira ticket
 - `mattpocock-skills:grilling`: stress-test an idea

@@ -23,7 +23,6 @@
     "./skills/development/typescript-code-quality",
     "./skills/development/typescript-project-starter",
     "./skills/devops/conventional-commit-generator",
-    "./skills/devops/git-workflow",
     "./skills/devops/project-init",
     "./skills/devops/repository-context-maintainer",
     "./skills/integrations/codex-review",
