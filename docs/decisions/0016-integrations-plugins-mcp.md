@@ -14,7 +14,8 @@ layer did not.
   and are not declared in files. The hub adds usage skills and guardrails only.
 - **Plugins** are declared in `config/settings.base.json` (`enabledPlugins` + `extraKnownMarketplaces`, merged
   key by key by `install.sh`): paste-preview, mattpocock-skills, claudex-loop, codex, claude-obsidian,
-  andrej-karpathy-skills, skill-creator. The `github` plugin is off: it fails to authenticate and duplicates the
+  andrej-karpathy-skills, skill-creator, modern-web-guidance (Chrome team; global so it reaches every front, org
+  repos included; it runs `npx modern-web-guidance@latest`, which needs network). The `github` plugin is off: it fails to authenticate and duplicates the
   claude.ai connector and `gh`. The Vercel plugin is on (it was enabled by hand; the base used to turn it off and
   `install.sh` would have disabled it on the next run). n8n, impeccable, higgsfield and graphify stay out for now.
 - **User-scope MCP** servers live in `config/mcp.user.json` and are registered by

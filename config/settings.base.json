@@ -225,7 +225,8 @@
     "codex@openai-codex": true,
     "claude-obsidian@agricidaniel-claude-obsidian": true,
     "andrej-karpathy-skills@karpathy-skills": true,
-    "ponytail@ponytail": true
+    "ponytail@ponytail": true,
+    "modern-web-guidance@googlechrome": true
   },
   "extraKnownMarketplaces": {
     "superpowers-marketplace": {
@@ -274,6 +275,12 @@
       "source": {
         "source": "github",
         "repo": "DietrichGebert/ponytail"
+      }
+    },
+    "googlechrome": {
+      "source": {
+        "source": "github",
+        "repo": "GoogleChrome/modern-web-guidance"
       }
     }
   },
