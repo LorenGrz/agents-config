@@ -62,7 +62,6 @@
       "mcp__claude_ai_Google_Drive__create_file",
       "mcp__claude_ai_Atlassian_Rovo__createJiraIssue",
       "mcp__claude_ai_Atlassian_Rovo__editJiraIssue",
-      "mcp__claude_ai_Atlassian_Rovo__transitionJiraIssue",
       "mcp__claude_ai_Atlassian_Rovo__addCommentToJiraIssue",
       "mcp__claude_ai_Atlassian_Rovo__addWorklogToJiraIssue",
       "mcp__claude_ai_Atlassian_Rovo__createIssueLink",
