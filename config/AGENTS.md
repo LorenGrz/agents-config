@@ -43,6 +43,10 @@ your profile (`config/profiles/<your-name>.md`, imported alongside this file) â€
   assume. Plan L's design step does not re-ask what was answered.
 - Outside a plan, don't pull in the heavy process (brainstorming, plan writing, subagent-driven execution)
   unless asked.
+- **Repo work goes to a background worker by default** (where the agent has subagents): every non-trivial
+  change runs in a worker on its own worktree and task branch while the user keeps working with the main
+  session, which reviews the diff and commits. Trivial changes (one line, or one file with no checks) are
+  done directly.
 
 ## Organizations (work repos)
 
