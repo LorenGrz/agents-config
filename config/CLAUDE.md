@@ -39,8 +39,9 @@ The lanes and the grilling interview are in `AGENTS.md` "Workflow lanes"; in Cla
 - `lane-guard.sh` enforces it: it denies a lane question in another order and an `ExitPlanMode` with no
   grilling since plan mode began (ADR 0025).
 - Outside a plan, never invoke `brainstorming`, `writing-plans`, `executing-plans`, `subagent-driven-development`,
-  `worker`, `reasoner` or `ponytail*` unless asked; this overrides `using-superpowers` and the
-  skills' own descriptions. `scout` stays allowed for open lookups.
+  `reasoner` or `ponytail*` unless asked; this overrides `using-superpowers` and the
+  skills' own descriptions. `scout` stays allowed for open lookups, and `worker` for repo work (see
+  "Agent Routing", ADR 0029).
 
 ## Agent Routing
 
@@ -50,8 +51,13 @@ Pick the agent by role; the model of each role is in your profile ("Model routin
   concrete question. Reading a known file stays inline.
 - **Decide** (`reasoner`, or plan mode): architecture, unknown-cause bugs, plan review, hard-to-reverse
   calls. Never bulk writing. A decision costly to get wrong never goes to `worker` or `scout`.
-- **Implement** (`worker`): code, docs, tests from a decided plan, with the exact files and an acceptance
-  command. More than 3 files or bulk -> `worker`; ≤3 known files stay inline (a cold start costs more).
+- **Implement** (`worker`): code, docs, tests, with the exact files, the decided change and an acceptance
+  command. Default for every non-trivial change in a repo, inside or outside a plan (ADR 0029): it runs in
+  the background (`run_in_background`) in its own worktree on the task branch, so the user keeps working
+  with the main session. The brief tells it to read the repo's `AGENTS.md`/`CLAUDE.md` and
+  `.claude/skills` first, and not to commit or push; the main session reviews the diff and the checks
+  it reports, then commits. Trivial changes (one line, or one file with no checks: a typo, a copy text,
+  a config value) stay inline, because a cold start costs more.
 - **Bulk (external)** (`gemini-delegate`, `agy`): mechanical writing or wide reading when that quota is
   cheaper; review the diff, run the acceptance command (ADR 0010).
 - Superpowers subagents: implementer, routine reviewer -> `worker`; security/architecture reviewer -> `reasoner`; search -> `scout`.
