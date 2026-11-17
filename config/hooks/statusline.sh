@@ -1,19 +1,12 @@
 #!/usr/bin/env bash
-# Statusline minimalista, solo ASCII: modelo, esfuerzo, costo de sesion,
+# Statusline minimalista, solo ASCII: modelo, esfuerzo,
 # contexto y uso 5h/7d con tiempo al reset. Colores por umbral, responsiva a $COLUMNS
 # y alineada a la derecha. NO_COLOR desactiva los colores.
-#
-# CONTRATO con caolg (ADR 0021): ademas de dibujar la linea, escribe dos caches que lee otro repo.
-#   ~/.cache/claude/rate-limits.json         {ts, rate_limits{five_hour,seven_day{used_percentage,resets_at}}}
-#   ~/.cache/claude/ctx/$CAO_TERMINAL_ID.json {ts, used_percentage, size, cwd}   (solo en panes de CAO)
-# Escritura atomica, sin tokens. Renombrar o quitar un campo rompe la barra y los bordes de caolg.
 set -uo pipefail
 
 # --- Umbrales (ajustables) ---
 PCT_WARN=50    # amarillo desde aca (contexto y uso)
 PCT_CRIT=80    # rojo desde aca
-COST_WARN=1    # USD de la sesion: amarillo desde aca
-COST_CRIT=5    # rojo desde aca
 
 if [[ -n "${NO_COLOR:-}" ]]; then
   G=""; Y=""; R=""; D=""; Z=""
@@ -23,11 +16,10 @@ fi
 
 entrada=$(cat)
 
-IFS='|' read -r modelo esfuerzo costo pct tam u5 r5 u7 r7 < <(
+IFS='|' read -r modelo esfuerzo pct tam u5 r5 u7 r7 < <(
   printf '%s' "$entrada" | jq -r '[
     (.model.display_name // "?"),
     (.effort.level // ""),
-    (.cost.total_cost_usd // 0 | tostring),
     (.context_window.used_percentage // "" | tostring),
     (.context_window.context_window_size // "" | tostring),
     (.rate_limits.five_hour.used_percentage // "" | tostring),
@@ -36,25 +28,6 @@ IFS='|' read -r modelo esfuerzo costo pct tam u5 r5 u7 r7 < <(
     (.rate_limits.seven_day.resets_at // "" | tostring)
   ] | join("|")' 2>/dev/null
 ) || exit 0
-
-# Copia de los límites 5h/7d para otras herramientas (p. ej. la barra de caolg): son de la cuenta, no
-# de la sesión, así que vale la última que llegue. Escritura atómica; nunca incluye tokens.
-if [[ -n "$u5$u7" ]]; then
-  cache="${XDG_CACHE_HOME:-$HOME/.cache}/claude"
-  mkdir -p "$cache" 2>/dev/null &&
-    printf '%s' "$entrada" | jq -c '{ts: now, rate_limits}' >"$cache/rate-limits.json.tmp" 2>/dev/null &&
-    mv -f "$cache/rate-limits.json.tmp" "$cache/rate-limits.json"
-fi
-# Agentes lanzados por CAO: % de contexto exacto y carpeta actual (sigue los `cd` del agente), por terminal
-# (lo leen la barra y los bordes de caolg).
-if [[ -n "${CAO_TERMINAL_ID:-}" && -n "$pct" ]]; then
-  ctxd="${XDG_CACHE_HOME:-$HOME/.cache}/claude/ctx"
-  mkdir -p "$ctxd" 2>/dev/null &&
-    printf '%s' "$entrada" | jq -c '{ts: (now | floor), used_percentage: .context_window.used_percentage,
-      size: .context_window.context_window_size, cwd: (.workspace.current_dir // .cwd)}' \
-      >"$ctxd/$CAO_TERMINAL_ID.json.tmp" 2>/dev/null &&
-    mv -f "$ctxd/$CAO_TERMINAL_ID.json.tmp" "$ctxd/$CAO_TERMINAL_ID.json"
-fi
 
 cols=${COLUMNS:-80}
 max=$((cols - 2))
@@ -68,11 +41,6 @@ color_pct() {
   if ((n >= PCT_CRIT)); then printf '%s' "$R"
   elif ((n >= PCT_WARN)); then printf '%s' "$Y"
   else printf '%s' "$G"; fi
-}
-
-color_costo() {
-  awk -v c="$1" -v w="$COST_WARN" -v k="$COST_CRIT" -v G="$G" -v Y="$Y" -v R="$R" \
-    'BEGIN { printf "%s", (c >= k ? R : (c >= w ? Y : G)) }'
 }
 
 # Tiempo restante hasta un reset (epoch en s/ms o fecha ISO)
@@ -96,9 +64,6 @@ put() { P+="$1"; C+="${2:-$1}"; }
 sep() { put " | " "${D} | ${Z}"; }
 reset_buf() { P=""; C=""; }
 
-costo_f=$(printf '%.2f' "$costo")
-cc=$(color_costo "$costo")
-
 ctx_n=""; ctx_txt="--"
 if [[ -n "$pct" ]]; then ctx_n=$(redondear "$pct"); ctx_txt="${ctx_n}%"; fi
 ctx_col=""; [[ -n "$ctx_n" ]] && ctx_col=$(color_pct "$ctx_n")
@@ -116,9 +81,6 @@ reset_buf
 m="$modelo"
 [[ -n "$esfuerzo" ]] && m="$modelo ($esfuerzo)"
 put "$m"; add_seg
-
-reset_buf
-put "\$${costo_f}" "${cc}\$${costo_f}${Z}"; put " sesion"; add_seg
 
 reset_buf
 put "ctx "
