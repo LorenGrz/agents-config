@@ -6,9 +6,6 @@
     "gh_owners": [],
     "remote_patterns": []
   },
-  "agent_providers": [
-    "claude_code"
-  ],
   "defaults": {
     "base_branch": "dev",
     "commit_language": "en",

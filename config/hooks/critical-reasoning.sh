@@ -4,7 +4,7 @@
 # session to ask the one question Continuar / Plan S / Plan L before editing, and that in Plan L the
 # decision goes to the `reasoner` subagent (Opus, effort high; ADRs 0018, 0022). Guidance only
 # (additionalContext); never blocks, always exits 0.
-# Silent: inside subagents, inside CAO panes (ADR 0020), in plan mode, and on task notifications.
+# Silent: inside subagents, in plan mode, and on task notifications.
 # The reasoner reminder is sent once per session (needs a session_id); the skill hint is not capped.
 #
 # Also reads the project's .agents/critical.json (written by scripts/project-agents.sh from the
@@ -16,7 +16,6 @@ set -uo pipefail
 input="$(cat 2>/dev/null || true)"
 agent_type="$(jq -r '.agent_type // empty' <<<"$input" 2>/dev/null || true)"
 [ -z "$agent_type" ] || exit 0  # already inside worker/scout/reasoner
-[ -z "${CAO_TERMINAL_ID:-}" ] || exit 0  # caolg leader or worker: its profile and role decide
 
 event="$(jq -r '.hook_event_name // empty' <<<"$input" 2>/dev/null || true)"
 perm_mode="$(jq -r '.permission_mode // empty' <<<"$input" 2>/dev/null || true)"

@@ -33,7 +33,7 @@ The lanes and the grilling interview are in `AGENTS.md` "Workflow lanes"; in Cla
 - The lane question is one `AskUserQuestion`; its fixed order (Continuar first) overrides the tool's
   "recommended first". Plan S/L call `EnterPlanMode` and load `mattpocock-skills:grilling` right after.
   Plan S runs inline with `ponytail:ponytail` loaded at the start, no `worker`/`reasoner`. Plan L uses
-  `superpowers:brainstorming`, then `writing-plans`, then `worker`/`reasoner`, or caolg across repos. An
+  `superpowers:brainstorming`, then `writing-plans`, then `worker`/`reasoner`. An
   unknown cause starts with `superpowers:systematic-debugging`. A plan the user starts directly ends with
   "Plan S/L because …".
 - `lane-guard.sh` enforces it: it denies a lane question in another order and an `ExitPlanMode` with no

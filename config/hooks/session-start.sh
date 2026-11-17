@@ -9,10 +9,6 @@ stale_commits="${AGENTS_MAP_STALE_COMMITS:-30}"
 
 input="$(cat 2>/dev/null || true)"
 
-# Inside a CAO pane (caolg leader or worker) the agent profile and role already say how to work:
-# the routing text and the project-init nudges below would contradict them (ADR 0020).
-[ -z "${CAO_TERMINAL_ID:-}" ] || exit 0
-
 cwd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)"
 [ -n "$cwd" ] && [ -d "$cwd" ] || cwd="$PWD"
 

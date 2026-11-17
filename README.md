@@ -57,7 +57,7 @@ claude plugin install agents-config@agents-config
 ```
 
 Gets you the skill library, the three subagents, and the generic lifecycle hooks (not
-`guard-omarchy` or the cost-tracking status line — those stay `install.sh`-only). It does
+`guard-omarchy` or the status line — those stay `install.sh`-only). It does
 **not** get you path-scoped rules (rules aren't a Claude Code plugin component at all) or
 the generated `CLAUDE.md`/`AGENTS.md`/`settings.json` merge — use Method 1 for those.
 
@@ -193,7 +193,7 @@ Hooks, concretely (event → script):
 The plugin marketplace method (below) ships seven of them as a generic subset
 (`hooks/hooks.json`: `scout-readonly.sh`, `format-file.sh`, `session-start.sh`,
 `stop-git-status.sh`, `log-instructions.sh`, `critical-reasoning.sh`, `intent-router.sh`) and omits `guard-omarchy.sh` (desktop-specific),
-`rtk.sh` (needs rtk installed) and the cost-tracking status line (untracked, machine-local).
+`rtk.sh` (needs rtk installed) and the status line (machine-local).
 
 Generated files + symlink map (`install.sh` creates/repairs these; see `config/README.md`
 for the full list — `<repo>` is wherever you cloned this):

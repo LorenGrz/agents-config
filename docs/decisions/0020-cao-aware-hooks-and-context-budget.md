@@ -1,6 +1,6 @@
 # 0020 — CAO-aware hooks, context budget and workflow lanes
 
-Status: accepted (2026-11-09)
+Status: accepted (2026-11-09); "CAO mode" removed by ADR 0028.
 
 ## Context
 

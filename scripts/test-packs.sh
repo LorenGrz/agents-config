@@ -4,7 +4,6 @@ set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 W="$(mktemp -d)"; trap 'rm -rf "$W"' EXIT
 export XDG_RUNTIME_DIR="$W/run"; mkdir -p "$XDG_RUNTIME_DIR"  # once-per-session markers go to a temp dir
-unset CAO_TERMINAL_ID  # the hooks stay silent inside CAO panes; tests must not depend on where they run
 pass=0; failn=0
 check() { if eval "$2"; then pass=$((pass + 1)); echo "ok   $1"; else failn=$((failn + 1)); echo "FAIL $1"; fi; }
 
@@ -46,7 +45,7 @@ check "critical reasoning and skill hint combine" 'grep -q "reasoner" <<<"$out" 
 check "reasoner reminder names the high-effort reasoner (ADR 0018)" 'grep -q "effort high" <<<"$out" && ! grep -q "Sonnet" <<<"$out"'
 check "reminder asks the one question Continuar / Plan S / Plan L (ADR 0022)" 'grep -q "Continuar / Plan S / Plan L" <<<"$out"'
 
-# --- hook: once per session, plan mode, notifications, CAO panes
+# --- hook: once per session, plan mode, notifications
 crit='{"hook_event_name":"UserPromptSubmit","session_id":"sess1","prompt":"necesito una migración de la base"}'
 out1="$(hook "$P" "$crit")"; out2="$(hook "$P" "$crit")"
 check "reasoner reminder is sent once per session" 'grep -q "reasoner" <<<"$out1" && [ -z "$out2" ]'
@@ -60,8 +59,6 @@ out="$(hook "$P" '{"hook_event_name":"UserPromptSubmit","session_id":"s4","permi
 check "plan mode keeps the skill hint" 'grep -q "new-bounded-context" <<<"$out" && ! grep -q "reasoner" <<<"$out"'
 out="$(hook "$P" '{"hook_event_name":"UserPromptSubmit","session_id":"s5","prompt":"<task-notification><summary>la migración terminó</summary></task-notification>"}')"
 check "task notifications are ignored" '[ -z "$out" ]'
-out="$(CAO_TERMINAL_ID=abc123 hook "$P" '{"hook_event_name":"UserPromptSubmit","session_id":"s6","prompt":"migración y nuevo bounded context"}')"
-check "silent inside CAO panes" '[ -z "$out" ]'
 
 
 # --- all packs: structure

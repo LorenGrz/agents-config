@@ -53,7 +53,7 @@
 #   --with-integrations also install the user-scope MCP servers in config/mcp.user.json
 #                   (tools via uv, registered with `claude mcp add-json --scope user`); ADR 0016
 #   --with-cli-baselines also write config/baseline.md as the global instructions of agy
-#                   (~/.gemini/GEMINI.md), Copilot, OpenCode (and OpenCode under CAO) for the tools
+#                   (~/.gemini/GEMINI.md), Copilot and OpenCode for the tools
 #                   that are installed (scripts/gen-cli-baselines.sh); ADR 0019
 
 set -euo pipefail
