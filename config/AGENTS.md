@@ -94,7 +94,7 @@ Natural phrases map to a skill. Load the skill and use the command in its `## Sh
 Claude Code's `intent-router` hook injects this automatically. Outbound actions still need the user's OK.
 
 - `codex-review`: Codex review
-- `github-usage`: pull changes, new branch, commit, push, open PR, issues and PRs
+- `github-usage`: pull changes, new branch, commit, push, open PR, issues and PRs, clean up worktrees
 - `google-workspace-usage`: email, calendar, drive files
 - `jira-ticket-review`: review my tickets
 - `jira-usage`: Jira ticket
