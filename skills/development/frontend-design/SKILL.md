@@ -69,3 +69,10 @@ Use active voice as default. A CTA says exactly what happens when it is used: "S
 Treat failure and emptiness as moments for direction, not mood. Explain what went wrong and how to fix it, in the interface's voice rather than a person's. Errors don't apologize, and they are never vague about what happened. An empty screen is an invitation to act.
 
 Keep the tone conversational: plain verbs, sentence case, no filler, with tone matched to the brand and the audience. Let each written element do exactly one job.
+
+## Design explorations on a canvas (redesigning an existing screen)
+
+When the work is options for redesigning screens that already exist (a Claude Design canvas or any artifact with artboards), two things are always part of the deliverable:
+
+- **Current state on the left.** Each page of the canvas starts with a column titled «Actual»: a real screenshot of the screen as it is today, taken from the running app (desktop and mobile), never a redrawing. The options (A, B, C…) go to its right in the same rows, so every option is read against what exists. If a state needs a click to appear (a dialog, a menu), the screenshot shows it open, without triggering anything irreversible.
+- **Light and dark, with a toggle on the artboard.** Every artboard, «Actual» included, works in both themes and carries a visible button on the artboard itself («Modo oscuro» / «Modo claro») that switches it. Colors come from two token sets (light and dark) chosen by the artboard's state, never from literals that only work in one theme; use the product's own dark palette when it has one. For «Actual», capture the screenshot in both themes and swap the image with the same button.
