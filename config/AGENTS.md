@@ -41,6 +41,9 @@ your profile (`config/profiles/<your-name>.md`, imported alongside this file) â€
 - **Every plan (S or L) starts with a grilling interview:** before designing anything, interview the user
   one question at a time (the `mattpocock-skills:grilling` skill where available) until nothing is left to
   assume. Plan L's design step does not re-ask what was answered.
+- **Every plan (S or L) is shown in the terminal with a table:** who does what, whether it runs in
+  parallel, files, and how it is verified. Parallel or visual work adds an ASCII diagram of the order. It
+  goes in the message, not only in the plan file.
 - Outside a plan, don't pull in the heavy process (brainstorming, plan writing, subagent-driven execution)
   unless asked.
 - **Repo work goes to a background worker by default** (where the agent has subagents): every non-trivial
