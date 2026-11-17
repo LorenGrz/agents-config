@@ -145,3 +145,4 @@ lighter flow above. An org's `POLICIES.md` may add to these rules, never relax t
 - intent: push — `sub[ií] los cambios|push[eé]a|(hac[eé]|hacer) (un )?push|push (my|the) changes|git push` → `git push -u origin <branch>` (ask the user first when the repo matches an organization)
 - intent: open PR — `abr[ií] (un )?pr|cre[aá] (un )?pr|open (a )?pr|create (a )?pull request` → `gh pr create --base <base>` (show the text and ask first)
 - intent: issues and PRs — `\bissues?\b|\bpr #?[0-9]+|pull request #?[0-9]+|revis[aá] (el|la) pr|review (the )?pr|list(a|ar)? (los )?prs` → `gh with a local checkout; the claude.ai GitHub connector without one`
+- intent: clean up worktrees — `limpi[aá] (los )?worktrees|borr[aá] (los )?worktrees|clean ?up worktrees` → `bash ~/.claude/hooks/worktree-cleanup.sh --cwd <dir>` (add `--dry-run` to list first; deletes the clean worktrees whose PR is merged, ADR 0030)

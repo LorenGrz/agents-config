@@ -52,6 +52,11 @@
           "label": "issues and PRs",
           "re": "\\bissues?\\b|\\bpr #?[0-9]+|pull request #?[0-9]+|revis[aá] (el|la) pr|review (the )?pr|list(a|ar)? (los )?prs",
           "cmd": "gh with a local checkout; the claude.ai GitHub connector without one"
+        },
+        {
+          "label": "clean up worktrees",
+          "re": "limpi[aá] (los )?worktrees|borr[aá] (los )?worktrees|clean ?up worktrees",
+          "cmd": "bash ~/.claude/hooks/worktree-cleanup.sh --cwd <dir>"
         }
       ]
     },
