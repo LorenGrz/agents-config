@@ -1,6 +1,6 @@
 # 0021 — Statusline cache files are an interface for caolg
 
-Status: accepted (2026-11-09)
+Status: superseded by ADR 0028 (2026-11-16): the statusline no longer writes these caches.
 
 ## Context
 

@@ -43,7 +43,6 @@ directory that contains symlinks, so keep dependencies out of the repo (install 
   "version": "0.1.0",
   "extends": "agents-config>=0.1.0",
   "match": { "gh_owners": ["acme-inc"], "remote_patterns": [] },
-  "agent_providers": ["claude_code"],
   "defaults": {
     "base_branch": "dev",
     "commit_language": "en",
@@ -70,7 +69,6 @@ directory that contains symlinks, so keep dependencies out of the repo (install 
 | `version` | yes | `orgs.sh status`, `.agents/skills.lock` | The org's own version; projects freeze it |
 | `extends` | no | `orgs.sh status` | Minimum base version, `agents-config>=x.y.z`; status warns when the base is older |
 | `match` | yes | `orgs.sh detect`, `init.sh`, the global index | `gh_owners` (GitHub owners) and `remote_patterns` (regex on the remote URL); at least one entry in total |
-| `agent_providers` | no | caolg | CAO providers allowed for agents in the org's repos (e.g. `["claude_code"]`); caolg's leader only opens workers of these providers. Missing means all, so drop the key to allow any model |
 | `defaults` | no | agents (and `intent-router.sh` for `base_branch`) | Org conventions in one place: `base_branch`, `commit_language`, `pr_title_language`, `pr_body_language`, `tracker`, `tracker_project`, and any extra descriptive key (stack summary, tracker projects by repo, ...). Only `base_branch` is read by a script; `POLICIES.md` is the human-readable source for the rest |
 | `blocklist_terms` | no | `orgs.sh` | Words that must never appear in the public repo; merged into the local leak-guard blocklist together with `name` and `match.gh_owners` |
 | `replaces` | no | `orgs.sh validate`, `project-agents.sh` | Flat map `base name -> org name`. A skill is a plain name, a command starts with `/`; a skill can only be replaced by a skill and a command by a command. The target must exist in the org's `skills/` or `commands/`. The base item can be a pack skill, a stack skill or a hub integration skill (`github-usage`, `jira-usage`, ...) |

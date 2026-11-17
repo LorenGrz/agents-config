@@ -2,12 +2,11 @@
 # gen-cli-baselines.sh - write config/baseline.md as the global instructions file of the CLIs that
 # agents-config does not configure otherwise (ADR 0019). Claude Code and Codex get theirs from install.sh.
 #
-# Usage: scripts/gen-cli-baselines.sh [--dry-run] [--target gemini|copilot|opencode|opencode-cao|all]
+# Usage: scripts/gen-cli-baselines.sh [--dry-run] [--target gemini|copilot|opencode|all]
 #
 #   gemini        ~/.gemini/GEMINI.md                          (agy / Antigravity)
 #   copilot       ${COPILOT_HOME:-~/.copilot}/copilot-instructions.md   (verified with `copilot instruction list`)
 #   opencode      ~/.config/opencode/AGENTS.md                 (OpenCode, standalone)
-#   opencode-cao  ~/.aws/opencode/AGENTS.md                    (OpenCode launched by CAO: OPENCODE_CONFIG_DIR)
 #   all (default) every target whose tool is installed; an explicit --target always writes.
 #
 # Same safety rules as install.sh: a file we generated (it carries the mark below) is rewritten in place;
@@ -24,11 +23,11 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) DRY_RUN=1; shift ;;
     --target) [ $# -ge 2 ] || { echo "--target needs a value" >&2; exit 1; }; TARGET="$2"; shift 2 ;;
-    -h|--help) sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown flag: $1" >&2; exit 1 ;;
   esac
 done
-case "$TARGET" in gemini|copilot|opencode|opencode-cao|all) ;; *) echo "unknown target: $TARGET" >&2; exit 1 ;; esac
+case "$TARGET" in gemini|copilot|opencode|all) ;; *) echo "unknown target: $TARGET" >&2; exit 1 ;; esac
 
 SRC="$HUB/config/baseline.md"
 [ -f "$SRC" ] || { echo "missing $SRC" >&2; exit 1; }
@@ -79,12 +78,4 @@ want() { [ "$TARGET" = all ] || [ "$TARGET" = "$1" ]; }
 want gemini && run_target gemini "$HOME/.gemini/GEMINI.md" agy "$HOME/.gemini"
 want copilot && run_target copilot "$COPILOT_DIR/copilot-instructions.md" copilot "$COPILOT_DIR"
 want opencode && run_target opencode "$HOME/.config/opencode/AGENTS.md" opencode "$HOME/.config/opencode"
-# CAO owns ~/.aws/opencode: with `all` it is written only when it already exists.
-if want opencode-cao; then
-  if [ "$TARGET" = all ] && [ ! -d "$HOME/.aws/opencode" ]; then
-    echo "skip:    opencode-cao (~/.aws/opencode not found)"
-  else
-    write_generated "$HOME/.aws/opencode/AGENTS.md"
-  fi
-fi
 exit 0

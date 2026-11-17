@@ -7,7 +7,6 @@ set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 W="$(mktemp -d)"; trap 'rm -rf "$W"' EXIT
 export AGENTS_CONFIG_STATE_DIR="$W/state" XDG_RUNTIME_DIR="$W/run"; mkdir -p "$XDG_RUNTIME_DIR"
-unset CAO_TERMINAL_ID  # the hooks change behaviour inside CAO panes; tests must not depend on where they run
 pass=0; failn=0
 check() { if eval "$2"; then pass=$((pass + 1)); echo "ok   $1"; else failn=$((failn + 1)); echo "FAIL $1"; fi; }
 
@@ -101,11 +100,7 @@ check "HOME itself never gets the workspace offer" '! HOME="$W/fakehome" start "
 check "SessionStart routing text points to CLAUDE.md and stays short" 'out="$(start "$W/ss/ready")"; grep -q "Agent routing" <<<"$out" && grep -q "scout" <<<"$out" && [ "${#out}" -lt 520 ]'
 check "SessionStart names the one question Continuar / Plan S / Plan L (ADR 0022)" 'start "$W/ss/ready" | grep -q "Continuar / Plan S / Plan L"'
 
-# --- CAO panes (caolg leader and workers): ADR 0020
-check "CAO pane: SessionStart adds nothing (no routing, no project-init nudge)" '[ -z "$(CAO_TERMINAL_ID=t1 start "$W/ss/noagents")" ]'
-check "CAO pane: phrases stay silent" '[ -z "$(CAO_TERMINAL_ID=t1 prompt "traete los cambios" "$W/plain")" ] && [ -n "$(prompt "traete los cambios" "$W/plain")" ]'
-check "CAO pane: git/gh in Bash stays silent" '[ -z "$(CAO_TERMINAL_ID=t1 tool Bash "git commit -m x")" ] && [ -n "$(tool Bash "git commit -m x")" ]'
-check "CAO pane: integration MCP tools are still routed" '[ -n "$(CAO_TERMINAL_ID=t1 tool mcp__claude_ai_Slack__slack_send_message)" ]'
+# --- task notifications
 check "task notifications are not read as phrases" '[ -z "$(prompt "<task-notification>traete los cambios</task-notification>" "$W/plain")" ]'
 
 # --- per-project plugins
