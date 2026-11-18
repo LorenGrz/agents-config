@@ -26,7 +26,8 @@ en `~/.claude/` y `~/.codex/`, combinados con tu perfil (`<repo>` es donde clona
   claves que define.
 - `hooks`: quedan las entradas de la base y, después de ellas en su evento, las que ya tenías y no corren un
   hook del hub (las de otra herramienta, como Orca). Una entrada es del hub si un comando suyo corre un script
-  de `~/.claude/hooks/`; esas se reemplazan por las de la base (ADR 0038).
+  de `~/.claude/hooks/`; esas se reemplazan por las de la base, y si mezclaba comandos conserva los ajenos
+  (ADR 0038).
 - `theme`: el de la base solo si el archivo no tiene uno (ADR 0038).
 - `permissions.defaultMode`: gana la base cuando la define.
 - `enabledPlugins`, `extraKnownMarketplaces`, `env` y `pluginConfigs`: unión; la base gana solo en claves

@@ -9,7 +9,8 @@
 #   skipped when the hub itself was cloned to ~/.agents/skills.
 # - Runs sync.sh to (re)build the flat ~/.claude/skills mirror.
 # - Merges config/settings.base.json into ~/.claude/settings.json (jq):
-#     * statusLine / model: base wins (full overwrite).
+#     * statusLine / model / effortLevel: base wins (full overwrite); modelSettings: deep
+#       merge, base wins on the keys it defines.
 #     * hooks: base entries + existing entries that run no hub hook (other tools',
 #       e.g. Orca's) kept after them; existing hub entries are replaced (ADR 0038).
 #     * theme: the base's only when the file has none (ADR 0038).
@@ -368,13 +369,16 @@ if [ ! -f "$SETTINGS" ]; then
     cp "$BASE" "$SETTINGS"
   fi
 else
-  # hooks (ADR 0038): an existing entry is "owned" by the hub when one of its commands runs a script in the
-  # installed hooks folder, i.e. contains `~/.claude/hooks/<name>` (also spelled `$HOME/` or `${HOME}/`) as a
-  # whole word, the way settings.base.json writes them. Owned entries are replaced by the base's; every other
-  # entry (Orca's `~/.orca/agent-hooks/claude-hook.sh`, any other tool's) is kept after the base entries of
-  # its event, in its order, and events only the existing file has stay when they keep any entry.
+  # hooks (ADR 0038): a command is the hub's when it runs a script in the installed hooks folder, i.e. it has
+  # `~/.claude/hooks/<name>` (also spelled `$HOME/` or `${HOME}/`) at its start or after a space, the way
+  # settings.base.json writes them. Hub commands of the existing file are dropped and the base's entries are
+  # written; every other command (Orca's `~/.orca/agent-hooks/claude-hook.sh`, any other tool's) is kept,
+  # after the base entries of its event and in its order. An entry that mixed both keeps its foreign commands;
+  # an event stays only while it has an entry.
   MERGED="$(jq -s '
-    def owned: any((.hooks // [])[]; (.command // "") | test("(^|\\s)(~|\\$HOME|\\$\\{HOME\\})/\\.claude/hooks/[^/\\s]+"));
+    def hub: type == "object" and ((.command // "") | if type == "string" then test("(^|\\s)(~|\\$HOME|\\$\\{HOME\\})/\\.claude/hooks/[^/\\s]+") else false end);
+    def foreign_part: if (.hooks | type) == "array" and any(.hooks[]; hub)
+      then (.hooks |= map(select(hub | not))) | select(.hooks | length > 0) else . end;
     .[0] as $cur | .[1] as $base
     | ($base.hooks // {}) as $bh | ($cur.hooks // {}) as $ch
     | $cur
@@ -382,7 +386,7 @@ else
     | .effortLevel = $base.effortLevel
     | .modelSettings = ((.modelSettings // {}) * ($base.modelSettings // {}))
     | .hooks = (reduce (($bh | keys_unsorted[]), ($ch | keys_unsorted[])) as $e ({};
-        if has($e) then . else .[$e] = (($bh[$e] // []) + [($ch[$e] // [])[] | select(owned | not)]) end)
+        if has($e) then . else .[$e] = (($bh[$e] // []) + [($ch[$e] // [])[] | foreign_part]) end)
         | with_entries(select(.value | length > 0)))
     | .statusLine = $base.statusLine
     | .enabledPlugins = (($cur.enabledPlugins // {}) + ($base.enabledPlugins // {}))
