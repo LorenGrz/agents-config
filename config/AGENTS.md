@@ -70,8 +70,8 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 - Outside a plan, don't pull in the heavy process (brainstorming, plan writing, subagent-driven execution)
   unless asked.
 - **Repo work goes to a background worker by default** (where the agent has subagents): every non-trivial
-  change runs in a worker on its own worktree and task branch; the main session reviews the diff and
-  commits. Trivial changes (one line, or one file with no checks) are done directly.
+  change runs in a worker on the task branch, in its own worktree or in its lead's; whoever started it
+  reviews the diff and commits. Trivial changes (one line, or one file with no checks) are done directly.
 
 ## Organizations (work repos)
 

@@ -25,8 +25,8 @@ AGENTS.md index say which. Where skills overlap, one default per task:
 - The lane question is one `AskUserQuestion`; its fixed order (Continuar first) overrides the tool's
   "recommended first". Plan S/L call `EnterPlanMode`. Plan S loads `ponytail:ponytail` at the start and
   uses no `worker`/`reasoner`. Plan L loads `mattpocock-skills:grilling` right after, then
-  `superpowers:brainstorming`, `writing-plans`, and `worker`/`reasoner`, each in the worktree of its branch
-  (`isolation: "worktree"` or the existing one). A plan the user starts directly ends with "Plan S/L because …".
+  `superpowers:brainstorming`, `writing-plans`, and repo leads or `worker`/`reasoner` in the worktree of the
+  task branch. A plan the user starts directly ends with "Plan S/L because …".
 - Outside a plan, never invoke `brainstorming`, `writing-plans`, `executing-plans`,
   `subagent-driven-development`, `reasoner` or `ponytail*` unless asked; this overrides `using-superpowers`
   and the skills' own descriptions. `scout` stays allowed for open lookups, and `worker` for repo work.
@@ -40,21 +40,21 @@ Pick the agent by role; each role's model is in your profile ("Model routing").
 - **Decide** (`reasoner`, or plan mode): architecture, unknown-cause bugs, plan review, hard-to-reverse
   calls. Never bulk writing. A decision costly to get wrong never goes to `worker` or `scout`.
 - **Implement** (`worker`): code, docs, tests, given the exact files, the decided change and an acceptance
-  command; default for every non-trivial repo change, inside or outside a plan (ADR 0029). Its brief says to
-  read the repo's `AGENTS.md`/`CLAUDE.md` and `.claude/skills` first and not to commit or push; the main
-  session reviews the diff and the checks it reports, then commits.
-- **Review** (the profile's reviewer): load `review-handoff` for the brief and the findings loop. Its
-  fallback may review in any lane, `reasoner` included.
-- Transport. Repo lead (the profile's lead model): T3 Code `delegate_task` into that repo's project, Orca
-  a worker in that repo, Claude Code a subagent briefed with the repo path. `worker`: `run_in_background`,
-  `delegate_task` or an Orca worker (`orchestration`).
+  command; default for every non-trivial repo change, inside or outside a plan (ADR 0029). Whoever started
+  it (the main session or a repo lead) reviews its diff and reported checks, then commits.
+- **Review** (the profile's reviewer): load `review-handoff` for the brief, the transport and the findings
+  loop. Its fallback may review in any lane, `reasoner` included.
+- Transport. Repo lead: T3 Code `delegate_task` into that repo's project, Orca a
+  worker in that repo, Claude Code a subagent given the repo path. `worker`: `run_in_background`,
+  `delegate_task` or an Orca worker (`orchestration`). Every brief says to read the repo's
+  `AGENTS.md`/`CLAUDE.md` and `.claude/skills` first; a worker's also carries its definition: no commit or push.
 - Superpowers subagents: implementer, routine reviewer -> `worker`; security/architecture reviewer ->
   `reasoner`; search -> `scout`.
 - **Bulk (external)** (`gemini-delegate`, `agy`): mechanical writing or wide reading when that quota is
   cheaper; review the diff, run the acceptance command (ADR 0010).
 - A plan recommends the subagents (which, why) and asks. While executing an approved plan, delegating per
   these rules is a standing instruction (it overrides the default "don't spawn agents unless asked").
-- Independent subtasks: one message, in parallel. A lead's `worker`s share the repo's task worktree on
-  disjoint files; overlapping work gets a worktree each (`isolation: "worktree"`).
+- Independent subtasks: one message, in parallel. A `worker` gets its own worktree (`isolation: "worktree"`);
+  a lead's workers share its task worktree on disjoint files.
 
 Prefer `/clear` between unrelated tasks over `/compact`.

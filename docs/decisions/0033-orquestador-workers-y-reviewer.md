@@ -1,6 +1,7 @@
 # 0033 — Orquestador con workers por capa y reviewer de otro proveedor
 
-Estado: aceptado (2026-11-18). Ajusta 0029 en el transporte del worker en segundo plano.
+Estado: aceptado (2026-11-18). Ajusta 0029 en el transporte del worker en segundo plano. Ajustado por 0036: el
+reparto del Plan L pasa a un líder por repo, que sí puede lanzar `worker` y `scout`.
 
 ## Contexto
 
