@@ -21,12 +21,18 @@ donde trabaja, y Loren pidió el 2026-11-18 que cada repo se trabaje con las suy
 - Los workers de un líder comparten el worktree de la tarea sobre archivos disjuntos; si se pisan, cada uno
   va en su worktree.
 - En un solo repo, el líder es la sesión principal.
-- Transporte del líder: `delegate_task` en el proyecto de ese repo (T3 Code), un worker de Orca en ese repo
-  (Orca), o un subagente con la ruta del repo en el brief (Claude Code).
+- Transporte del líder: en T3 Code, un hilo nuevo con `t3_thread_launch` en el proyecto de ese repo, seguido
+  de `t3_thread_wait` (`delegate_task` solo corre en el proyecto del hilo actual; un Plan L aprobado que
+  nombra a los líderes es el pedido del usuario para abrir esos hilos); en Orca, un worker en ese repo; en
+  Claude Code, un subagente con la ruta del repo en el brief.
 
 ## Consecuencias
 
 - Hay dos niveles de delegación, y el líder en Opus cuesta más que un worker en Sonnet.
 - En Claude Code un subagente no carga solo las skills de otro repo: el brief le dice que lea su `AGENTS.md`
   y su `.claude/skills` primero.
-- El transporte del líder en Orca y en Claude Code está escrito pero no verificado.
+- Verificado en T3 Code el 2026-11-18 con un hilo de solo lectura en otro repo: cae en el checkout de ese
+  repo, carga su `CLAUDE.md` y la config global, tiene `worker` y `scout` y no pregunta la lane. El
+  transporte en Orca y en Claude Code está escrito pero no verificado.
+- Un líder solo ve las skills instaladas para ese repo o globales: las que viven en la carpeta padre de un
+  workspace no le llegan.
