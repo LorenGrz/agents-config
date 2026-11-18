@@ -73,7 +73,7 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 ## Organizations (work repos)
 
 In a repo that matches an organization (`organizations/INDEX.md`): never commit on `main`/`master`/`dev`,
-ask before every push or PR, and nothing goes to the tracker without the user's OK on the exact text.
+ask before every push or PR, and a new ticket or a comment goes to the tracker only with the user's OK on the exact text.
 Load the `github-usage` skill (full org rules) before the first git action there. An org's `POLICIES.md`
 may add to these rules, never relax them.
 

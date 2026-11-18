@@ -83,9 +83,10 @@ An org's `POLICIES.md` may add to these rules, never relax them.
   the agreed explanation. Opening it moves each ticket to the project's review/test status without asking
   (reported in one line). The short closing comment on each ticket (cause and change as explained in the PR,
   one or two lines, plus the PR link) is shown first and posted only with the user's OK on that text.
-- **Everything else on the tracker is asked first.** Proposals, questions, new tickets, edits or any
-  transition outside the PR flow are shown first and published only after the user's explicit OK on that
-  exact text. An approved plan that contains the text does not count.
+- **New tickets and comments are asked first.** A new ticket or a comment (proposals and questions
+  included) is shown first and published only after the user's explicit OK on that exact text; an approved
+  plan that contains the text does not count. In Jira, edits, transitions, worklogs and links are done
+  without asking and reported in one line.
 - **Suggest issues, don't fix them in passing.** Anything out of scope with real impact (security, a
   user-visible bug, docs that mislead the next person) and simple to explain is proposed at the end of the
   task: title, impact in one line, proposal in one line, priority and evidence (`path:line`). No lint
