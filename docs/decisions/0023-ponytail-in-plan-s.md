@@ -1,7 +1,7 @@
 # 0023 — PonyTail, solo en Plan S
 
 Estado: aceptado (2026-11-09). Completa ADR 0022 (Plan S) y cierra la prueba de PonyTail que dejó abierta ADR
-0020.
+0020. Ajustado por 0037: Plan S ya no es solo inline.
 
 ## Contexto
 

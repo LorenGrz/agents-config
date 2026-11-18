@@ -27,6 +27,7 @@ The codex plugin (`openai/codex-plugin-cc`) commands:
 
 ## Rules
 
+- Only on request: the default review before a PR is `review-handoff` with the profile's reviewer.
 - In a repo that matches an organization, use that organization's replacement skill when one is installed (e.g. in `.claude/skills/`); its rules win.
 - NEVER enable the stop review gate (`/codex:setup --enable-review-gate`): it loops and burns quota.
 - The code goes to OpenAI. Skip Codex for repos with confidential or org-restricted code unless the organization's policy allows it; check `POLICIES.md` when in doubt.

@@ -2,7 +2,7 @@
 
 Estado: aceptado (2026-11-09); ADR 0025 agrega el hook que impone el orden y la entrevista de grilling.
 Reemplaza la elección de lane de ADR 0020 y acota ADR 0006 (la delegación aplica al trabajo que sale de un
-plan aprobado).
+plan aprobado). Ajustado por 0037: Plan S lanza subagentes cuando el trabajo los pide.
 
 ## Contexto
 

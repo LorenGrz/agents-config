@@ -1,6 +1,6 @@
 # 0031 — Plan S sin la entrevista de grilling
 
-Estado: aceptado (2026-11-18). Enmienda ADR 0025 en la entrevista; el orden de las lanes queda igual. Ajustado por 0037: Plan S lanza subagentes cuando el trabajo los pide.
+Estado: aceptado (2026-11-18). Enmienda ADR 0025 en la entrevista; el orden de las lanes queda igual.
 
 ## Contexto
 

@@ -51,6 +51,7 @@
   ],
   "agents": [
     "./config/agents/reasoner.md",
+    "./config/agents/reviewer.md",
     "./config/agents/scout.md",
     "./config/agents/worker.md"
   ]

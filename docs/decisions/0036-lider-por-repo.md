@@ -22,8 +22,8 @@ donde trabaja, y Loren pidió el 2026-11-18 que cada repo se trabaje con las suy
 - El líder implementa con las skills del repo, puede lanzar `worker` y `scout` ahí, commitea en la rama de
   la tarea y hace revisar su diff (`review-handoff`, con la skill de review del repo) antes de devolver el
   trabajo. Nunca pushea ni abre el PR.
-- Solo un líder lanza agentes propios: `worker` y `scout`, y el de un workspace, además, los líderes de sus
-  repos hijos. `worker`, `scout` y el reviewer no lanzan ninguno.
+- Solo un líder lanza agentes propios: `worker`, `scout` y su reviewer, y el de un workspace, además, los
+  líderes de sus repos hijos. `worker`, `scout` y el reviewer no lanzan ninguno.
 - Los workers de un líder comparten el worktree de la tarea sobre archivos disjuntos; si se pisan, cada uno
   va en su worktree.
 - En un solo repo, el líder es la sesión principal.

@@ -41,10 +41,10 @@ una sola pregunta con tres opciones, siempre en este orden (`lane-guard.sh` lo i
 | Plan L | entrevista de `mattpocock-skills:grilling`, spec y plan en `docs/superpowers/`, un líder por repo o workspace cuando el trabajo cruza repos |
 
 - **Orquestador**: la sesión principal. Planifica, escribe los briefs e integra; en Plan L no escribe código.
-- **Líder**: una sesión en cada repo que toca el trabajo, con las skills y restricciones de ese repo, o en la carpeta del workspace cuando las skills viven ahí (ese líder puede mandar un líder a cada repo hijo). Implementa, puede lanzar `worker` y `scout`, commitea en la rama de la tarea y hace revisar su diff. En un solo repo es el orquestador.
+- **Líder**: una sesión en cada repo que toca el trabajo, con las skills y restricciones de ese repo, o en la carpeta del workspace cuando las skills viven ahí (ese líder puede mandar un líder a cada repo hijo). Implementa, puede lanzar `worker`, `scout` y su reviewer, commitea en la rama de la tarea y hace revisar su diff. En un solo repo es el orquestador.
 - **`worker`**: implementa algo ya decidido, en segundo plano. Default para todo cambio no trivial. **`scout`**: solo lectura.
 - **`reasoner`**: decisiones caras de errar (arquitectura, bugs sin causa conocida, cambios difíciles de revertir).
-- **Reviewer**: un agente aparte (por defecto un `reasoner` nuevo) revisa el diff contra el pedido y corre los checks, sin
+- **Reviewer**: un agente aparte (el subagente `reviewer`) revisa el diff contra el pedido y corre los checks, sin
   editar, antes de cada PR y del merge que cierra un Plan L. Una sola re-revisión; otro proveedor, solo a pedido (`review-handoff`).
 
 ```mermaid
@@ -60,8 +60,8 @@ flowchart LR
 
 | Harness | Líder | `worker` | Reviewer |
 |---|---|---|---|
-| Claude Code | subagente con la ruta en el brief | subagente `worker` con `run_in_background` | subagente `reasoner` |
-| T3 Code | `t3_thread_launch` en el proyecto de ese repo o workspace | `delegate_task` con `isolation: "worktree"` | subagente `reasoner` |
+| Claude Code | subagente con la ruta en el brief | subagente `worker` con `run_in_background` | subagente `reviewer` |
+| T3 Code | `t3_thread_launch` en el proyecto de ese repo o workspace | `delegate_task` con `isolation: "worktree"` | subagente `reviewer` |
 | Orca | worker de Orca en ese repo o workspace | workers de Orca (skill `orchestration`) | worker de Orca |
 
 El modelo de cada rol lo define tu perfil («Model routing»). Un agente lanzado con un brief lo ejecuta, sin preguntar la

@@ -34,7 +34,7 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 - `worker` = Sonnet: code, docs, tests; every non-trivial repo change, in the background (ADR 0029). The `reasoner` subagent = Opus: decisions only. `scout` = Haiku: light read-only lookups.
 - Lead (Plan L across repos) = a reasoner session, not the `reasoner` subagent: one per repo, in that repo's own session and with that repo's skills, or in the workspace folder when the skills live there; a workspace lead may send a lead to each child repo. Leads start `worker` (Sonnet) and `scout` (Haiku).
 - Gemini (`agy`) for bulk mechanical writing or wide reading when its quota is the better spend.
-- `reviewer` = a fresh `reasoner` subagent (Opus at high effort), never the session that wrote the code:
+- `reviewer` = the `reviewer` subagent (Opus at high effort, no edit tools), never the session that wrote the code:
   reviews the diff before every PR and before a Plan L merge. Optional, only when Loren asks: Gemini 4 Argon
   (`gemini-4-argon`, thought level high; `gemini-4-argon-high` in `agy`) through Antigravity, or Codex
   (`codex-review`). A day of Argon reviews used almost the whole weekly Gemini quota.

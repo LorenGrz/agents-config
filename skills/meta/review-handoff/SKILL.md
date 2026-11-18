@@ -19,7 +19,7 @@ is opened or the Plan L is merged. It never edits, and it is never the session t
 
 ## Workflow
 
-1. Take the reviewer from the profile ("Model routing"): a fresh `reasoner` subagent unless it says
+1. Take the reviewer from the profile ("Model routing"): the `reviewer` subagent unless it says
    otherwise. Another provider's model (Gemini through `agy`, Codex) reviews only when the user asks for it.
    Review skill: the organization's review skill when the repo matches an org and one is installed,
    otherwise `~/.agents/skills/quality/code-review-safety/SKILL.md`.
@@ -46,8 +46,8 @@ is opened or the Plan L is merged. It never edits, and it is never the session t
 
    | Reviewer | Claude Code CLI | T3 Code | Orca |
    |---|---|---|---|
-   | Default (`reasoner`) | The `reasoner` subagent with the brief | The `reasoner` subagent with the brief | An Orca worker on the reviewer's model (`orchestration`) |
-   | Another provider, on request | Save the brief outside the worktree (it must stay clean); from the worktree, run `~/.agents/skills/meta/gemini-delegate/scripts/gemini-delegate.sh run -f <brief> --model <id from "agy models">` as a background Bash command and read the whole file at the `log:` path it prints (stdout shows only the last 40 lines) | `delegate_task` with `role: "review"`, `mode: "async"` and that provider, model and options as `target` | An Orca worker of that agent; its `worker_done` brings the result |
+   | Default (`reviewer`) | The `reviewer` subagent with the brief | The `reviewer` subagent when the thread runs on Claude; otherwise `delegate_task` with `role: "review"` to the reviewer's model | An Orca worker on the reviewer's model (`orchestration`) |
+   | Another provider, on request | Save the brief outside the worktree (it must stay clean); from the worktree, run `~/.agents/skills/meta/gemini-delegate/scripts/gemini-delegate.sh run -f <brief> --model <id from "agy models">` as a background Bash command and read the whole file at the `log:` path it prints (stdout shows only the last 40 lines). Codex: `/codex:review --base <base>` (`codex-review`) | `delegate_task` with `role: "review"`, `mode: "async"` and that provider, model and options as `target` | An Orca worker of that agent; its `worker_done` brings the result |
 
 5. A result without the findings and check sections asked for is a failed run: send the brief again as a
    new run; it does not count as the re-review. When it returns, compare status and HEAD with step 2. If
@@ -56,7 +56,8 @@ is opened or the Plan L is merged. It never edits, and it is never the session t
    new run with the previous findings attached. Whatever is still open after it goes to the user, and you
    stop.
 7. A requested provider is unavailable (off, no quota, error): the default reviewer reviews with the same
-   brief, and the user is told in one line.
+   brief, and the user is told in one line. No way to start a reviewer at all: tell the user before the PR
+   instead of skipping the review.
 
 ## Rules
 
