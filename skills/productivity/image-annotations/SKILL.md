@@ -7,14 +7,7 @@ description: 'Use when annotating screenshots, diagrams, or images with callout 
 
 ## Objective
 
-Add visual callouts to any image — screenshots, diagrams, architecture docs, demo frames — using PIL/Pillow. Highlights what changed or what to look at, so reviewers don't have to guess.
-
-## When to use
-
-- Highlight a specific area in a screenshot for a PR description
-- Annotate before/after images to show what changed
-- Add labels and callouts to diagrams or architecture images
-- Create annotated frames for animated GIF demos
+Add visual callouts to any image (screenshots for a PR, before/after pairs, diagrams, GIF demo frames) with PIL/Pillow, showing what changed or where to look.
 
 ## Prerequisites
 
@@ -25,18 +18,17 @@ Add visual callouts to any image — screenshots, diagrams, architecture docs, d
 ## Workflow
 
 1. Check `Image.open(path).size` first — HiDPI screenshots are larger than they appear (150% scaling = 1.5x CSS pixel dimensions).
-2. **Always use `grid_image()` before annotating an unfamiliar image**, then verify coordinates with small crops. Scaled-down previews display images smaller than actual pixel dimensions — the error compounds as you move away from (0,0).
+2. **Always use `grid_image()` before annotating an unfamiliar image**, then verify coordinates with small crops. Previews are scaled down, so coordinate errors grow away from (0,0).
 3. Annotate: one or two callouts by hand (snippet in `references/pil-snippets.md`); several elements with `annotate_image`, which places labels without overlap (`references/annotate-module.md`).
-4. Verify with `debug=True` — always check the first annotation of a new image with debug mode.
+4. Check the first annotation of a new image with `debug=True`.
 5. Show locally first — verify before uploading to a PR.
 
 ## Rules
 
 ### Color
 
-- **Red (`#E63946`)** — only for "bad" / "removed" things (e.g., circling a bug being fixed)
+- **Red (`#E63946`)** — only for "bad" / "removed" things (e.g., circling a bug being fixed), never just because it's eye-catching
 - **Yellowish-orange (`#FF9F1C`)** — for neutral highlights ("look here", "new feature", etc.)
-- Never use red just because it's eye-catching — red = bad/removed
 
 ### Font
 
@@ -52,13 +44,11 @@ Add visual callouts to any image — screenshots, diagrams, architecture docs, d
 - **Padding 18px** around the target content
 - **All elements same thickness** — rect `width`, line `width`, and visual text weight should feel consistent (~5px)
 - Place labels **close to the rect** — short leader line (25-35px). Labels can overlap content — the stroke gives enough contrast
-- **Short labels work better** — wide labels have fewer valid placements. Use 1-3 words when possible
+- **Short labels** — 1-3 words when possible; wide labels have fewer valid placements
 - **Take screenshots at native 1x, control display size in HTML** — use `<img width="300">` in markdown, never resize with PIL (creates artifacts)
 - `elem` boxes passed to `annotate_image` must be exact pixel coordinates
 
 ### Animated GIFs
-
-Animations have timing, transitions, and competing visual motion.
 
 1. **Rects for big areas, arrows for small elements** — 500x300px area = rect, 200x25px element = arrow
 2. **Labels go RIGHT NEXT to what they describe** — short arrow (30-80px), label adjacent. Viewer's eye shouldn't travel more than ~100px

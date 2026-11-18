@@ -1,7 +1,7 @@
 # Output Templates
 Read when: writing the final report or one of its sections (steps 10-12 of `SKILL.md`).
 
-Use these templates verbatim as the structure for every Serverless Scanner Report. Fill in the bracketed placeholders. Do not skip sections.
+Use these templates verbatim for every Serverless Scanner Report: fill in the bracketed placeholders and skip no section.
 
 ---
 
