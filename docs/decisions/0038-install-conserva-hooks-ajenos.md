@@ -26,5 +26,6 @@ Cada instalación real las borraba y volvía el tema a `dark`; había que restau
 - Orca y otras herramientas sobreviven a una reinstalación sin restaurar nada del backup.
 - Un hook propio escrito con ruta absoluta (`/home/<usuario>/.claude/hooks/...`) o entre comillas no cuenta
   como del hub y se conserva; la base nunca lo escribe así.
-- Una entrada mal formada no rompe el merge: se conserva tal cual.
+- Una entrada mal formada no rompe el merge y se conserva tal cual; un evento cuyo valor no es una lista se
+  descarta.
 - Para volver al tema de la base hay que borrar `theme` de `~/.claude/settings.json` y reinstalar.

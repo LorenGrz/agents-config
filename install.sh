@@ -11,8 +11,8 @@
 # - Merges config/settings.base.json into ~/.claude/settings.json (jq):
 #     * statusLine / model / effortLevel: base wins (full overwrite); modelSettings: deep
 #       merge, base wins on the keys it defines.
-#     * hooks: base entries + existing entries that run no hub hook (other tools',
-#       e.g. Orca's) kept after them; existing hub entries are replaced (ADR 0038).
+#     * hooks: base entries + the existing commands that run no hub hook (other tools',
+#       e.g. Orca's) kept after them; existing hub commands are replaced (ADR 0038).
 #     * theme: the base's only when the file has none (ADR 0038).
 #     * permissions.defaultMode: base wins when base sets it.
 #     * enabledPlugins / extraKnownMarketplaces: union of existing + base; base
@@ -377,7 +377,7 @@ else
   # an event stays only while it has an entry.
   MERGED="$(jq -s '
     def hub: type == "object" and ((.command // "") | if type == "string" then test("(^|\\s)(~|\\$HOME|\\$\\{HOME\\})/\\.claude/hooks/[^/\\s]+") else false end);
-    def foreign_part: if (.hooks | type) == "array" and any(.hooks[]; hub)
+    def foreign_part: if type == "object" and (.hooks | type) == "array" and any(.hooks[]; hub)
       then (.hooks |= map(select(hub | not))) | select(.hooks | length > 0) else . end;
     .[0] as $cur | .[1] as $base
     | ($base.hooks // {}) as $bh | ($cur.hooks // {}) as $ch
@@ -386,7 +386,7 @@ else
     | .effortLevel = $base.effortLevel
     | .modelSettings = ((.modelSettings // {}) * ($base.modelSettings // {}))
     | .hooks = (reduce (($bh | keys_unsorted[]), ($ch | keys_unsorted[])) as $e ({};
-        if has($e) then . else .[$e] = (($bh[$e] // []) + [($ch[$e] // [])[] | foreign_part]) end)
+        if has($e) then . else .[$e] = (($bh[$e] // []) + [($ch[$e] | if type == "array" then .[] else empty end) | foreign_part]) end)
         | with_entries(select(.value | length > 0)))
     | .statusLine = $base.statusLine
     | .enabledPlugins = (($cur.enabledPlugins // {}) + ($base.enabledPlugins // {}))

@@ -51,15 +51,18 @@ MIXED='bash ~/.other-tool/hook.sh'
 jq --arg f "$FOREIGN" --arg s "$STALE" --arg m "$MIXED" '
   .hooks.PostToolUse = ([{"hooks": [{"type": "command", "command": $f}]}] + (.hooks.PostToolUse // []))
   | .hooks.Stop += [{"hooks": [{"type": "command", "command": $s}, {"type": "command", "command": $m}]}]
-  | .hooks.SessionEnd = [{"hooks": ["not-an-object"]}]
+  | .hooks.SessionEnd = [{"hooks": ["not-an-object"]}, "bare-string"]
+  | .hooks.SubagentStop = "not-a-list"
   | .hooks.Notification = [{"hooks": [{"type": "command", "command": $s}]}]' "$S" >"$S.tmp" && mv "$S.tmp" "$S"
-before="$(sha1sum "$S")"; run --dry-run >/dev/null
-check "--dry-run writes nothing" '[ "$before" = "$(sha1sum "$S")" ]'
-run >/dev/null
+tree() { find "$W/home" -type f -exec sha1sum {} + | sort | sha1sum; }
+before="$(tree)"; run --dry-run >/dev/null
+check "--dry-run writes nothing under HOME" '[ "$before" = "$(tree)" ]'
+run >/dev/null; rc=$?
+check "the install exits 0 with malformed hook entries" '[ "$rc" -eq 0 ]'
 check "a foreign entry written first ends after the base entries" 'jq -e --arg f "$FOREIGN" "(.hooks.PostToolUse | last | .hooks[0].command) == \$f" "$S" >/dev/null && [ "$(count PostToolUse "$FOREIGN")" -eq 1 ]'
 check "a mixed entry keeps its foreign command and loses the hub one" '[ "$(count Stop "$MIXED")" -eq 1 ] && [ "$(count Stop "$STALE")" -eq 0 ]'
-check "a malformed entry does not break the merge and is kept" 'jq -e ".hooks.SessionEnd == [{\"hooks\": [\"not-an-object\"]}]" "$S" >/dev/null'
-check "an event holding only stale hub entries is removed" 'jq -e ".hooks | has(\"Notification\") | not" "$S" >/dev/null || jq -e --slurpfile b "$BASE" "\$b[0].hooks | has(\"Notification\")" "$S" >/dev/null'
+check "malformed entries are kept as they are" 'jq -e ".hooks.SessionEnd == [{\"hooks\": [\"not-an-object\"]}, \"bare-string\"]" "$S" >/dev/null'
+check "a stale hub command on an event of its own is gone" '[ "$(count Notification "$STALE")" -eq 0 ]'
 
 echo; echo "passed $pass, failed $failn"
 [ "$failn" -eq 0 ]
