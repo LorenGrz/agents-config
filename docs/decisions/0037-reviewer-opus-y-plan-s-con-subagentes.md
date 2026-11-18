@@ -24,7 +24,7 @@ resolvió que el Plan S pueda lanzar subagentes cuando el trabajo los pida.
   pide. Si ese proveedor no está disponible, revisa el reviewer por defecto y se avisa en una línea.
 - La skill `review-handoff` lleva los dos caminos; el modelo sale del perfil.
 - La delegación de trabajo a Gemini (`gemini-delegate`) también queda manual: solo cuando el usuario la
-  pide. Una tarea grande o mecánica no la dispara por sí sola; se sugiere en una línea.
+  pide. Una tarea grande o mecánica no la dispara por sí sola, y una segunda corrida también se pide.
 - Plan S: sigue sin entrevista, sin brainstorming y sin specs. Lo ejecuta la sesión principal y lanza
   subagentes solo cuando el trabajo los necesita.
 
