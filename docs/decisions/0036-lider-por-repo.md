@@ -38,8 +38,13 @@ donde trabaja, y Loren pidió el 2026-11-18 que cada repo se trabaje con las suy
 - Hay dos niveles de delegación, y el líder en Opus cuesta más que un worker en Sonnet.
 - En Claude Code un subagente no carga solo las skills de otro repo: el brief le dice que lea su `AGENTS.md`
   y su `.claude/skills` primero.
-- Verificado en T3 Code el 2026-11-18 con un hilo de solo lectura en otro repo: cae en el checkout de ese
-  repo, carga su `CLAUDE.md` y la config global, tiene `worker` y `scout` y no pregunta la lane. El
-  transporte en Orca y en Claude Code está escrito pero no verificado.
+- Verificado el 2026-11-18, con pruebas de solo lectura:
+  - T3 Code, cadena completa: un líder abierto en la carpeta del workspace ve las skills de esa carpeta,
+    lanza con `t3_thread_launch` un líder en un repo hijo, y ese arranca un `scout`; también tiene
+    `worker` y `reviewer`, y nadie pregunta la lane.
+  - Claude Code: un subagente tiene la herramienta para lanzar otros (`worker`, `scout`, `reviewer`) y
+    arrancó un `scout`. El contexto del repo le llega solo por las rutas que nombra el brief.
+  - Orca: sin verificar. `orchestration worker-start` solo corre desde una terminal de Orca
+    (`no_active_sender_terminal` desde afuera), así que hay que probarlo en una sesión de Orca.
 - Un líder solo ve las skills instaladas para ese repo o globales: las que viven en la carpeta padre de un
   workspace no le llegan. Por eso, con un workspace, el líder se abre en la carpeta padre.
