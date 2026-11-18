@@ -46,7 +46,7 @@
         {
           "label": "open PR",
           "re": "abr[ií] (un )?pr|cre[aá] (un )?pr|open (a )?pr|create (a )?pull request",
-          "cmd": "gh pr create --base <base>"
+          "cmd": "review the committed diff with review-handoff, then gh pr create --base <base>"
         },
         {
           "label": "issues and PRs",

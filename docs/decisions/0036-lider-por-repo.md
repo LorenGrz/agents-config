@@ -16,8 +16,9 @@ donde trabaja, y Loren pidió el 2026-11-18 que cada repo se trabaje con las suy
   restricciones.
 - Si los repos viven en una carpeta de workspace que tiene sus skills, el líder se abre en esa carpeta y
   puede mandar un líder a cada repo hijo, que a su vez lanza workers.
-- Un líder es un reasoner: para Loren, Opus en esfuerzo alto que consulta al advisor. La sesión principal
-  también lo es, así que una decisión se queda en ella o en el líder, sin pasar por el subagente `reasoner`.
+- El modelo del líder sale del perfil. Para Loren, un líder es un reasoner: una sesión de Opus en esfuerzo
+  alto que consulta al advisor, igual que la sesión principal. No es el subagente `reasoner`, que solo
+  devuelve una decisión o un plan.
 - El líder implementa con las skills del repo, puede lanzar `worker` y `scout` ahí, commitea en la rama de
   la tarea y hace revisar su diff (`review-handoff`, con la skill de review del repo) antes de devolver el
   trabajo. Nunca pushea ni abre el PR.
@@ -28,8 +29,8 @@ donde trabaja, y Loren pidió el 2026-11-18 que cada repo se trabaje con las suy
 - En un solo repo, el líder es la sesión principal.
 - Transporte del líder: en T3 Code, un hilo nuevo con `t3_thread_launch` en el proyecto de ese repo o workspace, seguido
   de `t3_thread_wait` (`delegate_task` solo corre en el proyecto del hilo actual; un Plan L aprobado que
-  nombra a los líderes es el pedido del usuario para abrir esos hilos); en Orca, un worker en ese repo; en
-  Claude Code, un subagente con la ruta del repo en el brief.
+  nombra a los líderes es el pedido del usuario para abrir esos hilos); en Orca, un worker en ese repo o
+  workspace; en Claude Code, un subagente general con la ruta en el brief.
 
 ## Consecuencias
 

@@ -147,6 +147,6 @@ An org's `POLICIES.md` may add to these rules, never relax them.
 - intent: new branch — `nueva rama|cre[aá] una rama|new branch|start a branch` → `git fetch && git checkout -b <type>/<scope>-<topic> origin/<base>` (never commit on the base branch)
 - intent: commit — `(hac[eé]|hacer|hag[aá]) (un )?commit|commite[aá]|commit (my|the) changes|commit this` → `Conventional Commit on a task branch, after git status and verification (see Workflow)`
 - intent: push — `sub[ií] los cambios|push[eé]a|(hac[eé]|hacer) (un )?push|push (my|the) changes|git push` → `git push -u origin <branch>` (ask the user first when the repo matches an organization)
-- intent: open PR — `abr[ií] (un )?pr|cre[aá] (un )?pr|open (a )?pr|create (a )?pull request` → `gh pr create --base <base>` (after the `review-handoff` review; show the text and ask first)
+- intent: open PR — `abr[ií] (un )?pr|cre[aá] (un )?pr|open (a )?pr|create (a )?pull request` → `review the committed diff with review-handoff, then gh pr create --base <base>` (show the text and ask first)
 - intent: issues and PRs — `\bissues?\b|\bpr #?[0-9]+|pull request #?[0-9]+|revis[aá] (el|la) pr|review (the )?pr|list(a|ar)? (los )?prs` → `gh with a local checkout; the claude.ai GitHub connector without one`
 - intent: clean up worktrees — `limpi[aá] (los )?worktrees|borr[aá] (los )?worktrees|clean ?up worktrees` → `bash ~/.claude/hooks/worktree-cleanup.sh --cwd <dir>` (add `--dry-run` to list first; deletes the clean worktrees whose PR is merged, ADR 0030)

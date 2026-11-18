@@ -63,7 +63,7 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   original request with the repo's review skill and runs the checks, without editing. Whoever asked for
   the review fixes small findings, sends large ones to a worker and asks for one re-review; what is still
   open goes to the user. No reviewer available: the profile's fallback reviews, and the user is told in one line.
-- **An agent started from a brief** (repo lead, worker, scout, reviewer) executes it without the lane
+- **An agent started from a brief** (lead, worker, scout, reviewer) executes it without the lane
   question. Only a lead may start agents of its own: `worker` and `scout`, and a workspace lead also the
   leads of its child repos.
 - **Every plan (S or L) is shown in the terminal message, not only in the plan file, with a table:** who
