@@ -1,29 +1,28 @@
-# 0029 — Repo work goes to a background worker by default
+# 0029 — El trabajo en un repo va por defecto a un worker en segundo plano
 
-Status: accepted (2026-11-17). Amends the "≤3 known files stay inline" rule of `config/CLAUDE.md`
-"Agent Routing" and the "`worker` only from an approved plan" limit.
+Estado: aceptado (2026-11-17). Enmienda la regla "≤3 known files stay inline" de "Agent Routing" en
+`config/CLAUDE.md` y el límite "`worker` only from an approved plan".
 
-## Context
+## Contexto
 
-The previous rule kept changes of up to 3 known files in the main session, and allowed `worker` only
-inside an approved plan. While a small front fix ran inline, Loren could not keep working with the main
-session. On 2026-11-17 he asked for the opposite default: the repo work goes to a worker, and he keeps
-talking with the main session.
+La regla anterior dejaba inline los cambios de hasta 3 archivos conocidos y `worker` solo dentro de un plan
+aprobado, y Loren no podía seguir trabajando mientras un arreglo chico corría inline. El 2026-11-17 pidió el
+default opuesto.
 
-## Decision
+## Decisión
 
-- Every non-trivial change in a repo goes to a `worker`, inside or outside a plan, run in the background
-  (`run_in_background`) in its own worktree on the task branch.
-- The brief carries the exact files, the decided change and an acceptance command, and tells the worker to
-  read the repo's `AGENTS.md`/`CLAUDE.md` and `.claude/skills` first and not to commit or push.
-- The main session reviews the diff and the reported checks, and commits.
-- Trivial changes (one line, or one file with no checks: a typo, a copy text, a config value) stay inline.
-- The lane question (Continuar / Plan S / Plan L) and the org rules do not change.
+- Todo cambio no trivial en un repo va a un `worker`, dentro o fuera de un plan, en segundo plano
+  (`run_in_background`), en su propio worktree y en la rama de la tarea.
+- El brief lleva los archivos exactos, el cambio decidido y un comando de aceptación, y le dice al worker que
+  lea primero `AGENTS.md`/`CLAUDE.md` y `.claude/skills` del repo, y que no commitee ni pushee: la sesión
+  principal revisa el diff y los checks reportados, y commitea.
+- Los cambios triviales (una línea, o un archivo sin checks: un typo, un texto, un valor de config) quedan
+  inline.
+- No cambian la pregunta de lane (Continuar / Plan S / Plan L) ni las reglas de las orgs. Queda escrito en
+  "Agent Routing" de `config/CLAUDE.md`, "Workflow lanes" de `config/AGENTS.md`, el recordatorio de
+  `session-start.sh` y "Model routing" del perfil.
 
-## Consequences
+## Consecuencias
 
-- The main session stays free while code is written, at the cost of a cold start per task.
-- A worker cannot see the conversation: a thin brief gives a wrong change, so the brief is the main
-  session's job.
-- Written in `config/CLAUDE.md` "Agent Routing", `config/AGENTS.md` "Workflow lanes", the
-  `session-start.sh` reminder and the profile's "Model routing".
+- La sesión principal queda libre mientras se escribe el código, a cambio de un arranque en frío por tarea y
+  de briefs completos (el worker no ve la conversación).

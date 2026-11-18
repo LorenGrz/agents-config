@@ -1,42 +1,41 @@
-# 0030 — Merged-PR worktrees are deleted when a session starts
+# 0030 — Los worktrees de PRs mergeados se borran al iniciar una sesión
 
-Status: accepted (2026-11-17). Follows 0029 (every non-trivial repo change runs in its own worktree).
+Estado: aceptado (2026-11-17). Sigue a 0029 (todo cambio no trivial en un repo corre en su propio worktree).
 
-## Context
+## Contexto
 
-Since 0029 each task lives in a sibling worktree of the repo (for example `repo-frontend-abc-123` next to
-`repo-frontend`). Nobody removes it after the PR is merged, so orphan worktrees and local branches pile up.
-Git cannot tell that a task is done: the repos merge with squash and keep the remote branch, so the branch
-is never an ancestor of the base. The only reliable signal is the PR on GitHub. On 2026-11-17 Loren asked
-for the worktree of a task to be deleted by itself when a session opens once its PR is merged.
+Desde 0029 cada tarea vive en un worktree hermano (`repo-frontend-abc-123` junto a `repo-frontend`) y nadie lo
+borra después del merge. Git no ve que la tarea terminó (squash merge, rama remota conservada); la única señal
+confiable es el PR en GitHub. El 2026-11-17 Loren pidió que se borre solo al abrir una sesión.
 
-## Decision
+## Decisión
 
-- A second `SessionStart` hook, `config/hooks/worktree-cleanup.sh`, registered in `settings.base.json`
-  next to `session-start.sh`. It reads `cwd` from the hook JSON (`$PWD` as fallback).
-- Scope: if the cwd is inside a git repo, the linked worktrees of that repo; if it is a folder that groups
-  repos (not a repo, children with their own `.git`), the linked worktrees of each. Never the main
-  worktree, never the worktree that contains the cwd.
-- A linked worktree with a branch is deleted only when all of these hold:
-  1. `git status --porcelain` is empty;
-  2. `gh pr list --repo <owner/repo of origin> --head <branch> --state merged` returns a PR;
-  3. that PR's `headRefOid` equals the worktree's `HEAD`, so a later local commit is never lost.
-  Then `git worktree remove <path>` (no `--force`: if git refuses, nothing is touched) and
-  `git branch -D <branch>` in the main repo (`-d` fails after a squash merge; `-D` is safe because of 3).
-- Never touched: the remote branch, the main worktree, a dirty worktree, one with commits the PR does not
-  have, locked or detached ones, and the branches `main`, `master`, `dev`, `develop`.
-- Time budget of about 10 seconds for the whole run, with a `timeout` per `gh` call. No `gh`, no network or
-  any other failure: exit 0 in silence. The hook never breaks a session.
-- Output: when it deleted something, one line per worktree as `additionalContext`
-  ("worktree-cleanup: borré <path> (rama <branch>, PR #<n> mergeado)"); nothing otherwise.
-- On demand: `bash ~/.claude/hooks/worktree-cleanup.sh --cwd <dir>` prints a plain-text summary, and
-  `--dry-run` only lists what it would delete. It is the "limpiar worktrees" shortcut of `github-usage`.
-- Tested offline by `scripts/test-worktree-cleanup.sh` (temp repos and a fake `gh`).
+- Un segundo hook `SessionStart`, `config/hooks/worktree-cleanup.sh`, registrado en `settings.base.json` junto
+  a `session-start.sh`. Lee `cwd` del JSON del hook (`$PWD` como respaldo).
+- Alcance: si el cwd está dentro de un repo git, los worktrees enlazados de ese repo; si es una carpeta que
+  agrupa repos (no es repo y sus hijos tienen su propio `.git`), los worktrees enlazados de cada uno. Nunca el
+  worktree principal ni el que contiene el cwd.
+- Un worktree enlazado con rama se borra solo si se cumple todo:
+  1. `git status --porcelain` está vacío;
+  2. `gh pr list --repo <owner/repo of origin> --head <branch> --state merged` devuelve un PR;
+  3. el `headRefOid` de ese PR es igual al `HEAD` del worktree, así nunca se pierde un commit local posterior.
+- Entonces corre `git worktree remove <path>` (sin `--force`: si git se niega, no se toca nada) y
+  `git branch -D <branch>` en el repo principal (`-d` falla después de un squash merge; `-D` es seguro por el
+  punto 3).
+- Nunca se tocan: la rama remota, el worktree principal, un worktree sucio, uno con commits que el PR no
+  tiene, los bloqueados o detached, ni las ramas `main`, `master`, `dev`, `develop`.
+- Presupuesto de unos 10 segundos para toda la corrida, con un `timeout` por llamada a `gh`. Sin `gh`, sin red
+  o ante cualquier otra falla: exit 0 en silencio. El hook nunca rompe una sesión.
+- Salida: si borró algo, una línea por worktree como `additionalContext` ("worktree-cleanup: borré <path>
+  (rama <branch>, PR #<n> mergeado)"); si no, nada.
+- A pedido: `bash ~/.claude/hooks/worktree-cleanup.sh --cwd <dir>` imprime un resumen en texto plano, y
+  `--dry-run` solo lista lo que borraría. Es el atajo "limpiar worktrees" de `github-usage`.
+- Verificado sin red por `scripts/test-worktree-cleanup.sh` (repos temporales y un `gh` falso).
 
-## Consequences
+## Consecuencias
 
-- Finished task worktrees disappear without a manual step, at the cost of up to 10 seconds in the worst
-  case at session start (a slow `gh`), and only when the session opens in the repo or its folder.
-- It deletes without asking, which is what Loren requested; the guard is the exact-head check, so
-  unmerged or extended work is left alone.
-- A worktree whose PR was merged but whose head moved afterwards stays until it is removed by hand.
+- Los worktrees de tareas terminadas desaparecen sin paso manual, a costa de hasta 10 segundos en el peor caso
+  al iniciar la sesión (un `gh` lento), y solo cuando la sesión abre en el repo o en su carpeta.
+- Borra sin preguntar, como pidió Loren; la guarda es el chequeo del head exacto, así el trabajo sin mergear o
+  extendido queda.
+- Un worktree cuyo PR se mergeó pero cuyo head se movió después queda hasta que se borre a mano.

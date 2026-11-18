@@ -1,13 +1,29 @@
-# 0015 — Leak guard and generated plugin files
+# 0015 — Guarda de filtraciones y archivos de plugin generados
 
-Status: accepted (2026-11-04)
+Estado: aceptado (2026-11-04).
 
-## Context
-Organization data must not reach this public repo, and `plugin.json`/`hooks.json` had drifted from their sources (project-scoped skills exported globally).
+## Contexto
 
-## Decision
-- `scripts/leak-guard.sh` fails on tracked files under `organizations/` (except README and `_template`), on terms from a **local** blocklist (`~/.config/agents-config/blocklist`, built by `orgs.sh` from each `org.json` name, terms and GitHub owners; a `LEAK_BLOCKLIST` secret in CI) and on obvious secrets. It checks file names, content (binaries included), renames and commit messages: hooks `pre-commit` (staged), `commit-msg`, `pre-push` (tree plus the commits being pushed) and CI (tree plus the pushed range). It never prints a term: a path that contains one is redacted, and in CI every path is.
-- `scripts/gen-plugin.sh` derives `plugin.json` skills (everything not project-scoped) and `hooks/hooks.json` (from `settings.base.json`, minus machine-specific hooks); `--check` runs in pre-commit and CI.
+Los datos de una organización no pueden llegar a este repo público, y `plugin.json`/`hooks.json` se habían
+desviado de sus fuentes (skills de proyecto exportadas como globales).
 
-## Consequences
-The blocklist protects only what is listed (renamed or abbreviated names pass; already-pushed history is out of reach); `org-creator` asks for the terms. Without a blocklist the guard warns locally and fails in CI. The pre-commit hook needs `git config core.hooksPath .githooks`.
+## Decisión
+
+- `scripts/leak-guard.sh` falla con archivos versionados bajo `organizations/` (salvo README y `_template`),
+  con términos de una blocklist **local** (`~/.config/agents-config/blocklist`, armada por `orgs.sh` con el
+  nombre, los términos y los owners de GitHub de cada `org.json`; un secreto `LEAK_BLOCKLIST` en CI) y con
+  secretos obvios.
+- Revisa nombres de archivo, contenido (binarios incluidos), renombres y mensajes de commit, en los hooks
+  `pre-commit` (staged), `commit-msg`, `pre-push` (el árbol más los commits que se pushean) y en CI (el árbol
+  más el rango pusheado).
+- Nunca imprime un término: una ruta que contiene uno se redacta, y en CI se redactan todas.
+- `scripts/gen-plugin.sh` deriva las skills de `plugin.json` (todo lo que no es de proyecto) y
+  `hooks/hooks.json` (desde `settings.base.json`, sin los hooks propios de la máquina); `--check` corre en
+  pre-commit y en CI.
+- El hook pre-commit necesita `git config core.hooksPath .githooks`.
+
+## Consecuencias
+
+- La blocklist protege solo lo listado: los nombres renombrados o abreviados pasan, y el historial ya pusheado
+  queda fuera de alcance. `org-creator` pide los términos.
+- Sin blocklist, la guarda avisa en local y falla en CI.

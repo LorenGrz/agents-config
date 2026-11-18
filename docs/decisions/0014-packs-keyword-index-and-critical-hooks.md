@@ -1,15 +1,32 @@
-# 0014 — Packs, keyword index and critical hooks
+# 0014 — Packs, índice de palabras clave y hooks críticos
 
-Status: accepted (2026-11-04)
+Estado: aceptado (2026-11-04).
 
-## Context
-Skills triggered only by their `description`, which is probabilistic, and stack skills ignored the chosen architecture.
+## Contexto
 
-## Decision
-- **Packs** (`packs/<name>/`: `pack.json`, `skills/`, `commands/`) bundle skills and slash commands by architecture. `project-agents.sh` installs the `always` packs plus those whose `when` matches the manifest (stack AND decisions), then an org on top (`--org`).
-- **Index, not enforcement**: a keyword table in the project's `AGENTS.md` (14 rows max), bilingual triggers in each `description`. Detail is read on demand, so context stays small.
-- **Hooks only at critical points**: `.agents/critical.json` (keyword or path -> skill) is read by `config/hooks/critical-reasoning.sh`, which hints the skill (never blocks) and combines with the existing `reasoner` nudge.
-- Model routing moved out of the base into the profile; the base names roles (scout, reasoner, worker) and says to recommend subagents and ask when planning.
+Las skills se activaban solo por su `description`, que es probabilístico, y las skills de stack ignoraban la
+arquitectura elegida.
 
-## Consequences
-Packs that only list `when.stacks` (frontend-ui, spring-testing, python-testing) also install without a manifest. `react-scalable-frontend` was removed (its rules live in `ui-builder`, `ui-review` and `feature-architecture`); `react-component-validator` stays because the `useEffect` doctrine exists nowhere else. Skill content is written from scratch (inspired by real projects, no domain). Org skills replace pack skills through `replaces`, and pack commands are rewritten to point at the replacement.
+## Decisión
+
+- **Packs** (`packs/<name>/`: `pack.json`, `skills/`, `commands/`) agrupan skills y slash commands por
+  arquitectura. `project-agents.sh` instala los packs `always` más los que cumplen su `when` contra el
+  manifiesto (stack Y decisiones), y encima la org (`--org`).
+- **Índice, no imposición**: una tabla de palabras clave en el `AGENTS.md` del proyecto (14 filas como máximo)
+  y triggers bilingües en cada `description`. El detalle se lee a pedido y el contexto queda chico.
+- **Hooks solo en puntos críticos**: `.agents/critical.json` (palabra clave o ruta -> skill) lo lee
+  `config/hooks/critical-reasoning.sh`, que sugiere la skill (nunca bloquea) y se suma al empujón existente
+  hacia `reasoner`.
+- El ruteo de modelos sale de la base y pasa al perfil; la base nombra roles (scout, reasoner, worker) y dice
+  que al planear se recomiendan subagentes y se pregunta.
+- Se elimina `react-scalable-frontend` (sus reglas viven en `ui-builder`, `ui-review` y
+  `feature-architecture`); `react-component-validator` queda porque la doctrina de `useEffect` no está en otro
+  lado.
+- El contenido de las skills se escribe de cero (inspirado en proyectos reales, sin dominio).
+- Las skills de una org reemplazan a las de un pack con `replaces`, y los comandos del pack se reescriben para
+  apuntar al reemplazo.
+
+## Consecuencias
+
+- Los packs que solo listan `when.stacks` (frontend-ui, spring-testing, python-testing) se instalan también
+  sin manifiesto.

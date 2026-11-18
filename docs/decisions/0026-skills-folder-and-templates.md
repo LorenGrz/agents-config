@@ -1,74 +1,62 @@
-# 0026 — Skills folder, one skill per tool, and a fixed template per markdown type
+# 0026 — Carpeta de skills, una skill por herramienta y una plantilla fija por tipo de markdown
 
-Status: accepted (2026-11-13). Builds on ADR 0001 (single repo), 0011 (global vs project scope), 0012
-(organizations) and 0017 (intent router).
+Estado: aceptado (2026-11-13). Se apoya en ADR 0001 (repo único), 0011 (alcance global o por proyecto), 0012
+(organizaciones) y 0017 (router de intenciones).
 
-## Context
+## Contexto
 
-The hub had grown flat: seven category folders, seven integration skills mixed in with them, external
-symlinks and `packs/` all at the repo root next to `config/`, `scripts/` and `docs/`. A new reader (or a
-model) could not tell skills from tooling at a glance. Git and GitHub were split across two skills
-(`git-workflow`, `github-usage`), against the rule of one skill per tool. The markdown files followed
-different shapes from one skill to the next, so every agent had to relearn how each file was organized.
+El hub había crecido plano (categorías, skills de integración, symlinks externos y `packs/` en la raíz), git y
+GitHub estaban partidos en `git-workflow` y `github-usage`, y cada markdown tenía otra forma. Los repos de org
+dependían del hub: sin `agents-config` no había skills de la org para GitHub, Jira, Slack o Google.
 
-Organization repos also depended on the hub being installed: a teammate who does not use `agents-config`
-had no way to get the org's skills for GitHub, Jira, Slack or Google, only the org's product skills.
+## Decisión
 
-## Decision
+- **Carpeta `skills/`.** Toda skill vive en `skills/<category>/<skill>/`. Categorías: `aws`, `development`,
+  `devops`, `meta`, `productivity`, `quality`, `security`, más `integrations/` para las skills dueñas de una
+  herramienta externa (`github-usage`, `jira-usage`, `slack-usage`, `google-workspace-usage`,
+  `obsidian-vault`, `notebooklm-obsidian-sync`, `codex-review`). `skills/external/` guarda los symlinks
+  propios de la máquina (omarchy, omarchy-app, diagnose-crash, superwhisper) y sigue ignorada. `packs/` queda
+  en la raíz.
+- **`~/.agents/skills` apunta a `<hub>/skills`** (antes, a la raíz del hub). `sync.sh` busca en `skills/` y
+  espeja `skills/external/*` explícitamente, porque `find` no entra en symlinks.
+- **Una skill por herramienta.** `git-workflow` se fusiona en `github-usage` y deja de existir: git y GitHub
+  son una sola skill, en `integrations/`. Es el único renombre de skill de la reorganización. Los ADRs y
+  planes que nombran `git-workflow` son historia y no se reescriben.
+- **Una plantilla fija por tipo de markdown**, para que cualquier modelo lea cada tipo igual. No se borra
+  contenido para encajar en una plantilla ni se parten las skills largas.
 
-- **`skills/` folder.** Every skill lives in `skills/<category>/<skill>/`. Categories: `aws`, `development`,
-  `devops`, `meta`, `productivity`, `quality`, `security`, plus `integrations/` for the skills that own an
-  outside tool (`github-usage`, `jira-usage`, `slack-usage`, `google-workspace-usage`, `obsidian-vault`,
-  `notebooklm-obsidian-sync`, `codex-review`). `skills/external/` holds the per-machine symlinks (omarchy,
-  omarchy-app, diagnose-crash, superwhisper); it stays gitignored. `packs/` stays at the root.
-- **`~/.agents/skills` points at `<hub>/skills`** (before: the hub root). `sync.sh` searches `skills/` and
-  mirrors `skills/external/*` explicitly, because `find` does not descend into symlinks.
-- **One skill per tool.** `git-workflow` is merged into `github-usage` and no longer exists: git and GitHub
-  are one skill, in `integrations/`. This is the only skill rename of the reorganization. ADRs and plans
-  that name `git-workflow` are history and are not rewritten.
-- **A fixed template per markdown type**, so any model reads each type the same way. Contents are not
-  deleted to fit a template; long skills are not split.
+| Tipo | Forma |
+|---|---|
+| SKILL.md | Frontmatter `name` (igual a la carpeta) y `description` ("Use when ..."). Secciones, en este orden y solo estas: `Objective`, `When to use`, `Prerequisites`, `Workflow`, `Rules`, `Reference`, `Output`, `Verification`, `Claude Code`, `Shortcuts`. `Workflow` o `Rules` es obligatoria; `Shortcuts` va última y mantiene el formato de `gen-intents`. `Claude Code` es el único lugar para ToolSearch, subagentes y hooks |
+| Reference | `# Title`, una línea "Read when: ...", sin repetir el SKILL.md |
+| Command | Frontmatter `description` y `argument-hint`; secciones `Source`, `Rules`, `Steps`, `Output`, `Stop when` |
+| Rule (`config/rules`) | Frontmatter `paths:` y `## Topic` con viñetas en imperativo |
+| Agent | `Before`, `Do`, `Never`, `Return` |
+| Profile | `Identity`, `GitHub`, `Stack`, `Model routing`, `Local tool paths`, `Skill routing`, `OS` |
+| POLICIES (org) | Un resumen corto, una sección núcleo, una sección de proyecto y una por producto; sin identidad personal; fechas como "in force since" |
+| README de carpeta / AGENTS.md | `Purpose`, `Layout`, `How to add`, `Checks`; AGENTS.md suma `Rules` y `Pointers` |
 
-  | Type | Shape |
-  |---|---|
-  | SKILL.md | Frontmatter `name` (equal to the folder) and `description` ("Use when ..."). Sections, in this order and only these: `Objective`, `When to use`, `Prerequisites`, `Workflow`, `Rules`, `Reference`, `Output`, `Verification`, `Claude Code`, `Shortcuts`. `Workflow` or `Rules` is required; `Shortcuts` is last and keeps the `gen-intents` format. `Claude Code` is the only place for ToolSearch, subagents and hooks |
-  | Reference | `# Title`, a "Read when: ..." line, no repetition of the SKILL.md |
-  | Command | Frontmatter `description` and `argument-hint`; sections `Source`, `Rules`, `Steps`, `Output`, `Stop when` |
-  | Rule (`config/rules`) | `paths:` frontmatter and `## Topic` with imperative bullets |
-  | Agent | `Before`, `Do`, `Never`, `Return` |
-  | Profile | `Identity`, `GitHub`, `Stack`, `Model routing`, `Local tool paths`, `Skill routing`, `OS` |
-  | POLICIES (org) | A short summary, a core section, a project section and one section per product; no personal identity; dates as "in force since" |
-  | Folder README / AGENTS.md | `Purpose`, `Layout`, `How to add`, `Checks`; AGENTS.md adds `Rules` and `Pointers` |
+- Las formas existentes se mapean: `Operating Rules` pasa a `Rules`; `Role`, `Responsibilities` y `Guardrails`
+  pasan a `Objective` más `Rules` con temas `###`; las skills de forma libre suman un `Objective` y sus `##`
+  bajan a `###`. `orca-cli`, `orchestration` y `frontend-design` quedan exentas (solo frontmatter).
+- **`scripts/lint-docs.sh`** revisa la plantilla de SKILL.md (frontmatter, `name` igual a la carpeta,
+  encabezados permitidos y su orden, `Workflow` o `Rules`, `Shortcuts` última), `config/rules/*.md` (`paths:`)
+  y `packs/*/commands/*.md` (`description`). Arranca en CI como aviso (exit 0) y pasa a error (`--strict`)
+  cuando las skills existentes estén migradas.
+- **Los repos de org son autosuficientes.** Un repo de org trae su propio `.claude-plugin/`, `hooks/` (un hook
+  SessionStart que muestra el resumen de su POLICIES), `install.sh`, `AGENTS.md` y `README.md`, así se instala
+  como plugin de Claude Code o con su script, sin el hub. Sus skills cubren las mismas herramientas que las
+  skills de integración del hub, con las reglas de la org. `replaces` de `org.json` mapea cada skill de
+  integración del hub a la de la org (por ejemplo `github-usage` a la skill de GitHub de la org), así en sus
+  repos aplica una sola. El contrato está en `organizations/README.md`, y `org.json` suma los defaults
+  separados `pr_title_language` y `pr_body_language`.
 
-  Existing shapes map onto it: `Operating Rules` becomes `Rules`; `Role`, `Responsibilities` and
-  `Guardrails` become `Objective` plus `Rules` with `###` topics; free-form skills gain an `Objective`
-  and their `##` headings drop to `###`. `orca-cli`, `orchestration` and `frontend-design` are exempt
-  (frontmatter only).
-- **`scripts/lint-docs.sh`** checks the SKILL.md template (frontmatter, `name` equal to the folder,
-  allowed headings, their order, `Workflow` or `Rules`, `Shortcuts` last), `config/rules/*.md` (`paths:`)
-  and `packs/*/commands/*.md` (`description`). It starts in CI as a warning (exit 0) and becomes an error
-  (`--strict`) once the existing skills are migrated.
-- **Organization repos are self-sufficient.** An org repo carries its own `.claude-plugin/`, `hooks/` (a
-  SessionStart hook that shows its POLICIES summary), `install.sh`, `AGENTS.md` and `README.md`, so it
-  installs as a Claude Code plugin or with its own script, without the hub. Its skills cover the same tools
-  as the hub's integration skills, with the org's rules. `org.json` `replaces` maps each hub integration
-  skill to the org's (for example `github-usage` to the org's GitHub skill), so only one of the two
-  applies in the org's repos. The contract is documented in `organizations/README.md`, and
-  `org.json` gains separate `pr_title_language` and `pr_body_language` defaults.
+## Consecuencias
 
-## Consequences
-
-- Paths change: everything that read `<hub>/<category>/<skill>` now reads `<hub>/skills/<category>/<skill>`
-  (`sync.sh`, `gen-plugin.sh`, `gen-intents.sh`, `export-obsidian.sh`, `project-agents.sh`, rulesync, the
-  project-init scripts, the CI and the tests). A script with a relative `../` into the hub goes one level
-  deeper.
-- Each machine re-runs `install.sh` once so `~/.agents/skills` points at `<hub>/skills`.
-- Anything that named `git-workflow` (hooks, `intents.json`, `config/AGENTS.md`, packs, project-init, READMEs)
-  now names `github-usage`. Old ADRs and plans keep the old name as history.
-- Until the skills are migrated, `lint-docs.sh` reports many violations; CI only warns. The strict mode is
-  the gate for the migration batch.
-- The org-side `replaces` for hub integration skills only removes copies installed in a project. For the
-  global hub skills the intent router still has to translate the suggested skill with the org's `replaces`;
-  that is a follow-up in `config/hooks/intent-router.sh`.
-- Org repos that stop depending on the hub lose the guarantee that the hub's hooks and rules are present,
-  so their `install.sh` refuses to install into a project already managed by `agents-config`.
+- Todo lo que leía `<hub>/<category>/<skill>` ahora lee `<hub>/skills/<category>/<skill>` (`sync.sh`,
+  `gen-plugin.sh`, `gen-intents.sh`, `export-obsidian.sh`, `project-agents.sh`, rulesync, los scripts de
+  project-init, el CI y los tests). Un script con un `../` relativo al hub baja un nivel más.
+- Lo que nombraba `git-workflow` (hooks, `intents.json`, `config/AGENTS.md`, packs, project-init, READMEs)
+  ahora nombra `github-usage`.
+- Los repos de org que no dependen del hub pierden la garantía de que estén sus hooks y rules, así que su
+  `install.sh` se niega a instalar en un proyecto ya manejado por `agents-config`.

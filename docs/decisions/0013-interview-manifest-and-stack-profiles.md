@@ -1,16 +1,33 @@
-# 0013 — project-init interview, manifest and stack profiles
+# 0013 — Entrevista, manifiesto y perfiles de stack de project-init
 
-Status: accepted (2026-11-04)
+Estado: aceptado (2026-11-04).
 
-## Context
-`project-init` assumed TypeScript, asked nothing about architecture and could not scaffold Java, Kotlin or Python.
+## Contexto
 
-## Decision
-- **Interview first** (`devops/project-init/references/interview.md`): org, stack, backend and frontend style, data, auth, testing, deploy, SDD. Critical answers are never defaulted; "no sé" becomes `pending`.
-- **Manifest** `.agents/project.json` (schema v1) holds the answers; `manifest.sh` validates it (required keys), writes one ADR per decision and lists pending ones in `.agents/CONTEXT.md`. `init.sh --manifest` consumes it.
-- **Stack profiles**: `templates/<stack>/stack.env` (commands, lint text, allowed commands), optional `@maven`/`@gradle` variants detected from the generated project, per-stack `setup.sh` (Spotless, ruff/mypy/pytest). Stack files win over `templates/common`, which uses placeholders; non-node stacks write `.agents/stack.env` for `gh-flow.sh pr` and `verify-ci.sh`.
-- The `sdd` answer (`required|light|off`, validated) rewrites step 2 of the generated `AGENTS.md` (`references/sdd/`); `required` keeps the template text. The generated `docs-check.sh` reads dependency changes in package.json, pom.xml, Gradle files and catalog, pyproject.toml and requirements*.txt.
-- New stacks: `python`, `java-spring` (Maven and Gradle), `kotlin-spring` (Gradle). `kotlin.md` is not attached to `kotlin-spring`: it prescribes a layered architecture that the interview decides.
+`project-init` suponía TypeScript, no preguntaba nada de arquitectura y no podía armar proyectos Java, Kotlin
+ni Python.
 
-## Consequences
-For the TS stacks the generated files are unchanged except `scripts/gh-flow.sh` (a `stack.env` branch) and what packs add on purpose: the keyword table in `AGENTS.md`, the `workflow` commands and the `run-app` skill (checked by diffing against a baseline). Every stack has an e2e (`e2e.sh`); `test-manifest.sh` covers the manifest offline.
+## Decisión
+
+- **Primero la entrevista** (`devops/project-init/references/interview.md`): org, stack, estilo de backend y
+  de frontend, datos, auth, testing, deploy, SDD. Las respuestas críticas nunca toman un default; «no sé»
+  queda como `pending`.
+- **Manifiesto** `.agents/project.json` (schema v1) con las respuestas; `manifest.sh` lo valida (claves
+  obligatorias), escribe un ADR por decisión y lista las pendientes en `.agents/CONTEXT.md`.
+  `init.sh --manifest` lo consume.
+- **Perfiles de stack**: `templates/<stack>/stack.env` (comandos, texto de lint, comandos permitidos),
+  variantes opcionales `@maven`/`@gradle` detectadas en el proyecto generado y un `setup.sh` por stack
+  (Spotless, ruff/mypy/pytest). Los archivos del stack ganan sobre `templates/common`, que usa placeholders;
+  los stacks que no son node escriben `.agents/stack.env` para `gh-flow.sh pr` y `verify-ci.sh`.
+- La respuesta `sdd` (`required|light|off`, validada) reescribe el paso 2 del `AGENTS.md` generado
+  (`references/sdd/`); `required` deja el texto del template. El `docs-check.sh` generado lee cambios de
+  dependencias en package.json, pom.xml, archivos y catálogo de Gradle, pyproject.toml y requirements*.txt.
+- Stacks nuevos: `python`, `java-spring` (Maven y Gradle) y `kotlin-spring` (Gradle). `kotlin.md` no se
+  adjunta a `kotlin-spring`: prescribe una arquitectura en capas, y eso lo decide la entrevista.
+
+## Consecuencias
+
+- En los stacks TS los archivos generados no cambian, salvo `scripts/gh-flow.sh` (una rama para `stack.env`) y
+  lo que los packs agregan a propósito: la tabla de palabras clave en `AGENTS.md`, los comandos de `workflow`
+  y la skill `run-app` (comprobado comparando contra una línea base).
+- Cada stack tiene un e2e (`e2e.sh`); `test-manifest.sh` cubre el manifiesto sin red.

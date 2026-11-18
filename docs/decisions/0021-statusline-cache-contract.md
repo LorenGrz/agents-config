@@ -1,32 +1,29 @@
-# 0021 — Statusline cache files are an interface for caolg
+# 0021 — Los archivos de cache de la statusline son una interfaz para caolg
 
-Status: superseded by ADR 0028 (2026-11-16): the statusline no longer writes these caches.
+Estado: reemplazado por ADR 0028 (2026-11-16): la statusline ya no escribe estos caches.
 
-## Context
+## Contexto
 
-`config/hooks/statusline.sh` receives Claude Code's statusline JSON on every refresh. Besides drawing the line it
-writes two small cache files that caolg (a separate repo) reads: the quota bar (`bin/cao-usage`,
-`lib/caolg_lib.py`) and the border of each agent with its context percentage and current folder
-(`bin/caolg-watch`). Nothing said so, and nothing in caolg names agents-config: changing the statusline would
-degrade the bar and the borders without any error.
+`config/hooks/statusline.sh`, además de dibujar, escribe dos caches que lee caolg (otro repo): la barra de
+cuota (`bin/cao-usage`, `lib/caolg_lib.py`) y el borde de cada agente con su contexto y su carpeta
+(`bin/caolg-watch`). Nada lo decía, y cambiar la statusline degradaba la barra y los bordes sin error.
 
-## Decision
+## Decisión
 
-The two files are a contract. `statusline.sh` documents it in its header; this ADR is the reference.
+- Los dos archivos son un contrato. `statusline.sh` lo documenta en su cabecera; este ADR es la referencia.
 
-| File | Written when | Fields |
+| Archivo | Se escribe cuando | Campos |
 |---|---|---|
-| `${XDG_CACHE_HOME:-~/.cache}/claude/rate-limits.json` | the input has `rate_limits.five_hour` or `.seven_day` | `ts` (epoch, float), `rate_limits` (the input object as received: `five_hour` and `seven_day`, each with `used_percentage` and `resets_at`) |
-| `${XDG_CACHE_HOME:-~/.cache}/claude/ctx/<CAO_TERMINAL_ID>.json` | `CAO_TERMINAL_ID` is set and `used_percentage` is known | `ts` (epoch, integer), `used_percentage`, `size` (context window), `cwd` (`workspace.current_dir`, else `cwd`; follows the agent's `cd`) |
+| `${XDG_CACHE_HOME:-~/.cache}/claude/rate-limits.json` | el input tiene `rate_limits.five_hour` o `.seven_day` | `ts` (epoch, float), `rate_limits` (el objeto del input tal cual: `five_hour` y `seven_day`, cada uno con `used_percentage` y `resets_at`) |
+| `${XDG_CACHE_HOME:-~/.cache}/claude/ctx/<CAO_TERMINAL_ID>.json` | `CAO_TERMINAL_ID` está definido y se conoce `used_percentage` | `ts` (epoch, entero), `used_percentage`, `size` (ventana de contexto), `cwd` (`workspace.current_dir`, si no `cwd`; sigue el `cd` del agente) |
 
-- Both are written atomically (`.tmp` then `mv`) and never contain tokens or credentials.
-- Fields may be added. A rename or removal is a breaking change: update caolg in the same change and say so in
-  the commit.
-- The rate limits belong to the account, not to the session: the last writer wins.
-- caolg keeps working without the files, with a fallback (transcripts, Codex rollouts, `gh`), only less exact.
+- Los dos se escriben de forma atómica (`.tmp` y después `mv`) y nunca contienen tokens ni credenciales.
+- Se pueden agregar campos. Renombrar o sacar uno rompe: se actualiza caolg en el mismo cambio y se dice en el
+  commit.
+- Los rate limits son de la cuenta, no de la sesión: gana el último que escribe.
+- caolg sigue andando sin los archivos, con un fallback (transcripts, rollouts de Codex, `gh`), solo que menos
+  exacto.
 
-## Consequences
+## Consecuencias
 
-- The file shapes are not covered by a test in this repo yet (the writer needs a statusline JSON sample);
-  caolg's tests cover its own parsing.
-- Replacing the statusline script means keeping these two writes.
+- Ninguna vigente: ADR 0028 sacó las dos escrituras.

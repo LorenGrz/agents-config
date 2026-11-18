@@ -1,29 +1,23 @@
-# 0024 — Opus at high effort; terminal images inside tmux
+# 0024 — Opus con esfuerzo alto; imágenes en la terminal dentro de tmux
 
-Status: accepted (2026-11-10). Supersedes the medium effort of [0018](0018-opus-medium-default-reasoner-high.md)
-(`model: opus` and `reasoner` at high stay).
+Estado: aceptado (2026-11-10). Reemplaza el esfuerzo medio de
+[0018](0018-opus-medium-default-reasoner-high.md) (`model: opus` y `reasoner` en alto siguen).
 
-## Context
+## Contexto
 
-- Effort: the owner works with Opus at high (his local `~/.claude/settings.json` already had
-  `modelSettings.claude-opus-5-5.effortLevel = "high"`), but the base said medium, so every
-  `install.sh` run lowered it again.
-- Images: in caolg the agents run inside tmux. Claude Code asks the terminal whether it can draw
-  images (kitty graphics protocol); inside tmux the answer is `tmux`, so pasted images show as
-  `Image #N` with no thumbnail (`paste-preview` plugin), while straight Ghostty shows them. tmux already
-  has `allow-passthrough on` and Claude Code wraps the images for tmux when forced. CAO unsets every
-  `CLAUDE*` variable before launching `claude`, so exporting the variable in the shell does not reach it.
+La base decía esfuerzo medio y cada `install.sh` bajaba el `high` que usa el dueño. Dentro de tmux (caolg)
+Claude Code no detecta el kitty graphics protocol y las imágenes pegadas salen como `Image #N` sin miniatura
+(`paste-preview`), con `allow-passthrough on` en tmux; CAO hace unset de las variables `CLAUDE*` de la shell.
 
-## Decision
+## Decisión
 
-- `config/settings.base.json`: `effortLevel` and `modelSettings.claude-opus-5-5.effortLevel` = `"high"`.
-- `config/settings.base.json` `env`: `"CLAUDE_CODE_FORCE_TERMINAL_IMAGES": "1"` (settings `env` is applied
-  by Claude Code itself, after CAO's unset). Tested by hand in tmux inside Ghostty: thumbnails show.
+- `config/settings.base.json`: `effortLevel` y `modelSettings.claude-opus-5-5.effortLevel` = `"high"`.
+- `config/settings.base.json` `env`: `"CLAUDE_CODE_FORCE_TERMINAL_IMAGES": "1"` (el `env` de los settings lo
+  aplica Claude Code mismo, después del unset de CAO). Probado a mano en tmux dentro de Ghostty: se ven las
+  miniaturas.
 
-## Consequences
+## Consecuencias
 
-- Higher cost and latency per turn in the main session than at medium.
-- Images are forced in every terminal, not only tmux. Fine in Ghostty/kitty; a terminal without the
-  kitty graphics protocol (e.g. the VS Code terminal) would print garbage. If that happens, remove the
-  variable and set it per launch instead.
-- caolg sessions already open do not pick it up: close them and open a new one with `claudes`.
+- Más costo y latencia por turno en la sesión principal que en medio.
+- Las imágenes se fuerzan en toda terminal, no solo en tmux. Una terminal sin kitty graphics protocol (por
+  ejemplo la de VS Code) imprimiría basura: si pasa, se saca la variable y se define por lanzamiento.

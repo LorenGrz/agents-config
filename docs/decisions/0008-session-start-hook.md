@@ -1,26 +1,25 @@
-# 0008 — SessionStart hook for routing and codebase-map refresh
+# 0008 — Hook SessionStart para el ruteo y el mapa del código
 
-## Context
+Estado: aceptado (2026-10-23).
 
-Prose rules in `CLAUDE.md` lose to harness defaults (such as "don't spawn subagents unless
-asked") and get diluted in long sessions, so the routing rule from ADR 0006 was often
-ignored. Large repos also get explored from scratch each session when `.agents/CONTEXT.md`
-is missing or out of date.
+## Contexto
 
-## Decision
+Las reglas en prosa de `CLAUDE.md` pierden contra los defaults del harness (como "don't spawn subagents unless
+asked") y se diluyen en sesiones largas, así que el ruteo de ADR 0006 se ignoraba seguido. Además los repos
+grandes se exploran de cero si `.agents/CONTEXT.md` falta o está desactualizado.
 
-Add a `SessionStart` hook, `config/hooks/session-start.sh`, that:
+## Decisión
 
-- re-injects the agent-routing rule as `additionalContext` at every session start;
-- in git repos with at least 200 tracked files (`AGENTS_MAP_MIN_FILES`), nudges to run the
-  `repository-context-maintainer` skill when `.agents/CONTEXT.md` is missing, or when it is
-  at least 30 commits behind HEAD (`AGENTS_MAP_STALE_COMMITS`); otherwise it says to read it.
+- Un hook `SessionStart`, `config/hooks/session-start.sh` (registrado en `config/settings.base.json` y
+  `hooks/hooks.json`), que:
+  - reinyecta la regla de ruteo de agentes como `additionalContext` en cada inicio de sesión;
+  - en repos git con al menos 200 archivos versionados (`AGENTS_MAP_MIN_FILES`), sugiere correr la skill
+    `repository-context-maintainer` cuando `.agents/CONTEXT.md` falta o está 30 commits o más detrás de HEAD
+    (`AGENTS_MAP_STALE_COMMITS`); si no, dice que se lea.
+- Es un sustituto barato de graphify: sin grafo de dependencias ni de llamadas, solo el mapa en prosa que
+  mantiene la skill.
 
-This is a cheap substitute for graphify: no dependency or call graph, only the prose map
-maintained by the skill. It is wired in `config/settings.base.json` and `hooks/hooks.json`.
+## Consecuencias
 
-## Consequences
-
-- About 60 tokens of context per session.
-- Thresholds are tunable through environment variables.
-- Still guidance, not enforcement: the model can ignore it.
+- Unos 60 tokens de contexto por sesión; umbrales ajustables por variables de entorno.
+- Sigue siendo guía, no imposición: el modelo lo puede ignorar.

@@ -1,46 +1,33 @@
-# 0003 — Model routing by task complexity, not by habit
+# 0003 — Ruteo de modelos por complejidad de la tarea, no por costumbre
 
-> Partly superseded by [0009](0009-opusplan-and-critical-reasoning-hook.md) and then [0018](0018-opus-medium-default-reasoner-high.md): the main session runs on Opus at medium effort; deep decisions go to `reasoner` (effort high).
+Estado: aceptado (2026-10-10). Reemplazado en parte por [0009](0009-opusplan-and-critical-reasoning-hook.md) y
+luego [0018](0018-opus-medium-default-reasoner-high.md): la sesión principal corre en Opus con esfuerzo medio
+y las decisiones profundas van a `reasoner` (esfuerzo alto). [0006](0006-always-delegate.md) acota la regla de
+«≤3 archivos conocidos inline»: vale solo para archivos conocidos; las búsquedas abiertas van a `scout`.
 
-> The "≤3 known files inline" rule below is narrowed by [0006](0006-always-delegate.md): it applies to known files only; open lookups go to `scout`.
+## Contexto
 
-## Context
+Hay tres subagentes con modelo fijo (`scout` = Haiku, `worker` = Sonnet, `reasoner` = Opus,
+`config/agents/*.md`) y superpowers despacha subagentes en `subagent-driven-development`, `executing-plans`,
+`dispatching-parallel-agents` y `requesting-code-review`. Sin regla, todo iba a Opus o todo a Sonnet.
 
-Three model-pinned subagents exist (`scout` = Haiku, `worker` = Sonnet, `reasoner` = Opus,
-`config/agents/*.md`), and superpowers dispatches subagents for implementer, reviewer, and
-search roles during `subagent-driven-development`, `executing-plans`,
-`dispatching-parallel-agents`, and `requesting-code-review`. Without an explicit rule, it is
-easy to default every dispatch to the main session's model (Opus) regardless of what the
-step actually needs, which is slow and token-expensive for mechanical work, or to default
-everything to Sonnet, which under-uses Opus for the decisions that actually benefit from it.
+## Decisión
 
-## Decision
+- Se rutea por lo que hace el paso, no por qué agente es «mejor»:
+  - **Opus** (sesión principal / `reasoner`) solo razona y decide: arquitectura, bugs de causa desconocida,
+    revisión de planes, decisiones difíciles de revertir. No hace escritura de worker.
+  - **Sonnet** (`worker`) escribe todo el código y la documentación de un plan ya decidido.
+  - **Haiku** (`scout`) hace solo búsquedas livianas de lectura.
+- El `subagent_type` de superpowers sigue el mismo reparto: tareas de implementer → `worker`; revisores de
+  spec y de calidad → `worker` para lo rutinario, `reasoner` solo si el cambio es crítico en seguridad o
+  arquitectura; búsquedas de archivos e inventarios → `scout`.
+- Un cambio de ≤3 archivos conocidos se hace inline, sin subagente: sale más barato que su arranque en frío.
+- Queda en la sección "Agent Routing" de `config/CLAUDE.md` (corta, carga en cada sesión), sin duplicarla en
+  `AGENTS.md`, que ya lleva las reglas de orquestación para Codex.
 
-Route by what the step *does*, not by which agent is "better":
+## Consecuencias
 
-- **Opus** (main session / `reasoner`) only reasons and decides: architecture, unknown-cause
-  bugs, plan review, hard-to-reverse calls. It does not do worker-type writing.
-- **Sonnet** (`worker`) writes all code/docs from an already-decided plan.
-- **Haiku** (`scout`) does light read-only lookups only.
-
-Superpowers' `subagent_type` follows the same split: implementer tasks → `worker`;
-spec/code-quality reviewers → `worker` for routine review, `reasoner` only when the change
-is security- or architecture-critical; file searches/inventories → `scout`.
-
-Below that, skip the subagent entirely: a change touching ≤3 known files is cheaper done
-inline than paying a subagent's cold-start cost.
-
-This is recorded in `config/CLAUDE.md`'s "Agent Routing" section (kept short — that file
-loads every session) rather than duplicated in `AGENTS.md`, which already carries the
-Codex-facing orchestration rules.
-
-## Consequences
-
-- Reviewers and other agents can predict which model a given dispatch will use without
-  re-deriving it from scratch each time.
-- Opus time is spent on decisions, not on mechanical writing it would do no better (and
-  slower, more expensively) than Sonnet.
-- If a `worker` dispatch fails its acceptance check twice, or a reviewer's first hypothesis
-  doesn't reproduce, escalate to `reasoner` rather than retrying the same tier — this is the
-  existing escalation rule in `config/CLAUDE.md`'s Agent Routing section and is unchanged by this
-  ADR.
+- Se puede predecir qué modelo usa cada despacho, y Opus se gasta en decisiones, no en escritura mecánica.
+- Si un `worker` falla su check de aceptación dos veces, o la primera hipótesis de un revisor no se reproduce,
+  se escala a `reasoner` en vez de reintentar en el mismo nivel (regla de escalado de "Agent Routing", sin
+  cambios).

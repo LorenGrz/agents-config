@@ -1,32 +1,30 @@
-# 0028 — Drop the caolg integration
+# 0028 — Se quita la integración con caolg
 
-Status: accepted (2026-11-16). Supersedes ADR 0021 and the "CAO mode" part of ADR 0020.
+Estado: aceptado (2026-11-16). Reemplaza ADR 0021 y la parte de «modo CAO» de ADR 0020.
 
-## Context
+## Contexto
 
-caolg (a separate repo wrapping CAO in tmux) was the way to run a leader agent with workers across repos.
-Loren stopped using it and switched to Orca, which runs the same kind of workers but leaves the repositories
-clean. agents-config still carried code that only made sense under caolg: hooks that went quiet when
-`CAO_TERMINAL_ID` was set, a statusline that wrote two cache files for caolg's bar and pane borders, an
-`opencode-cao` baseline target for OpenCode launched by CAO, and an `agent_providers` key in `org.json` that
-only caolg's leader read.
+Loren dejó caolg (otro repo que envuelve CAO en tmux para correr un líder con workers entre repos) y pasó a
+Orca, que corre el mismo tipo de workers pero deja los repos limpios. agents-config todavía cargaba código que
+solo servía bajo caolg, como la clave `agent_providers` de `org.json`.
 
-## Decision
+## Decisión
 
-- `session-start.sh`, `critical-reasoning.sh` and `intent-router.sh` no longer check `CAO_TERMINAL_ID`; they
-  behave the same in every session. The rest of ADR 0020 (context budget, once-per-session reasoner reminder,
-  task-notification heuristic) stays.
-- `statusline.sh` only draws the line. It no longer writes `~/.cache/claude/rate-limits.json` or
-  `~/.cache/claude/ctx/<id>.json`; nothing else read them.
-- `gen-cli-baselines.sh` drops the `opencode-cao` target (`~/.aws/opencode`).
-- `agent_providers` is removed from the org template and the organizations README.
-- Mentions of caolg in `config/CLAUDE.md`, the profile and `.agents/CONTEXT.md` are removed. Orca is not named
-  in their place: how agents-config should route work to Orca is a separate decision.
-- Older ADRs and plans keep their text as history; only their status line points here.
+- `session-start.sh`, `critical-reasoning.sh` e `intent-router.sh` ya no miran `CAO_TERMINAL_ID`: se comportan
+  igual en toda sesión. El resto de ADR 0020 (presupuesto de contexto, recordatorio de reasoner una vez por
+  sesión, heurística de notificaciones de tareas) sigue.
+- `statusline.sh` solo dibuja la línea. Ya no escribe `~/.cache/claude/rate-limits.json` ni
+  `~/.cache/claude/ctx/<id>.json`; nada más los leía.
+- `gen-cli-baselines.sh` saca el target `opencode-cao` (`~/.aws/opencode`).
+- `agent_providers` sale del template de org y del README de organizaciones.
+- Se sacan las menciones a caolg de `config/CLAUDE.md`, el perfil y `.agents/CONTEXT.md`. Orca no se nombra en
+  su lugar: cómo rutear trabajo a Orca es otra decisión.
+- Los ADRs y planes viejos conservan su texto como historia; solo su línea de estado apunta acá.
 
-## Consequences
+## Consecuencias
 
-- A Claude session inside a CAO pane, if CAO is ever used again, gets the full routing and reminders like any
-  other session.
-- `CLAUDE_CODE_FORCE_TERMINAL_IMAGES=1` (ADR 0024) stays: it helps any session inside tmux, not only caolg.
-- The tests for the CAO cases in `test-intents.sh`, `test-packs.sh` and `test-cli-baselines.sh` are gone.
+- Una sesión de Claude dentro de un panel de CAO, si se vuelve a usar CAO, recibe el ruteo y los recordatorios
+  completos como cualquier otra.
+- `CLAUDE_CODE_FORCE_TERMINAL_IMAGES=1` (ADR 0024) sigue: sirve a cualquier sesión dentro de tmux, no solo a
+  caolg.
+- Los tests de los casos de CAO en `test-intents.sh`, `test-packs.sh` y `test-cli-baselines.sh` se eliminan.
