@@ -7,7 +7,6 @@ Claude lee cuando hace falta, para aplicar patrones de mínimo privilegio y bajo
 
 | Skill | Cuándo cargarla |
 |-------|-------------|
-| [`serverless-scanner`](./serverless-scanner/SKILL.md) | Analizar productos existentes para encontrar migraciones a serverless con buen retorno |
 | [`sam-deploy`](./sam-deploy/SKILL.md) | Construir y deployar stacks con AWS SAM CLI: `samconfig.toml`, pipeline de build/deploy, response streaming, errores comunes |
 | [`lambda-patterns`](./lambda-patterns/SKILL.md) | Escribir handlers de Lambda: arm64, memoria, cold starts, ESM, Python, logs de CloudWatch, manejo de errores |
 | [`iam-least-privilege`](./iam-least-privilege/SKILL.md) | Crear usuarios, roles y políticas de IAM: usuario de deploy, roles de ejecución, plantillas de políticas, scripts de setup |

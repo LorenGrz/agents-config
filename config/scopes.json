@@ -21,7 +21,7 @@
       "rules": ["react"]
     },
     "aws": {
-      "skills": ["sam-deploy", "lambda-patterns", "iam-least-privilege", "cost-optimizer", "serverless-scanner"],
+      "skills": ["sam-deploy", "lambda-patterns", "iam-least-privilege", "cost-optimizer"],
       "rules": []
     },
     "python": { "skills": [], "rules": ["python"] },
