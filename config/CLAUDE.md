@@ -45,16 +45,16 @@ Pick the agent by role; each role's model is in your profile ("Model routing").
   session reviews the diff and the checks it reports, then commits.
 - **Review** (the profile's reviewer): load `review-handoff` for the brief and the findings loop. Its
   fallback may review in any lane, `reasoner` included.
-- Transport by harness: Claude Code runs `worker` with `run_in_background` and the reviewer through
-  `gemini-delegate`; T3 Code uses `delegate_task` for both (`isolation: "worktree"` for workers); Orca
-  uses Orca workers (`orchestration`). A brief always carries what the `worker` definition says.
+- Transport. Repo lead (the profile's lead model): T3 Code `delegate_task` into that repo's project, Orca
+  a worker in that repo, Claude Code a subagent briefed with the repo path. `worker`: `run_in_background`,
+  `delegate_task` or an Orca worker (`orchestration`).
 - Superpowers subagents: implementer, routine reviewer -> `worker`; security/architecture reviewer ->
   `reasoner`; search -> `scout`.
 - **Bulk (external)** (`gemini-delegate`, `agy`): mechanical writing or wide reading when that quota is
   cheaper; review the diff, run the acceptance command (ADR 0010).
 - A plan recommends the subagents (which, why) and asks. While executing an approved plan, delegating per
   these rules is a standing instruction (it overrides the default "don't spawn agents unless asked").
-- Independent subtasks: one message, in parallel. Parallel `worker`s on one repo get a worktree each
-  (`isolation: "worktree"`) unless their files are disjoint.
+- Independent subtasks: one message, in parallel. A lead's `worker`s share the repo's task worktree on
+  disjoint files; overlapping work gets a worktree each (`isolation: "worktree"`).
 
 Prefer `/clear` between unrelated tasks over `/compact`.
