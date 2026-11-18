@@ -44,7 +44,7 @@ Pick the agent by role; each role's model is in your profile ("Model routing").
   it (the main session or a repo lead) reviews its diff and reported checks, then commits.
 - **Review** (the profile's reviewer): load `review-handoff` for the brief, the transport and the findings
   loop. Its fallback may review in any lane, `reasoner` included.
-- Transport. Repo lead: T3 Code `delegate_task` into that repo's project, Orca a
+- Transport. Repo lead: T3 Code `t3_thread_launch` in that repo's project, Orca a
   worker in that repo, Claude Code a subagent given the repo path. `worker`: `run_in_background`,
   `delegate_task` or an Orca worker (`orchestration`). Every brief says to read the repo's
   `AGENTS.md`/`CLAUDE.md` and `.claude/skills` first; a worker's also carries its definition: no commit or push.

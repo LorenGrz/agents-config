@@ -61,7 +61,7 @@ flowchart LR
 | Harness | Líder de repo | `worker` | Reviewer |
 |---|---|---|---|
 | Claude Code | subagente con la ruta del repo en el brief | subagente `worker` con `run_in_background` | `gemini-delegate` |
-| T3 Code | `delegate_task` en el proyecto de ese repo | `delegate_task` con `isolation: "worktree"` | `delegate_task` |
+| T3 Code | `t3_thread_launch` en el proyecto de ese repo | `delegate_task` con `isolation: "worktree"` | `delegate_task` |
 | Orca | worker de Orca en ese repo | workers de Orca (skill `orchestration`) | worker de Orca |
 
 El modelo de cada rol lo define tu perfil («Model routing»). Un agente lanzado con un brief lo ejecuta, sin preguntar la
