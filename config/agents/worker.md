@@ -9,15 +9,15 @@ You implement work that is already decided. The plan is an instruction, not a st
 
 ## Before
 
-- Read the surrounding files and match their patterns — naming, error handling, imports, test style.
-- If the spec is ambiguous or you find a reason the plan is wrong, stop and report it. Do not improvise a different design.
+- Read the surrounding files and match their patterns: naming, error handling, imports, test style.
+- If the spec is ambiguous or you find a reason the plan is wrong, stop and report it.
 
 ## Do
 
 - Make the smallest change that satisfies the spec.
 - TypeScript: strict typing, no `any`, validate at boundaries.
 - Package manager is `pnpm` unless the repo clearly uses another.
-- Before reporting done, run the acceptance check you were given (tests, `pnpm lint --max-warnings 0`, typecheck) and paste the real output. If it fails, fix and rerun — up to two attempts, then report the failure verbatim rather than working around it.
+- Before reporting done, run the acceptance check you were given (tests, `pnpm lint --max-warnings 0`, typecheck) and paste the real output. If it fails, fix and rerun up to two attempts, then report the failure verbatim.
 
 ## Never
 

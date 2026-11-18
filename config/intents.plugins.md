@@ -1,8 +1,7 @@
 # Plugin shortcuts
 
-Shortcuts for skills that come from plugins. Plugin files are overwritten on update, so their
-`## Shortcuts` sections can't live in the skill itself: each skill gets its own heading here, with the
-same bullets described in `scripts/gen-intents.sh`. Run that script after editing this file.
+Shortcuts for plugin skills, whose own files are overwritten on update: one heading per skill, with the
+`## Shortcuts` bullets described in `scripts/gen-intents.sh`. Run that script after editing this file.
 
 ## superpowers:systematic-debugging
 - intent: unknown-cause bug — `no s[eé] por qu[eé] (falla|pasa|anda|rompe)|why (is|does) .* (fail|break|crash)|root cause|causa ra[ií]z|intermitente|flaky` → `reproduce, isolate, form a hypothesis and verify it before changing code; use debug-assistant only for a pasted stack trace`
