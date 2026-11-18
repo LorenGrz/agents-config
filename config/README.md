@@ -22,7 +22,8 @@ en `~/.claude/` y `~/.codex/`, combinados con tu perfil (`<repo>` es donde clona
 
 `install.sh` además mergea `settings.base.json` en `~/.claude/settings.json` (siempre con backup antes):
 
-- `hooks`, `statusLine`, `model` y `theme`: gana la base.
+- `hooks`, `statusLine`, `model`, `effortLevel` y `theme`: gana la base. `modelSettings`: merge profundo, la base
+  gana en las claves que define.
 - `permissions.defaultMode`: gana la base cuando la define.
 - `enabledPlugins`, `extraKnownMarketplaces`, `env` y `pluginConfigs`: unión; la base gana solo en claves
   en conflicto y lo que agregaste vos se queda. Con PonyTail activo crea una vez `~/.claude/.ponytail-band`
