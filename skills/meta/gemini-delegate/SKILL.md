@@ -1,6 +1,6 @@
 ---
 name: gemini-delegate
-description: Use when the user asks to use Gemini / Google / Antigravity (`agy`), to save Anthropic tokens, or when a task is large mechanical writing (boilerplate, bulk tests, an already-decided refactor) or reading a lot of context. Delegates the work to Gemini headless (`run`) or opens an interactive `agy` session (`open`).
+description: Use only when the user asks to use Gemini / Google / Antigravity (`agy`) for a task - delegates the work to Gemini headless (`run`) or opens an interactive `agy` session (`open`). Never start it on your own, it spends the Gemini quota.
 ---
 
 # gemini-delegate
@@ -11,8 +11,8 @@ Send a task to Gemini through the Antigravity CLI so bulk reading/generation run
 
 ## When to use
 
-- Large mechanical writing from an already-decided plan, bulk tests/boilerplate, wide read-and-summarize passes.
-- The user explicitly asks for Gemini / Google / Antigravity.
+- Only when the user explicitly asks for Gemini / Google / Antigravity. Large mechanical writing or wide
+  reading is not a reason by itself: suggest it in one line and let the user decide.
 
 ### When not to
 
