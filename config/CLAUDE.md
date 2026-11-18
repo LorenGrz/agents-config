@@ -40,7 +40,7 @@ Pick the agent by role; each role's model is in your profile ("Model routing").
 - **Decide** (`reasoner`, or plan mode): architecture, unknown-cause bugs, plan review, hard-to-reverse
   calls. Never bulk writing. A decision costly to get wrong never goes to `worker` or `scout`.
 - **Implement** (`worker`): code, docs, tests, given the exact files, the decided change and an acceptance
-  command; default for every non-trivial repo change, inside or outside a plan (ADR 0029). Whoever started
+  command; default for every non-trivial repo change (ADR 0029), except Plan S, where it is used when needed. Whoever started
   it (the main session or a lead) reviews its diff and reported checks, then commits.
 - **Review** (`reviewer`): load `review-handoff` for the brief, the transport and the findings loop. It
   runs in any lane.

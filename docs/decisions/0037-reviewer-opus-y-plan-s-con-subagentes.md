@@ -15,7 +15,9 @@ resolvió que el Plan S pueda lanzar subagentes cuando el trabajo los pida.
 - El reviewer por defecto es un agente aparte del que escribió el código: el subagente `reviewer`
   (`config/agents/reviewer.md`, Opus en esfuerzo alto, sin herramientas de edición). Sigue revisando antes
   de cada PR y antes del merge de un Plan L, con una sola re-revisión, y corre en cualquier lane. No se usa
-  `reasoner` para esto: su definición devuelve un plan y puede editar.
+  `reasoner` para esto: su definición devuelve un plan y puede editar. Esto revierte un descarte de 0033
+  (un subagente `reviewer.md`, «solo existe en Claude Code»): con el reviewer en Opus, T3 Code y Orca lo
+  alcanzan con `delegate_task` o un worker de Orca.
 - Un líder puede lanzar a su reviewer. Un agente que no puede lanzar ninguno lo dice antes del PR, en vez de
   saltearse la revisión.
 - Un modelo de otro proveedor (Gemini por `agy`, Codex por `codex-review`) revisa solo cuando el usuario lo

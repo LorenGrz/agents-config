@@ -55,7 +55,7 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   code. Work that spans repos (backend, frontend) gets one lead per repo: a session opened in that repo, in
   the one worktree of its task branch, so that repo's `AGENTS.md`, skills and restrictions apply. When the
   repos sit in a workspace folder that holds their skills, the lead opens in that folder and may send a
-  lead to each child repo. A lead implements with the repo's skills, may start `worker` and `scout` agents
+  lead to each child repo. A lead implements with the repo's skills, may start `worker`, `scout` and reviewer agents
   there, commits on the task branch and gets its diff reviewed before handing it back; it never pushes or
   opens the PR. In a single repo the main session is the lead.
 - **A reviewer checks the work before every PR is opened**, and before the merge that closes a Plan L when

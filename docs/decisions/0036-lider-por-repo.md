@@ -1,6 +1,7 @@
 # 0036 — Un líder por repo cuando el trabajo cruza repos
 
-Estado: aceptado (2026-11-18). Ajusta 0033 en el reparto del Plan L.
+Estado: aceptado (2026-11-18). Ajusta 0033 en el reparto del Plan L. Ajustado por 0037: el líder también lanza a su
+reviewer.
 
 ## Contexto
 
@@ -19,7 +20,7 @@ donde trabaja, y Loren pidió el 2026-11-18 que cada repo se trabaje con las suy
 - El modelo del líder sale del perfil. Para Loren, un líder es un reasoner: una sesión de Opus en esfuerzo
   alto que consulta al advisor, igual que la sesión principal. No es el subagente `reasoner`, que solo
   devuelve una decisión o un plan.
-- El líder implementa con las skills del repo, puede lanzar `worker` y `scout` ahí, commitea en la rama de
+- El líder implementa con las skills del repo, puede lanzar `worker`, `scout` y su reviewer ahí, commitea en la rama de
   la tarea y hace revisar su diff (`review-handoff`, con la skill de review del repo) antes de devolver el
   trabajo. Nunca pushea ni abre el PR.
 - Solo un líder lanza agentes propios: `worker`, `scout` y su reviewer, y el de un workspace, además, los
