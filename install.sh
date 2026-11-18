@@ -9,7 +9,11 @@
 #   skipped when the hub itself was cloned to ~/.agents/skills.
 # - Runs sync.sh to (re)build the flat ~/.claude/skills mirror.
 # - Merges config/settings.base.json into ~/.claude/settings.json (jq):
-#     * hooks / statusLine / model / theme: base wins (full overwrite).
+#     * statusLine / model / effortLevel: base wins (full overwrite); modelSettings: deep
+#       merge, base wins on the keys it defines.
+#     * hooks: base entries + the existing commands that run no hub hook (other tools',
+#       e.g. Orca's) kept after them; existing hub commands are replaced (ADR 0038).
+#     * theme: the base's only when the file has none (ADR 0038).
 #     * permissions.defaultMode: base wins when base sets it.
 #     * enabledPlugins / extraKnownMarketplaces: union of existing + base; base
 #       wins only on conflicting keys, user-added entries survive.
@@ -365,19 +369,31 @@ if [ ! -f "$SETTINGS" ]; then
     cp "$BASE" "$SETTINGS"
   fi
 else
+  # hooks (ADR 0038): a command is the hub's when it runs a script in the installed hooks folder, i.e. it has
+  # `~/.claude/hooks/<name>` (also spelled `$HOME/` or `${HOME}/`) at its start or after a space, the way
+  # settings.base.json writes them. Hub commands of the existing file are dropped and the base's entries are
+  # written; every other command (Orca's `~/.orca/agent-hooks/claude-hook.sh`, any other tool's) is kept,
+  # after the base entries of its event and in its order. An entry that mixed both keeps its foreign commands;
+  # an event stays only while it has an entry.
   MERGED="$(jq -s '
+    def hub: type == "object" and ((.command // "") | if type == "string" then test("(^|\\s)(~|\\$HOME|\\$\\{HOME\\})/\\.claude/hooks/[^/\\s]+") else false end);
+    def foreign_part: if type == "object" and (.hooks | type) == "array" and any(.hooks[]; hub)
+      then (.hooks |= map(select(hub | not))) | select(.hooks | length > 0) else . end;
     .[0] as $cur | .[1] as $base
+    | ($base.hooks // {}) as $bh | ($cur.hooks // {}) as $ch
     | $cur
     | .model = $base.model
     | .effortLevel = $base.effortLevel
     | .modelSettings = ((.modelSettings // {}) * ($base.modelSettings // {}))
-    | .hooks = $base.hooks
+    | .hooks = (reduce (($bh | keys_unsorted[]), ($ch | keys_unsorted[])) as $e ({};
+        if has($e) then . else .[$e] = (($bh[$e] // []) + [($ch[$e] | if type == "array" then .[] else empty end) | foreign_part]) end)
+        | with_entries(select(.value | length > 0)))
     | .statusLine = $base.statusLine
     | .enabledPlugins = (($cur.enabledPlugins // {}) + ($base.enabledPlugins // {}))
     | .extraKnownMarketplaces = (($cur.extraKnownMarketplaces // {}) + ($base.extraKnownMarketplaces // {}))
     | (if $base.env then .env = (($cur.env // {}) + $base.env) else . end)
     | (if $base.pluginConfigs then .pluginConfigs = (($cur.pluginConfigs // {}) * $base.pluginConfigs) else . end)
-    | .theme = $base.theme
+    | (if .theme == null and $base.theme != null then .theme = $base.theme else . end)
     | (if $base.permissions.defaultMode then .permissions.defaultMode = $base.permissions.defaultMode else . end)
     | .permissions.allow = ((($cur.permissions.allow // []) + ($base.permissions.allow // [])) | unique)
     | .permissions.ask   = ((($cur.permissions.ask   // []) + ($base.permissions.ask   // [])) | unique)
