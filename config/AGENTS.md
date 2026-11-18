@@ -36,11 +36,15 @@ your profile (`config/profiles/<your-name>.md`, imported alongside this file) �
 - **More than one file, or unclear scope** (unknown-cause bugs too): before editing, ask one question with
   exactly three options, always in this order: **Continuar** (direct, no plan) · **Plan S** (short plan:
   files, change, check; executed inline, no brainstorming, no spec docs, no subagents) · **Plan L** (design,
-  spec and plan in `docs/superpowers/`, then delegated to subagents or workers). Mark the recommended one
-  with "(Recomendado)" and one line of why, without moving it: Continuar stays first.
-- **Every plan (S or L) starts with a grilling interview:** before designing anything, interview the user
-  one question at a time (the `mattpocock-skills:grilling` skill where available) until nothing is left to
-  assume. Plan L's design step does not re-ask what was answered.
+  spec and plan in `docs/superpowers/`, then delegated to subagents or workers). Keep the option
+  descriptions minimal: «directo», «plan corto», «plan complejo». Mark the recommended one with
+  "(Recomendado)" and one short line of why, without moving it: Continuar stays first.
+- **Plan S has no interview:** investigate, then ask only the key decisions that are critical and can't be
+  deduced, in one batch. No rounds.
+- **Plan L starts with a grilling interview:** before designing anything, interview the user one question
+  at a time (the `mattpocock-skills:grilling` skill where available) until nothing is left to assume. Its
+  design step does not re-ask what was answered, and its work goes to subagents or workers, each one in
+  the worktree of the branch it touches.
 - **Every plan (S or L) is shown in the terminal with a table:** who does what, whether it runs in
   parallel, files, and how it is verified. Parallel or visual work adds an ASCII diagram of the order. It
   goes in the message, not only in the plan file.
