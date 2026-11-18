@@ -42,7 +42,7 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 - **Punctual change** (one file, clear intent): do it directly. No question, no plan.
 - **More than one file, or unclear scope** (unknown-cause bugs too): before editing, ask one question with
   exactly three options, always in this order: **Continuar** (direct, no plan) · **Plan S** (short plan:
-  files, change, check; executed inline, no brainstorming, no spec docs, no subagents) · **Plan L** (design,
+  files, change, check; no brainstorming, no spec docs, subagents only when the work needs them) · **Plan L** (design,
   spec and plan in `docs/superpowers/`, then delegated to subagents or workers). Option descriptions stay
   minimal: «directo», «plan corto», «plan complejo». Mark the recommended one with "(Recomendado)" and one
   short line of why, without moving it: Continuar stays first.
@@ -55,17 +55,18 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   code. Work that spans repos (backend, frontend) gets one lead per repo: a session opened in that repo, in
   the one worktree of its task branch, so that repo's `AGENTS.md`, skills and restrictions apply. When the
   repos sit in a workspace folder that holds their skills, the lead opens in that folder and may send a
-  lead to each child repo. A lead implements with the repo's skills, may start `worker` and `scout` agents
+  lead to each child repo. A lead implements with the repo's skills, may start `worker`, `scout` and reviewer agents
   there, commits on the task branch and gets its diff reviewed before handing it back; it never pushes or
   opens the PR. In a single repo the main session is the lead.
 - **A reviewer checks the work before every PR is opened**, and before the merge that closes a Plan L when
-  there is no PR: a model from another provider (named in the profile) reviews the diff against the
+  there is no PR: a separate reviewer agent (the profile names its model) reviews the diff against the
   original request with the repo's review skill and runs the checks, without editing. Whoever asked for
   the review fixes small findings, sends large ones to a worker and asks for one re-review; what is still
-  open goes to the user. No reviewer available: the profile's fallback reviews, and the user is told in one line.
+  open goes to the user. Another provider's model reviews only when the user asks for it. An agent that
+  cannot start a reviewer says so before the PR instead of skipping the review.
 - **An agent started from a brief** (lead, worker, scout, reviewer) executes it without the lane
-  question. Only a lead may start agents of its own: `worker` and `scout`, and a workspace lead also the
-  leads of its child repos.
+  question. Only a lead may start agents of its own: `worker`, `scout` and its reviewer, and a workspace
+  lead also the leads of its child repos.
 - **Every plan (S or L) is shown in the terminal message, not only in the plan file, with a table:** who
   does what, whether it runs in parallel, files, and how it is verified. Parallel or visual work adds an
   ASCII diagram of the order.
@@ -74,6 +75,7 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 - **Repo work goes to a background worker by default** (where the agent has subagents): every non-trivial
   change runs in a worker on the task branch, in its own worktree or in its lead's; whoever started it
   reviews the diff and commits. Trivial changes (one line, or one file with no checks) are done directly.
+  In Plan S the main session executes and starts one only when the work needs it.
 
 ## Organizations (work repos)
 

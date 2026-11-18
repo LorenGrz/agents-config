@@ -47,7 +47,7 @@ clon espejo personal, lo sincronizás vos (el repo no lo sigue).
 | `profiles/` | Contenido personal, un archivo por persona (`_template.md` para empezar) | `install.sh`, que importa el perfil activo |
 | `rules/` | Reglas por ruta (ver «rules/») | Claude Code, por archivo, cuando la ruta coincide |
 | `hooks/` | Scripts de hooks (ver «hooks/») y la statusline | Claude Code, por `settings.json` |
-| `agents/` | `scout.md`, `worker.md`, `reasoner.md`: los subagentes con modelo fijo | Claude Code (`~/.claude/agents`) y el plugin |
+| `agents/` | `scout.md`, `worker.md`, `reasoner.md`, `reviewer.md`: los subagentes con modelo fijo | Claude Code (`~/.claude/agents`) y el plugin |
 | `settings.base.json` | Base sin secretos que se mergea en `~/.claude/settings.json`: permisos, modelo, hooks, `statusLine`, `enabledPlugins`, `extraKnownMarketplaces`, `env`, tema. Sin bloque `autoMode` de la máquina | `install.sh` |
 | `keybindings.json` | Alt+P plan, Alt+M selector de modelo, Ctrl+Alt+G vista de agentes de Orca | Claude Code (symlink) |
 | `scopes.json` | Qué skills, reglas, MCP y plugins son de cada stack; lo que no figura es global (ADR 0011) | `install.sh`, `sync.sh`, `scripts/project-agents.sh` |
@@ -73,7 +73,7 @@ caches.
 | Skills | Solo la `description`, hasta que la tarea coincide y el modelo la invoca | `~/.claude/skills/<name>/SKILL.md` |
 | Reglas | Solo cuando un archivo tocado coincide con su `paths:` | `config/rules/*.md` |
 | Hooks | Los ejecuta el harness en un evento; el modelo no los lee | `config/hooks/*.sh`, registrados en `~/.claude/settings.json` |
-| Subagentes (`scout`, `worker`, `reasoner`) | Cuando se los lanza, cada uno con su modelo | `config/agents/*.md` |
+| Subagentes (`scout`, `worker`, `reasoner`, `reviewer`) | Cuando se los lanza, cada uno con su modelo | `config/agents/*.md` |
 | Auto-memory | La carga el harness al iniciar, fuera de este repo | `~/.claude/projects/.../memory/` |
 
 ### rules/
