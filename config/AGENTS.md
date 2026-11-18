@@ -42,7 +42,7 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 - **Punctual change** (one file, clear intent): do it directly. No question, no plan.
 - **More than one file, or unclear scope** (unknown-cause bugs too): before editing, ask one question with
   exactly three options, always in this order: **Continuar** (direct, no plan) · **Plan S** (short plan:
-  files, change, check; executed inline, no brainstorming, no spec docs, no subagents) · **Plan L** (design,
+  files, change, check; no brainstorming, no spec docs, subagents only when the work needs them) · **Plan L** (design,
   spec and plan in `docs/superpowers/`, then delegated to subagents or workers). Option descriptions stay
   minimal: «directo», «plan corto», «plan complejo». Mark the recommended one with "(Recomendado)" and one
   short line of why, without moving it: Continuar stays first.
@@ -59,10 +59,10 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   there, commits on the task branch and gets its diff reviewed before handing it back; it never pushes or
   opens the PR. In a single repo the main session is the lead.
 - **A reviewer checks the work before every PR is opened**, and before the merge that closes a Plan L when
-  there is no PR: a model from another provider (named in the profile) reviews the diff against the
+  there is no PR: a separate reviewer agent (the profile names its model) reviews the diff against the
   original request with the repo's review skill and runs the checks, without editing. Whoever asked for
   the review fixes small findings, sends large ones to a worker and asks for one re-review; what is still
-  open goes to the user. No reviewer available: the profile's fallback reviews, and the user is told in one line.
+  open goes to the user. Another provider's model reviews only when the user asks for it.
 - **An agent started from a brief** (lead, worker, scout, reviewer) executes it without the lane
   question. Only a lead may start agents of its own: `worker` and `scout`, and a workspace lead also the
   leads of its child repos.
