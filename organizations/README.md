@@ -1,39 +1,46 @@
-# Organizations
+# Organizaciones
 
-Each organization (employer, client) is **its own private git repo** cloned into `organizations/<name>/`. This public repo never tracks them (`.gitignore`), never stores their URL, and `scripts/leak-guard.sh` fails if one gets tracked. Manage them with `scripts/orgs.sh`.
+Cada organización (empleador, cliente) es **su propio repo git privado**, clonado en
+`organizations/<name>/`. Este repo público nunca lo versiona (`.gitignore`), nunca guarda su URL, y
+`scripts/leak-guard.sh` falla si se versiona uno. Se administran con `scripts/orgs.sh`.
 
-An org adds its policies, skills, commands and interview questions on top of the base. The working rules every org repo inherits (branch per task from the remote base, never commit on `main`/`dev`, ask before push/PR, approve tracker text, suggest issues) live in `config/AGENTS.md` § Organizations. It may override conventions (base branch, PR format, language, tracker, design system) but never `config/baseline.md`; when it replaces a base practice, the project records an ADR.
+Una organización suma sus políticas, skills, comandos y preguntas de entrevista sobre la base. Las reglas de
+trabajo que hereda todo repo de una org (rama por tarea desde la base remota, nunca commitear en
+`main`/`dev`, preguntar antes de push o PR, aprobar el texto del tracker, sugerir issues) están resumidas en
+`config/AGENTS.md`, sección «Organizations», y completas en la skill `github-usage`. Puede cambiar convenciones (rama base, formato de PR, idioma,
+tracker, design system), nunca `config/baseline.md`; cuando reemplaza una práctica base, el proyecto lo
+registra en un ADR.
 
-## Contract
+## Contrato
 
 ```
 organizations/<name>/
-  org.json          required
-  POLICIES.md       required: a summary of 15 lines or fewer first, then one section per topic
+  org.json          obligatorio
+  POLICIES.md       obligatorio: primero un resumen de 15 líneas o menos, después una sección por tema
   skills/<name>/SKILL.md
   commands/<name>.md
-  interview.md      extra questions for project-init (optional)
-  scripts/          helper scripts the org's skills and commands call (optional, not copied into projects)
-  workspaces/<slug>/  multi-repo workspace configs, written by project-init's workspace.sh (optional)
+  interview.md      preguntas extra para project-init (opcional)
+  scripts/          scripts que usan las skills y comandos de la org (opcional, no se copian a los proyectos)
+  workspaces/<slug>/  config de workspaces multi-repo, la escribe workspace.sh de project-init (opcional)
 ```
 
-An org repo can also be **self-sufficient**, so a teammate can use it without this hub. It then adds:
+Un repo de org también puede ser **autosuficiente**, para que alguien del equipo lo use sin este hub. En ese
+caso suma:
 
 ```
-  .claude-plugin/   plugin.json + marketplace.json: install it as a Claude Code plugin
-  hooks/            hooks.json + scripts: a SessionStart hook that shows the POLICIES.md summary
-  install.sh        installs skills, commands and POLICIES.md into ~/.claude, or into a project with
-                    --project <path>; keeps a manifest, supports --dry-run and --uninstall; refuses
-                    a project that already runs agents-config
-  AGENTS.md         map of the org repo for any agent
-  README.md         the two ways to install it
+  .claude-plugin/   plugin.json + marketplace.json: se instala como plugin de Claude Code
+  hooks/            hooks.json + scripts: un hook SessionStart que muestra el resumen de POLICIES.md
+  install.sh        instala skills, comandos y POLICIES.md en ~/.claude, o en un proyecto con
+                    --project <path>; guarda un manifiesto, soporta --dry-run y --uninstall; se niega
+                    a instalar en un proyecto que ya usa agents-config
+  AGENTS.md         mapa del repo de la org para cualquier agente
+  README.md         las dos formas de instalarlo
 ```
 
-The hub reads only `org.json`, `POLICIES.md`, `skills/`, `commands/` (or, with `products`, those of each
-`<product>/` folder), `interview.md` and `workspaces/`; the
-self-sufficient files are ignored by `orgs.sh` and `project-agents.sh`. `project-agents.sh` refuses an org
-directory that contains symlinks, so keep dependencies out of the repo (install them elsewhere, e.g. under
-`~/.cache`).
+El hub lee solo `org.json`, `POLICIES.md`, `skills/`, `commands/` (o, con `products`, los de cada carpeta
+`<product>/`), `interview.md` y `workspaces/`; `orgs.sh` y `project-agents.sh` ignoran los archivos de la
+versión autosuficiente. `project-agents.sh` rechaza un directorio de org que tenga symlinks: las dependencias
+van fuera del repo (por ejemplo, en `~/.cache`).
 
 `org.json`:
 
@@ -63,41 +70,52 @@ directory that contains symlinks, so keep dependencies out of the repo (install 
 }
 ```
 
-| Key | Required | Read by | Meaning |
+| Clave | Obligatoria | La lee | Significado |
 |---|---|---|---|
-| `name` | yes | `orgs.sh`, `project-agents.sh` | Same as the directory name; lowercase letters, digits and `-` |
-| `version` | yes | `orgs.sh status`, `.agents/skills.lock` | The org's own version; projects freeze it |
-| `extends` | no | `orgs.sh status` | Minimum base version, `agents-config>=x.y.z`; status warns when the base is older |
-| `match` | yes | `orgs.sh detect`, `init.sh`, the global index | `gh_owners` (GitHub owners) and `remote_patterns` (regex on the remote URL); at least one entry in total |
-| `defaults` | no | agents (and `intent-router.sh` for `base_branch`) | Org conventions in one place: `base_branch`, `commit_language`, `pr_title_language`, `pr_body_language`, `tracker`, `tracker_project`, and any extra descriptive key (stack summary, tracker projects by repo, ...). Only `base_branch` is read by a script; `POLICIES.md` is the human-readable source for the rest |
-| `blocklist_terms` | no | `orgs.sh` | Words that must never appear in the public repo; merged into the local leak-guard blocklist together with `name` and `match.gh_owners` |
-| `replaces` | no | `orgs.sh validate`, `project-agents.sh` | Flat map `base name -> org name`. A skill is a plain name, a command starts with `/`; a skill can only be replaced by a skill and a command by a command. The target must exist in the org's `skills/` or `commands/`. The base item can be a pack skill, a stack skill or a hub integration skill (`github-usage`, `jira-usage`, ...) |
-| `assets` | no | `project-agents.sh` | Per-file stack filter, keyed `skills/<name>` or `commands/<name>.md`; a file without an entry is installed for every stack |
-| `products` | no | `orgs.sh validate`, `project-agents.sh` | For an org with several product lines: `{"<product>": {"remote_patterns": [regex, ...]}}`. Each product keeps its own `skills/`, `commands/` and a full `POLICIES.md` in `<product>/`; the root `POLICIES.md` stays (the org-wide core the global index points to). `project-agents.sh` takes `--product <name>` or picks the one whose patterns match the project's `origin` (in a workspace folder, its child repos); no single match fails closed. `replaces` targets, `assets` keys and `index`/`critical` rows refer to whichever product is installed |
-| `index` / `critical` | no | `project-agents.sh` | Rows for the project's keyword table and `.agents/critical.json`, merged before the packs' own. A row may carry `"stacks": [...]` |
+| `name` | sí | `orgs.sh`, `project-agents.sh` | Igual al nombre del directorio; minúsculas, dígitos y `-` |
+| `version` | sí | `orgs.sh status`, `.agents/skills.lock` | Versión propia de la org; los proyectos la congelan |
+| `extends` | no | `orgs.sh status` | Versión mínima de la base, `agents-config>=x.y.z`; `status` avisa si la base es más vieja |
+| `match` | sí | `orgs.sh detect`, `init.sh`, el índice global | `gh_owners` (owners de GitHub) y `remote_patterns` (regex sobre la URL del remoto); al menos una entrada en total |
+| `defaults` | no | los agentes (e `intent-router.sh` para `base_branch`) | Convenciones de la org en un solo lugar: `base_branch`, `commit_language`, `pr_title_language`, `pr_body_language`, `tracker`, `tracker_project` y cualquier clave descriptiva extra (resumen del stack, proyectos del tracker por repo, ...). Solo un script lee `base_branch`; para el resto, la fuente legible es `POLICIES.md` |
+| `blocklist_terms` | no | `orgs.sh` | Palabras que nunca pueden aparecer en el repo público; se suman al blocklist local de leak-guard junto con `name` y `match.gh_owners` |
+| `replaces` | no | `orgs.sh validate`, `project-agents.sh` | Mapa plano `nombre base -> nombre de la org`. Una skill es un nombre a secas, un comando empieza con `/`; una skill solo se reemplaza por una skill y un comando por un comando. El destino tiene que existir en `skills/` o `commands/` de la org. Lo reemplazado puede ser una skill de pack, de stack o una skill de integración del hub (`github-usage`, `jira-usage`, ...) |
+| `assets` | no | `project-agents.sh` | Filtro por stack para cada archivo, con clave `skills/<name>` o `commands/<name>.md`; un archivo sin entrada se instala en todos los stacks |
+| `products` | no | `orgs.sh validate`, `project-agents.sh` | Para una org con varias líneas de producto: `{"<product>": {"remote_patterns": [regex, ...]}}`. Cada producto tiene sus `skills/`, `commands/` y un `POLICIES.md` completo en `<product>/`; el `POLICIES.md` de la raíz se queda (el núcleo común al que apunta el índice global). `project-agents.sh` toma `--product <name>` o elige el que coincide con el `origin` del proyecto (en una carpeta workspace, con sus repos hijos); si no coincide exactamente uno, falla cerrado. Los destinos de `replaces`, las claves de `assets` y las filas de `index`/`critical` se refieren al producto instalado |
+| `index` / `critical` | no | `project-agents.sh` | Filas para la tabla de palabras clave del proyecto y para `.agents/critical.json`, mergeadas antes que las de los packs. Una fila puede llevar `"stacks": [...]` |
 
-Notes:
+Notas:
 
-- `pr_title_language` and `pr_body_language` are separate on purpose: an org can ask for English
-  Conventional Commit titles and a Spanish body, or the other way round. They replace the older single
-  `pr_language`.
-- `blocklist_terms` must not keep the template's `acme` placeholder (validation fails).
-- When a replacement applies to a project, `project-agents.sh` removes the replaced skill or command from
-  the project's `.claude/`, rewrites references to it in the skills and commands it installed, and points
-  the index and critical rows at the replacement.
+- `pr_title_language` y `pr_body_language` van separados a propósito: una org puede pedir títulos
+  Conventional Commits en inglés y el cuerpo en español, o al revés. Reemplazan al viejo `pr_language`.
+- `blocklist_terms` no puede conservar el `acme` de la plantilla (la validación falla).
+- Cuando un reemplazo aplica a un proyecto, `project-agents.sh` saca la skill o el comando reemplazado del
+  `.claude/` del proyecto, reescribe las referencias en las skills y comandos que instaló, y apunta las filas
+  de `index` y `critical` al reemplazo.
 
-## Use
+## Uso
 
 ```
-scripts/orgs.sh add <name> <git-url>     clone and register
-scripts/orgs.sh add <name> --init        start a new local org from _template/
-scripts/orgs.sh validate <name|path>     check the contract
-scripts/orgs.sh detect <owner|remote>    which org owns this repo
-scripts/orgs.sh status | pull | push     one repo at a time, push asks first
+scripts/orgs.sh add <name> <git-url>     clona, valida y registra
+scripts/orgs.sh add <name> --init        crea una org local nueva desde _template/
+scripts/orgs.sh validate <name|path>     revisa el contrato
+scripts/orgs.sh detect <owner|remote>    qué org es dueña de este repo
+scripts/orgs.sh list | status | index    lista, estado (versión y extends), regenera organizations/INDEX.md
+scripts/orgs.sh pull                     fast-forward de cada org y la valida
+scripts/orgs.sh push <name> [--yes]      pushea un repo de org, pregunta antes
+scripts/orgs.sh remove <name> [--force]  se niega con cambios sin commitear o sin pushear salvo --force
 ```
 
-project-init asks which org a project belongs to (proposing the detected one), then `project-agents.sh --org <name>` copies the org's skills and commands, merges its index and critical entries, and copies `POLICIES.md` to `.agents/POLICIES.md`. The project freezes the base and org versions in `.agents/skills.lock`; updates are always explicit.
+`install.sh --org <name> <git-url>` hace el mismo `add` e importa el índice `organizations/INDEX.md` en los
+archivos generados.
 
-`orgs.sh validate` runs automatically on `add`, `pull` and before `project-agents.sh --org` installs anything (fail closed). It is advisory: it catches mistakes and obvious phrases that weaken the baseline, it does not make an untrusted org safe. `init.sh` asks before copying an org's `POLICIES.md` into a project whose owner is not one of the org's `gh_owners` (`--allow-org-mismatch` to proceed).
+project-init pregunta a qué org pertenece un proyecto (propone la detectada) y después
+`project-agents.sh --org <name>` copia las skills y comandos de la org, mergea sus filas de índice y críticas,
+y copia `POLICIES.md` a `.agents/POLICIES.md`. El proyecto congela las versiones de la base y de la org en
+`.agents/skills.lock`; las actualizaciones son siempre explícitas.
 
-To create an org for a new client, use the `org-creator` skill.
+`orgs.sh validate` corre solo en `add`, en `pull` y antes de que `project-agents.sh --org` instale algo
+(falla cerrado). Es una ayuda: atrapa errores y frases obvias que debilitan el baseline, no vuelve segura a
+una org en la que no se confía. `init.sh` pregunta antes de copiar el `POLICIES.md` de una org a un proyecto
+cuyo owner no está en sus `gh_owners` (`--allow-org-mismatch` para seguir).
+
+Para crear la org de un cliente nuevo, usar la skill `org-creator`.

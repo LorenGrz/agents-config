@@ -58,7 +58,7 @@ without the user confirming the plan first: `install.sh` touches `~/.claude/` an
 
 If the user only wants skills/agents/hooks (not rules, not the generated `CLAUDE.md`/`AGENTS.md`, not
 `settings.json` merging), point them at `claude plugin marketplace add <this-repo>` instead of
-`install.sh` (`README.md`, Install section). Don't combine the two methods on one machine.
+`install.sh` (`README.md`, "Instalación" section). Don't combine the two methods on one machine.
 
 ## Rules
 
