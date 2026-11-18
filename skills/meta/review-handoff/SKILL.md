@@ -47,7 +47,8 @@ before the PR is opened or the Plan L is merged. It never edits.
    | T3 Code | `delegate_task` with `role: "review"`, `mode: "async"`, and the reviewer's provider, model and options as `target` | Arrives by itself |
    | Orca | An Orca worker of the reviewer's agent through the `orchestration` skill | Its `worker_done` |
 
-5. When it returns, compare status and HEAD with step 2. If the reviewer changed anything, report it;
+5. A result without the findings and check sections asked for is a failed run: send the brief again as a
+   new run; it does not count as the re-review. When it returns, compare status and HEAD with step 2. If the reviewer changed anything, report it;
    discard nothing without the user's OK.
 6. Findings loop: fix small findings yourself, send large ones to a worker, then ask for one re-review as a
    new run with the previous findings attached. Whatever is still open after it goes to the user, and you
