@@ -60,3 +60,8 @@ dependían del hub: sin `agents-config` no había skills de la org para GitHub, 
   ahora nombra `github-usage`.
 - Los repos de org que no dependen del hub pierden la garantía de que estén sus hooks y rules, así que su
   `install.sh` se niega a instalar en un proyecto ya manejado por `agents-config`.
+- Una instalación anterior a este ADR corre `install.sh` una vez, para que `~/.agents/skills` apunte a
+  `<hub>/skills`.
+- El `replaces` de una org para las skills de integración del hub solo quita las copias instaladas en un
+  proyecto. Para las skills globales, `config/hooks/intent-router.sh` traduce la skill sugerida con ese
+  `replaces`.

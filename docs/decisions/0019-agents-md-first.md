@@ -41,3 +41,6 @@ agy, Copilot y OpenCode no recibían nada global, y Codex solo por `~/.codex/AGE
   silencio la lectura nativa de `AGENTS.md` para todo lo de abajo. `workspace.sh` todavía escribe un
   `CLAUDE.md` con `@AGENTS.md`; se revisa aparte.
 - `InstructionsLoaded` no se dispara para un `AGENTS.md` leído así: `log-instructions.sh` ya no lo ve.
+- Verificado: el archivo personal de Copilot y el `AGENTS.md` de proyecto que lee Copilot.
+- Queda pendiente curar qué ve Codex en `~/.agents/skills`: es un symlink al árbol entero de skills, sin el
+  filtro de `config/scopes.json`, y el perfil llama a un script a través de él; necesita su propio cambio.

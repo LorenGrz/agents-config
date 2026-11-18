@@ -29,3 +29,5 @@ no tiene esfuerzo por modo: `effortLevel` y `modelSettings.<model>.effortLevel` 
   nuevo, se agrega su clave a la base o arranca con su propio default.
 - El método marketplace no puede fijar modelo ni esfuerzo: los dos llegan solo por `install.sh`.
 - Si Claude Code suma un esfuerzo por modo, se pasa a él y se reemplaza este ADR.
+- El texto de ruteo (`config/CLAUDE.md`, `session-start.sh`, perfil) ya no dice «Sonnet vía `opusplan`»:
+  `worker` (Sonnet) implementa, y la sesión principal (Opus) delega e informa.

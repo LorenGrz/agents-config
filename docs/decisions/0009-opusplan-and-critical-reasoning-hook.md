@@ -25,3 +25,5 @@ mano no escala.
 - Un hook no puede cambiar el modelo: es un empujón, no una imposición. Si resulta flojo, el paso siguiente es
   un `PreToolUse` más estricto que pregunte antes de ediciones sensibles de la sesión principal.
 - Las listas de palabras y rutas son heurísticas: habrá falsos positivos (baratos) y omisiones.
+- Quien quiera otro modelo lo cambia en `config/settings.base.json` de su clon: en el merge de `install.sh` la
+  base gana para `model`, así que editar `~/.claude/settings.json` se pisa en la siguiente corrida.

@@ -23,3 +23,4 @@ tenía cuota de Google sin usar mientras los tokens de Anthropic pagaban lectura
 
 - Gemini no ve la conversación: la spec tiene que estar completa y la sesión principal revisa el diff y corre
   la aceptación. El modelo (`gemini-3.8-flash-high`) puede cambiar: `GEMINI_DELEGATE_MODEL`.
+- Depende de que `agy` esté instalado y de la cuota y la disponibilidad de Google.

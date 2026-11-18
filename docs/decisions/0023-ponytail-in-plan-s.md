@@ -28,3 +28,4 @@ autodeclarados. Leído el código: tres hooks de Node (SessionStart, SubagentSta
 - Escribir `/ponytail` lo prende por el resto de la sesión; "stop ponytail" lo apaga.
 - Corre código de terceros en cada inicio de sesión y en cada prompt. Actualizar el plugin trae código nuevo:
   se revisa el diff antes de `claude plugin marketplace update ponytail`.
+- Un plugin instalado a mitad de sesión recién está disponible en la sesión siguiente.
