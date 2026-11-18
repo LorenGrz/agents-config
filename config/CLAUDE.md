@@ -59,6 +59,11 @@ Pick the agent by role; the model of each role is in your profile ("Model routin
   `.claude/skills` first, and not to commit or push; the main session reviews the diff and the checks
   it reports, then commits. Trivial changes (one line, or one file with no checks: a typo, a copy text,
   a config value) stay inline, because a cold start costs more.
+- **Review** (the profile's reviewer): before every PR, and before the merge that closes a Plan L. Load
+  `review-handoff` for the brief and the findings loop.
+- Transport by harness: Claude Code runs `worker` in the background and the reviewer through
+  `gemini-delegate`; T3 Code uses `delegate_task` for both (`isolation: "worktree"` for workers); Orca
+  uses Orca workers (`orchestration`). A brief always carries what the `worker` definition says.
 - **Bulk (external)** (`gemini-delegate`, `agy`): mechanical writing or wide reading when that quota is
   cheaper; review the diff, run the acceptance command (ADR 0010).
 - Superpowers subagents: implementer, routine reviewer -> `worker`; security/architecture reviewer -> `reasoner`; search -> `scout`.

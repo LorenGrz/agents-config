@@ -12,7 +12,7 @@
 #     - `##` headings only from: Objective, When to use, Prerequisites, Workflow, Rules, Reference,
 #       Output, Verification, Claude Code, Shortcuts - in that order, none repeated
 #     - at least one of Workflow or Rules; Shortcuts is the last `##` heading
-#     - EXEMPT skills (frontmatter only): orca-cli, orchestration, frontend-design
+#     - EXEMPT skills (frontmatter only): orca-cli, orca-computer-use, orchestration, frontend-design
 #   config/rules/*.md       frontmatter with `paths:`
 #   packs/*/commands/*.md   frontmatter with a non-empty `description`
 #
@@ -21,7 +21,7 @@
 set -uo pipefail
 
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-EXEMPT=" orca-cli orchestration frontend-design "
+EXEMPT=" orca-cli orca-computer-use orchestration frontend-design "
 STRICT=0
 FILES=()
 

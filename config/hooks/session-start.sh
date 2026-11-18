@@ -13,7 +13,7 @@ cwd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)"
 [ -n "$cwd" ] && [ -d "$cwd" ] || cwd="$PWD"
 
 # Short on purpose: the full rule lives in AGENTS.md "Workflow lanes" and CLAUDE.md "Workflow lanes" / "Agent Routing".
-msg='Agent routing (agents-config; full rule in CLAUDE.md "Workflow lanes" and "Agent Routing"): one file, clear intent -> direct; more files or unclear scope -> ask Continuar / Plan S / Plan L, in that order; Plan S: no interview, only the critical questions in one batch; Plan L starts with `mattpocock-skills:grilling`. Non-trivial repo work -> background `worker` in its own worktree (ADR 0029); `scout` for lookups; `reasoner` only from a plan. Do not assume: ask.'
+msg='Agent routing (full rule: CLAUDE.md "Workflow lanes" and "Agent Routing"): one file, clear intent -> direct; more files or unclear scope -> ask Continuar / Plan S / Plan L, in that order; Plan S: no interview; Plan L: `mattpocock-skills:grilling` first. Repo work -> background `worker` in its own worktree; `scout` for lookups; `reasoner` only from a plan. Reviewer before every PR and Plan L merge (`review-handoff`). Started from a brief: no lane question, execute it. Do not assume: ask.'
 
 if git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   n="$(git -C "$cwd" ls-files 2>/dev/null | wc -l | tr -d ' ')"

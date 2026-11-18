@@ -33,6 +33,9 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 - Main session: Opus at high effort (ADR 0024). Opus designs plans (Plan S/L, plan mode), executes them and delegates to workers (subagents); never pass `model: fable` to a subagent. Fable is only the advisor (`advisorModel: "fable"` in `~/.claude/settings.json`), since 2026-11-16. Decisions outside a plan still go to `reasoner` (Opus, effort high), ADR 0018.
 - `worker` = Sonnet: implements common writing tasks (code, docs, tests): every non-trivial repo change, in the background (ADR 0029). `reasoner` = Opus: decisions only. `scout` = Haiku: light read-only lookups.
 - Gemini (`agy`) for bulk mechanical writing or wide reading when its quota is the better spend.
+- `reviewer` = Gemini 4 Argon (`gemini-4-argon`, thought level high; `gemini-4-argon-high` in `agy`) through
+  Antigravity: reviews the diff before every PR and before a Plan L merge. Fallback when it is unavailable:
+  `reasoner`.
 
 ## Local tool paths
 
