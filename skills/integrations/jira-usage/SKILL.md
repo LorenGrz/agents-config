@@ -48,4 +48,4 @@ Read and search Jira/Confluence freely. In Jira only a new ticket and a comment 
 ## Shortcuts
 <!-- parsed by scripts/gen-intents.sh -->
 - tools: `^mcp__claude_ai_Atlassian_Rovo__`
-- intent: Jira ticket — `\bjira\b|\bticket\b|\b[a-z]{2,10}-[0-9]+\b|\bsprint\b|\bconfluence\b` → `getJiraIssue or JQL search; a new ticket or a comment only after showing the exact text and getting an OK; edits, transitions, worklogs and links without asking, reported in one line`
+- intent: Jira ticket — `\bjira\b|\bticket\b|\b[a-z]{2,10}-[0-9]+\b|\bsprint\b|\bconfluence\b` → `getJiraIssue or JQL search; a new ticket, a comment or a Confluence page only after showing the exact text and getting an OK; ticket edits, transitions, worklogs and links without asking, reported in one line`
