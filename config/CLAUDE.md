@@ -60,7 +60,8 @@ Pick the agent by role; the model of each role is in your profile ("Model routin
   it reports, then commits. Trivial changes (one line, or one file with no checks: a typo, a copy text,
   a config value) stay inline, because a cold start costs more.
 - **Review** (the profile's reviewer): before every PR, and before the merge that closes a Plan L. Load
-  `review-handoff` for the brief and the findings loop.
+  `review-handoff` for the brief and the findings loop. Its fallback may review in any lane, `reasoner`
+  included.
 - Transport by harness: Claude Code runs `worker` in the background and the reviewer through
   `gemini-delegate`; T3 Code uses `delegate_task` for both (`isolation: "worktree"` for workers); Orca
   uses Orca workers (`orchestration`). A brief always carries what the `worker` definition says.

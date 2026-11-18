@@ -15,8 +15,8 @@ nueva: `session-start.sh` le inyecta la pregunta de lane y puede frenarlo.
 - Un reviewer de otro proveedor, nombrado en el perfil (Gemini 4 Argon para Loren, reemplazo `reasoner`),
   revisa el diff antes de cada PR y antes del merge que cierra un Plan L: solo lee y corre checks, con una
   sola re-revisión. El brief y el ciclo de hallazgos están en la skill `review-handoff`.
-- Transporte por harness: Claude Code usa `worker` en segundo plano y `gemini-delegate`; en T3 Code el
-  worker en segundo plano es `delegate_task`, y en Orca es un worker de Orca (`orchestration`).
+- Transporte por harness, para el worker y para el reviewer: Claude Code usa `worker` en segundo plano y
+  `gemini-delegate`; T3 Code usa `delegate_task` para los dos; Orca usa workers de Orca (`orchestration`).
 - Un agente lanzado con un brief lo ejecuta: sin pregunta de lane ni subagentes propios.
 - Descartado: un subagente `config/agents/reviewer.md` (solo existe en Claude Code) y ponerlo todo en
   `config/CLAUDE.md` (ya pasa el tope del ADR 0004).

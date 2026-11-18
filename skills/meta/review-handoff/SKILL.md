@@ -28,6 +28,7 @@ before the PR is opened or the Plan L is merged. It never edits.
    Original request (verbatim): <...>
    Plan: <path, or none>
    Worktree to review (absolute path): <...>
+   Work only there (cd into it, or git -C); never in the checkout you were started in.
    Range: <base>..<branch>
    Review skill to follow: <path>
    Checks to run: <commands>
@@ -42,7 +43,7 @@ before the PR is opened or the Plan L is merged. It never edits.
 
    | Harness | How | Result |
    |---|---|---|
-   | Claude Code CLI | Save the brief to a file; from the worktree, run `~/.agents/skills/meta/gemini-delegate/scripts/gemini-delegate.sh run -f <brief> --model <reviewer id from "agy models">` as a background Bash command | The harness re-invokes you when it exits |
+   | Claude Code CLI | Save the brief to a file outside the worktree (it must stay clean); from the worktree, run `~/.agents/skills/meta/gemini-delegate/scripts/gemini-delegate.sh run -f <brief> --model <reviewer id from "agy models">` as a background Bash command | The harness re-invokes you when it exits; read the whole file at the `log:` path it prints, stdout only shows the last 40 lines |
    | T3 Code | `delegate_task` with `role: "review"`, `mode: "async"`, and the reviewer's provider, model and options as `target` | Arrives by itself |
    | Orca | An Orca worker of the reviewer's agent through the `orchestration` skill | Its `worker_done` |
 
@@ -52,7 +53,7 @@ before the PR is opened or the Plan L is merged. It never edits.
    new run with the previous findings attached. Whatever is still open after it goes to the user, and you
    stop.
 7. Reviewer unavailable (provider off, no quota, error): the profile's fallback reviews with the same brief,
-   and the user is told in one line.
+   in any lane, and the user is told in one line.
 
 ## Rules
 
