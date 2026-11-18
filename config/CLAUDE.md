@@ -13,7 +13,7 @@ Stack skills (React, Next, Nest, persistence, API, auth, AWS) exist only in repo
 
 Where skills overlap, one default per task:
 
-- Planning: `mattpocock-skills:grilling` first (Plan S and L), then (Plan L only) `superpowers:brainstorming`
+- Planning (Plan L only): `mattpocock-skills:grilling` first, then `superpowers:brainstorming`
   and `writing-plans`; TDD `superpowers:test-driven-development`;
   unknown-cause bugs `superpowers:systematic-debugging` (`debug-assistant` only for a pasted stack trace).
 - TypeScript review `code-review-safety` (acting on feedback: `superpowers:receiving-code-review`);
@@ -28,16 +28,17 @@ Where skills overlap, one default per task:
 
 ## Workflow lanes
 
-The lanes and the grilling interview are in `AGENTS.md` "Workflow lanes"; in Claude Code they run like this:
+The lanes and the Plan L interview are in `AGENTS.md` "Workflow lanes"; in Claude Code they run like this:
 
 - The lane question is one `AskUserQuestion`; its fixed order (Continuar first) overrides the tool's
-  "recommended first". Plan S/L call `EnterPlanMode` and load `mattpocock-skills:grilling` right after.
-  Plan S runs inline with `ponytail:ponytail` loaded at the start, no `worker`/`reasoner`. Plan L uses
-  `superpowers:brainstorming`, then `writing-plans`, then `worker`/`reasoner`. An
+  "recommended first". Plan S/L call `EnterPlanMode`. Plan S runs inline with `ponytail:ponytail`
+  loaded at the start, no interview and no `worker`/`reasoner`. Plan L loads `mattpocock-skills:grilling`
+  right after, then `superpowers:brainstorming`, `writing-plans`, and `worker`/`reasoner`, each in the
+  worktree of its branch (`isolation: "worktree"` or the existing one). An
   unknown cause starts with `superpowers:systematic-debugging`. A plan the user starts directly ends with
   "Plan S/L because …".
-- `lane-guard.sh` enforces it: it denies a lane question in another order and an `ExitPlanMode` with no
-  grilling since plan mode began (ADR 0025).
+- `lane-guard.sh` enforces it: it denies a lane question in another order, and an `ExitPlanMode` with no
+  grilling since plan mode began when the last lane picked was Plan L (ADR 0025, ADR 0031).
 - Outside a plan, never invoke `brainstorming`, `writing-plans`, `executing-plans`, `subagent-driven-development`,
   `reasoner` or `ponytail*` unless asked; this overrides `using-superpowers` and the
   skills' own descriptions. `scout` stays allowed for open lookups, and `worker` for repo work (see
