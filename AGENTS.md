@@ -10,7 +10,7 @@ personal content goes in `config/profiles/<name>.md`.
 Use the `agents-config-setup` skill (`skills/meta/agents-config-setup/SKILL.md`) if available;
 otherwise do the same by hand:
 
-1. Read this repo's `README.md` "Install" section.
+1. Read this repo's `README.md` "Instalación" section.
 2. Run `./install.sh --dry-run` and show the user the plan before touching anything real.
 3. Ask the user for their profile name. If `config/profiles/<name>.md` doesn't exist yet,
    offer to create it from `config/profiles/_template.md` by asking: their name, preferred
@@ -18,7 +18,7 @@ otherwise do the same by hand:
    their current stack/learning stage.
 4. Run `./install.sh --profile <name>` only after the user confirms the dry-run plan.
 5. Verify: `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` exist and import files that
-   actually exist; `~/.claude/{rules,hooks,agents}` are symlinks into this repo;
+   actually exist; `~/.claude/{hooks,agents}` are symlinks into this repo and `~/.claude/rules` holds one symlink per global rule;
    `~/.claude/skills` is populated (`readlink` a few entries).
 
 Never overwrite a user's `~/.claude/` or `~/.codex/` files except through `install.sh`, which

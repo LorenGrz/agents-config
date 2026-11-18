@@ -32,7 +32,7 @@ without the user confirming the plan first: `install.sh` touches `~/.claude/` an
    ./install.sh --profile <name>
    ```
    It generates `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` (backing up any pre-existing real
-   file once, as `.bak.<timestamp>`), symlinks `~/.claude/{rules,hooks,agents}` into the repo,
+   file once, as `.bak.<timestamp>`), symlinks `~/.claude/{hooks,agents}` and each global rule under `~/.claude/rules/` into the repo,
    mirrors skills into `~/.claude/skills` via `sync.sh`, and merges `config/settings.base.json`
    into `~/.claude/settings.json`.
 
@@ -41,7 +41,7 @@ without the user confirming the plan first: `install.sh` touches `~/.claude/` an
      `config/baseline.md`, the chosen profile and `config/CLAUDE.md`; each imported path exists.
    - `cat ~/.codex/AGENTS.md`: the same header comment, then `config/AGENTS.md`, the baseline and
      the profile content concatenated.
-   - `readlink ~/.claude/rules ~/.claude/hooks ~/.claude/agents`: each resolves into the repo.
+   - `readlink ~/.claude/hooks ~/.claude/agents` and `ls -l ~/.claude/rules`: each link resolves into the repo.
    - `ls ~/.claude/skills | head` is populated; `readlink ~/.claude/skills/<any-name>` resolves to a
      real `skills/<category>/<skill>/` directory in the repo.
    - Re-run `./install.sh --profile <name>`: everything reported up to date (idempotent).
@@ -58,7 +58,7 @@ without the user confirming the plan first: `install.sh` touches `~/.claude/` an
 
 If the user only wants skills/agents/hooks (not rules, not the generated `CLAUDE.md`/`AGENTS.md`, not
 `settings.json` merging), point them at `claude plugin marketplace add <this-repo>` instead of
-`install.sh` (`README.md`, Install section). Don't combine the two methods on one machine.
+`install.sh` (`README.md`, "Instalación" section). Don't combine the two methods on one machine.
 
 ## Rules
 

@@ -1,30 +1,30 @@
 # aws
 
-Claude Code skills for working with AWS serverless infrastructure. Each skill is a self-contained `SKILL.md` that Claude reads on demand to apply consistent, least-privilege, cost-aware patterns.
+Skills para trabajar con infraestructura serverless en AWS. Cada una es un `SKILL.md` autocontenido que
+Claude lee cuando hace falta, para aplicar patrones de mínimo privilegio y bajo costo.
 
 ## Skills
 
-| Skill | When to load |
+| Skill | Cuándo cargarla |
 |-------|-------------|
-| [`serverless-scanner`](./serverless-scanner/SKILL.md) | Analyzing existing products to identify high-ROI serverless migration opportunities |
-| [`sam-deploy`](./sam-deploy/SKILL.md) | Building and deploying stacks with AWS SAM CLI — `samconfig.toml`, build/deploy pipeline, response streaming, common errors |
-| [`lambda-patterns`](./lambda-patterns/SKILL.md) | Writing Lambda handlers — arm64, memory sizing, cold starts, ESM, Python, CloudWatch logs, error handling |
-| [`iam-least-privilege`](./iam-least-privilege/SKILL.md) | Creating IAM users/roles/policies — deploy-user pattern, execution roles, policy templates, setup scripts |
-| [`cost-optimizer`](./cost-optimizer/SKILL.md) | Keeping AWS costs minimal — free tier, arm64, log retention, billing alarms, cost traps |
+| [`serverless-scanner`](./serverless-scanner/SKILL.md) | Analizar productos existentes para encontrar migraciones a serverless con buen retorno |
+| [`sam-deploy`](./sam-deploy/SKILL.md) | Construir y deployar stacks con AWS SAM CLI: `samconfig.toml`, pipeline de build/deploy, response streaming, errores comunes |
+| [`lambda-patterns`](./lambda-patterns/SKILL.md) | Escribir handlers de Lambda: arm64, memoria, cold starts, ESM, Python, logs de CloudWatch, manejo de errores |
+| [`iam-least-privilege`](./iam-least-privilege/SKILL.md) | Crear usuarios, roles y políticas de IAM: usuario de deploy, roles de ejecución, plantillas de políticas, scripts de setup |
+| [`cost-optimizer`](./cost-optimizer/SKILL.md) | Mantener el costo de AWS al mínimo: free tier, arm64, retención de logs, alarmas de facturación, trampas de costo |
 
-## Usage
+## Uso
 
-These skills live inside this hub at `skills/aws/<skill>/SKILL.md` (folded in via `git subtree`,
-see `docs/decisions/0001-single-repo.md`), not in a separate repo.
+Viven dentro de este hub en `skills/aws/<skill>/SKILL.md` (entraron con `git subtree`, ver
+`docs/decisions/0001-single-repo.md`), no en un repo aparte.
 
-They are **project-scoped**, not global: all five are listed under the `aws` stack in
-`config/scopes.json`, so `sync.sh` does not mirror them into `~/.claude/skills` and `install.sh` does not
-install them. Add them to a project with `scripts/project-agents.sh`, which copies them into the project's
-`.claude/skills/`:
+Son **de proyecto**, no globales: las cinco están en el stack `aws` de `config/scopes.json`, así que
+`sync.sh` no las espeja en `~/.claude/skills` e `install.sh` no las instala. Se suman a un proyecto con
+`scripts/project-agents.sh`, que las copia al `.claude/skills/` del proyecto:
 
 ```bash
 scripts/project-agents.sh --stack aws --dir ~/projects/my-app
-# project-init does the same: init.sh --stack nestjs --with aws ...
+# project-init hace lo mismo: init.sh --stack nestjs --with aws ...
 ```
 
-See "Global vs project scope" in the root `README.md` and ADR 0011.
+Ver «Alcance global o por proyecto» en `config/README.md` y el ADR 0011.

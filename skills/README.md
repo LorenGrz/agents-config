@@ -2,62 +2,92 @@
 
 ## Purpose
 
-The skill library: one folder per skill, each with a `SKILL.md` that an agent loads on demand when its
-`description` matches the task. Skills are grouped by category here and mirrored flat into
-`~/.claude/skills` by `sync.sh` (Claude Code only reads direct children). `install.sh` also links
-`~/.agents/skills` to this folder, so other agents share the same root.
+La biblioteca de skills: una carpeta por skill, cada una con un `SKILL.md` que el agente carga cuando su
+`description` coincide con la tarea. Acá se agrupan por categoría y `sync.sh` las espeja planas en
+`~/.claude/skills` (Claude Code solo lee hijos directos). `install.sh` también enlaza `~/.agents/skills` a
+esta carpeta, así otros agentes comparten la misma raíz.
 
-Each skill follows one template, so any model reads them the same way. The history of the decision is in
+Todas siguen una plantilla, así cualquier modelo las lee igual. La decisión está en
 `docs/decisions/0026-skills-folder-and-templates.md`.
 
 ## Layout
 
-| Category | What goes there | Skills |
-|---|---|---|
-| `aws/` | AWS serverless work. Project-scoped (stack `aws`), see `aws/README.md` | `sam-deploy`, `lambda-patterns`, `iam-least-privilege`, `cost-optimizer`, `serverless-scanner` |
-| `development/` | Building features and code quality | `api-contract-design`, `code-documenter`, `database-persistence-patterns`, `debug-assistant`, `frontend-design`, `nest-module-generator`, `nextjs-ssr-frontend`, `react-native-mobile`, `regex-builder-explainer`, `typescript-code-quality`, `typescript-project-starter` |
-| `devops/` | Repo and release lifecycle, containers | `conventional-commit-generator`, `project-init`, `repository-context-maintainer`, `run-docker-environment` |
-| `integrations/` | One skill per outside tool, with its `## Shortcuts` | `github-usage` (git and GitHub), `jira-usage`, `slack-usage`, `google-workspace-usage`, `obsidian-vault`, `notebooklm-obsidian-sync`, `codex-review` |
-| `meta/` | How agents work: setup, workflow, delegation, org creation | `agents-config-setup`, `codex-workflows`, `english-prompt-coach`, `gemini-delegate`, `orca-cli`, `orchestration`, `org-creator`, `roadmap-coach`, `team-roles` |
-| `productivity/` | Non-code deliverables (stack `office` for all but `image-annotations`) | `ats-resume-formatting`, `cv-linkedin-optimizer`, `image-annotations`, `meeting-notes-organizer`, `presentation-prep`, `professional-email-drafter` |
-| `quality/` | Review and tests | `code-review-safety`, `execute-test-suite`, `react-component-validator`, `unit-test-generator` |
-| `security/` | Auth and prompt-injection defense | `auth-security-basics`, `prompt-injection-defense` |
-| `external/` | Symlinks to skills shipped by other tools. Gitignored, recreated per machine | `omarchy`, `omarchy-app`, `diagnose-crash`, `superwhisper` |
+Un `*` marca una skill de proyecto: figura en un stack de `config/scopes.json`, `sync.sh` no la pone en el
+espejo global y `scripts/project-agents.sh` la instala por proyecto (ADR 0011). Las demás son globales.
 
-Which skills are global and which belong to a stack is decided by `config/scopes.json` (ADR 0011): a skill
-listed under a stack is installed per project by `scripts/project-agents.sh`, any other skill is global.
-Skills bundled with an architecture live in `packs/<name>/skills/`, not here.
+| Categoría | Qué va ahí | Skills |
+|---|---|---|
+| `aws/` | Trabajo serverless en AWS (stack `aws`), ver `aws/README.md` | `sam-deploy`*, `lambda-patterns`*, `iam-least-privilege`*, `cost-optimizer`*, `serverless-scanner`* |
+| `development/` | Construir funcionalidades y calidad de código | `api-contract-design`*, `code-documenter`, `database-persistence-patterns`*, `debug-assistant`, `frontend-design`, `nest-module-generator`*, `nextjs-ssr-frontend`*, `react-native-mobile`*, `regex-builder-explainer`, `typescript-code-quality`, `typescript-project-starter` |
+| `devops/` | Ciclo de vida del repo y releases, contenedores | `conventional-commit-generator`, `project-init`, `repository-context-maintainer`, `run-docker-environment`* |
+| `integrations/` | Una skill por herramienta externa, con su `## Shortcuts` | `github-usage` (git y GitHub), `jira-usage`, `jira-ticket-review`, `slack-usage`, `google-workspace-usage`, `obsidian-vault`, `notebooklm-obsidian-sync`, `codex-review` |
+| `meta/` | Cómo trabajan los agentes: setup, flujo, delegación, revisión, organizaciones | `agents-config-setup`, `codex-workflows`, `english-prompt-coach`, `gemini-delegate`, `orca-cli`, `orca-computer-use`, `orchestration`, `org-creator`, `review-handoff`, `roadmap-coach`, `team-roles` |
+| `productivity/` | Entregables que no son código (stack `office` salvo `image-annotations`) | `ats-resume-formatting`*, `cv-linkedin-optimizer`*, `image-annotations`, `meeting-notes-organizer`*, `presentation-prep`*, `professional-email-drafter`* |
+| `quality/` | Revisión y tests | `code-review-safety`, `execute-test-suite`, `react-component-validator`*, `unit-test-generator` |
+| `security/` | Auth y defensa contra prompt injection | `auth-security-basics`*, `prompt-injection-defense`* |
+| `external/` | Symlinks a skills de otras herramientas. Ignorado por git, se recrea en cada máquina | `omarchy`, `omarchy-app`, `diagnose-crash` (vienen con Omarchy), `superwhisper` (viene con SuperWhisper) |
+
+El propósito de cada una está en la `description` de su frontmatter: `rg '^description' skills/*/*/SKILL.md`.
+Las skills que vienen con una arquitectura viven en `packs/<name>/skills/`, no acá.
+
+### Shortcuts: frases e integraciones a skills
+
+Las skills de `integrations/` terminan con una sección `## Shortcuts`: patrones `tools:` y `bash:` que
+identifican sus llamadas, y líneas `intent:` (etiqueta, regex de la frase en español e inglés, comando). Las
+skills de plugins no se pueden editar, así que sus atajos van en `config/intents.plugins.md`.
+`scripts/gen-intents.sh` convierte todo en `config/intents.json` (lo lee el hook `intent-router.sh`) y en
+una tabla corta en `config/AGENTS.md` (la leen Codex, Cursor y el resto); `sync.sh` y CI lo mantienen al día
+(`--check`). `<base>` en un comando es la rama base del repo: con `scripts/gh-flow.sh`, `dev`; si no, una
+regla «Base branch is `x`» del `AGENTS.md`, el `base_branch` de la organización, `origin/HEAD` y por último
+`main` (ADR 0017).
+
+### Evals de activación
+
+`evals/` tiene evals para `claude plugin eval`: cada caso manda un pedido realista (sin nombrar la skill) y
+revisa que se active la skill correcta, o ninguna en los casos `no-trigger-*`.
+
+```bash
+./scripts/eval-skills.sh                        # todos los casos
+./scripts/eval-skills.sh --case 'trigger-*'     # solo los positivos
+EVAL_RUNS=3 ./scripts/eval-skills.sh            # antes de confiar en un cambio de description
+```
+
+Cada caso es una sesión paga (`EVAL_MAX_COST`, 2 USD por defecto, pone el tope), por eso no corre en CI.
+Pide Claude Code >= 2.1.269 (>= 2.1.299 para que un error de la API puntúe 0). Los resultados van a
+`evals/results/` (ignorado).
 
 ## How to add a skill
 
-1. Create `skills/<category>/<skill>/SKILL.md`. The folder name is the skill name. Pick the category by the
-   table above; a tool with its own API or CLI goes in `integrations/`, one skill per tool.
-2. Write it with this template (a skill may not repeat what another skill owns, link to it by name):
-   - Frontmatter: `name` (equal to the folder) and `description` ("Use when ..."); optional keys stay as is.
-   - `##` sections, only from this list and in this order: `Objective`, `When to use`, `Prerequisites`,
-     `Workflow`, `Rules` (topics as `###`), `Reference`, `Output`, `Verification`, `Claude Code`
-     (the only place for ToolSearch, subagents and hooks), `Shortcuts` (always last).
-   - At least one of `Workflow` or `Rules`.
-   - Long detail goes in `references/<topic>.md` next to the SKILL.md, starting with `# Title` and a
-     `Read when: ...` line, and does not repeat the SKILL.md.
-3. Run what the change touches:
-   - `./sync.sh` to refresh the `~/.claude/skills` mirror.
-   - `scripts/gen-plugin.sh` when the skill is global (it lists the plugin's skills; `--check` verifies).
-   - `scripts/gen-intents.sh` when the skill has `## Shortcuts` (regenerates `config/intents.json` and the
-     table in `config/AGENTS.md`; `--check` verifies).
-   - If the skill belongs to a stack, add it to that stack in `config/scopes.json`.
-4. Check it with `bash scripts/lint-docs.sh --files skills/<category>/<skill>/SKILL.md`.
+1. Crear `skills/<category>/<skill>/SKILL.md`. El nombre de la carpeta es el nombre de la skill. La categoría
+   sale de la tabla de arriba; una herramienta con API o CLI propia va en `integrations/`, una skill por
+   herramienta.
+2. Escribirla con esta plantilla (una skill no repite lo que es de otra: la nombra):
+   - Frontmatter: `name` (igual a la carpeta) y `description` ("Use when ..."); las claves opcionales quedan
+     como están.
+   - Secciones `##`, solo de esta lista y en este orden: `Objective`, `When to use`, `Prerequisites`,
+     `Workflow`, `Rules` (temas como `###`), `Reference`, `Output`, `Verification`, `Claude Code`
+     (el único lugar para ToolSearch, subagentes y hooks), `Shortcuts` (siempre la última).
+   - Al menos una de `Workflow` o `Rules`.
+   - El detalle largo va en `references/<topic>.md` al lado del SKILL.md, empieza con `# Title` y una línea
+     `Read when: ...`, y no repite el SKILL.md.
+3. Correr lo que el cambio toca:
+   - `./sync.sh` para refrescar el espejo `~/.claude/skills`.
+   - `scripts/gen-plugin.sh` si la skill es global (lista las skills del plugin; `--check` verifica).
+   - `scripts/gen-intents.sh` si la skill tiene `## Shortcuts` (regenera `config/intents.json` y la tabla de
+     `config/AGENTS.md`; `--check` verifica).
+   - Si es de un stack, sumarla a ese stack en `config/scopes.json`.
+4. Revisarla con `bash scripts/lint-docs.sh --files skills/<category>/<skill>/SKILL.md`.
 
-`orca-cli`, `orchestration` and `frontend-design` are free-form skills and exempt from the section template:
-only their frontmatter is checked.
+`orca-cli`, `orca-computer-use`, `orchestration` y `frontend-design` son de forma libre y quedan fuera de la
+plantilla de secciones: solo se revisa su frontmatter.
 
 ## Checks
 
 ```bash
-bash scripts/lint-docs.sh             # warn mode: prints violations, exits 0
-bash scripts/lint-docs.sh --strict    # exits 1 on any violation
+bash scripts/lint-docs.sh             # modo aviso: imprime las violaciones, sale 0
+bash scripts/lint-docs.sh --strict    # sale 1 ante cualquier violación
 bash scripts/lint-docs.sh --files skills/meta/roadmap-coach/SKILL.md
-scripts/gen-plugin.sh --check         # plugin skill list matches the global skills
-scripts/gen-intents.sh --check        # Shortcuts table is up to date
+scripts/gen-plugin.sh --check         # la lista de skills del plugin coincide con las globales
+scripts/gen-intents.sh --check        # la tabla de Shortcuts está al día
 bash scripts/test-intents.sh
 ```
