@@ -51,24 +51,27 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 - **Plan L starts with a grilling interview:** before designing anything, interview the user one question
   at a time (the `mattpocock-skills:grilling` skill where available) until nothing is left to assume. The
   design step does not re-ask what was answered.
-- **Plan L splits the work:** one worker per repo or layer (backend, frontend), in parallel, each in its
-  own worktree, on the branch it touches. The main session writes the briefs, integrates and commits, and
-  writes no code.
+- **Plan L splits the work by repo:** the main session plans, writes the briefs, integrates, and writes no
+  code. Work that spans repos (backend, frontend) gets one lead per repo: a session opened in that repo, in
+  the one worktree of its task branch, so that repo's `AGENTS.md`, skills and restrictions apply. A lead
+  implements with the repo's skills, may start `worker` and `scout` agents there, commits on the task
+  branch and gets its diff reviewed before handing it back; it never pushes or opens the PR. In a single
+  repo the main session is the lead.
 - **A reviewer checks the work before every PR is opened**, and before the merge that closes a Plan L when
   there is no PR: a model from another provider (named in the profile) reviews the diff against the
-  original request with the repo's review skill and runs the checks, without editing. The main session
-  fixes small findings, sends large ones to a worker and asks for one re-review; what is still open goes
-  to the user. No reviewer available: the profile's fallback reviews, and the user is told in one line.
-- **An agent started from a brief** (worker, delegated child, reviewer) executes it: no lane question, no
-  subagents of its own.
+  original request with the repo's review skill and runs the checks, without editing. Whoever asked for
+  the review fixes small findings, sends large ones to a worker and asks for one re-review; what is still
+  open goes to the user. No reviewer available: the profile's fallback reviews, and the user is told in one line.
+- **An agent started from a brief** (repo lead, worker, scout, reviewer) executes it without the lane
+  question. Only a repo lead may start agents of its own (`worker`, `scout`).
 - **Every plan (S or L) is shown in the terminal message, not only in the plan file, with a table:** who
   does what, whether it runs in parallel, files, and how it is verified. Parallel or visual work adds an
   ASCII diagram of the order.
 - Outside a plan, don't pull in the heavy process (brainstorming, plan writing, subagent-driven execution)
   unless asked.
 - **Repo work goes to a background worker by default** (where the agent has subagents): every non-trivial
-  change runs in a worker on its own worktree and task branch; the main session reviews the diff and
-  commits. Trivial changes (one line, or one file with no checks) are done directly.
+  change runs in a worker on the task branch, in its own worktree or in its lead's; whoever started it
+  reviews the diff and commits. Trivial changes (one line, or one file with no checks) are done directly.
 
 ## Organizations (work repos)
 

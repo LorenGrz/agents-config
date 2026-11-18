@@ -39,7 +39,7 @@ is_project_skill() { grep -qxF -- "$1" <<<"$PROJECT_SKILLS"; }
 
 # 1. Link every skill found in the hub (skills/<category>/<skill>/SKILL.md).
 #    This includes aws/<skill>/SKILL.md (cost-optimizer, iam-least-privilege,
-#    lambda-patterns, sam-deploy, serverless-scanner) now that aws/ is folded
+#    lambda-patterns, sam-deploy) now that aws/ is folded
 #    into the hub via git subtree.
 while IFS= read -r skill_md; do
   dir="$(dirname "$skill_md")"

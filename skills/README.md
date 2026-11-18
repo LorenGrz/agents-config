@@ -17,7 +17,7 @@ espejo global y `scripts/project-agents.sh` la instala por proyecto (ADR 0011). 
 
 | Categoría | Qué va ahí | Skills |
 |---|---|---|
-| `aws/` | Trabajo serverless en AWS (stack `aws`), ver `aws/README.md` | `sam-deploy`*, `lambda-patterns`*, `iam-least-privilege`*, `cost-optimizer`*, `serverless-scanner`* |
+| `aws/` | Trabajo serverless en AWS (stack `aws`), ver `aws/README.md` | `sam-deploy`*, `lambda-patterns`*, `iam-least-privilege`*, `cost-optimizer`* |
 | `development/` | Construir funcionalidades y calidad de código | `api-contract-design`*, `code-documenter`, `database-persistence-patterns`*, `debug-assistant`, `frontend-design`, `nest-module-generator`*, `nextjs-ssr-frontend`*, `react-native-mobile`*, `regex-builder-explainer`, `typescript-code-quality`, `typescript-project-starter` |
 | `devops/` | Ciclo de vida del repo y releases, contenedores | `conventional-commit-generator`, `project-init`, `repository-context-maintainer`, `run-docker-environment`* |
 | `integrations/` | Una skill por herramienta externa, con su `## Shortcuts` | `github-usage` (git y GitHub), `jira-usage`, `jira-ticket-review`, `slack-usage`, `google-workspace-usage`, `obsidian-vault`, `notebooklm-obsidian-sync`, `codex-review` |
