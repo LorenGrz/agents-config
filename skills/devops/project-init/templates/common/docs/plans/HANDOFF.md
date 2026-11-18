@@ -1,10 +1,9 @@
 # Handoff - {{PROJECT}}
 
 <!--
-First file a new session reads after AGENTS.md when work is mid-flight. Update it whenever
-work pauses mid-task - before stopping, not after (see AGENTS.md "Documentation rules").
-Keep it current rather than complete: stale beats missing, but wrong is worse than either,
-so replace sections instead of only appending to them.
+First file a new session reads after AGENTS.md when work is mid-flight. Update it before stopping,
+not after (see AGENTS.md "Documentation rules"). Replace sections instead of only appending: stale
+beats missing, but wrong is worse than either.
 -->
 
 Last updated: {{DATE}}
@@ -17,14 +16,13 @@ Freshly scaffolded, nothing built yet.
 
 ## Active plan
 
-<!-- Link the plan this work is following, e.g. [`2026-10-10-auth-flow.md`](../superpowers/plans/2026-10-10-auth-flow.md). -->
+<!-- Link the plan this work is following, e.g. [`2026-10-10-auth-flow.md`](../superpowers/plans/2026-10-10-auth-flow.md). Clear it when the work merges: the plan is deleted then. -->
 
 None yet - no plan in progress.
 
 ## Pending work
 
-<!-- Concrete next steps, in the order they should happen. Delete items as they're done
-     instead of checking them off, so this list only ever shows what's left. -->
+<!-- Concrete next steps, in order. Delete items when done instead of checking them off. -->
 
 ## How to resume
 

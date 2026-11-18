@@ -5,11 +5,11 @@ paths:
 
 # Python
 
-## Tooling (2025 baseline)
+## Tooling
 
 - **uv** for envs and dependencies (`uv init`, `uv add`, `uv run`, `uv sync`). Not pip/poetry/virtualenv unless the project already uses them.
-- **ruff** for lint + format (replaces black, isort, flake8, pyupgrade). Run `ruff check --fix` and `ruff format`.
-- **mypy --strict** (or pyright) as the type-check baseline. Treat type errors as build failures.
+- **ruff** for lint + format, instead of black, isort, flake8, pyupgrade: `ruff check --fix` and `ruff format`.
+- **mypy --strict** (or pyright) for type checks; type errors are build failures.
 - One config file: `pyproject.toml`. No `setup.py`, `setup.cfg`, `.flake8`, `mypy.ini`.
 - `src/` layout for packages.
 
@@ -24,7 +24,7 @@ paths:
 
 ## Automation & agent scripts
 
-- Wrap every network/tool/LLM call with a timeout and bounded retries (`tenacity`), exponential backoff. Give up after N attempts with a deterministic fallback, not an infinite loop.
+- Every network/tool/LLM call gets a timeout and bounded retries with exponential backoff (`tenacity`), then a deterministic fallback after N attempts, never an infinite loop.
 - Make side-effecting operations idempotent (idempotency key, "check then act", or safe re-run).
 - Structured LLM output: define a Pydantic schema, parse into it, retry on validation failure, fail closed if it never validates.
 - Least-privilege credentials scoped to the task. Never `eval`/`exec`/shell-interpolate model or external output. See the `prompt-injection-defense` skill for LLM-facing code.

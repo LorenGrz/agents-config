@@ -6,7 +6,7 @@ paths:
 
 # Kotlin / Spring Boot
 
-Reference implementation: `~/projects/booklibre/backend`. Layered, domain-centred.
+Reference implementation: `~/projects/booklibre/backend` (layered, domain-centred).
 
 ## Layers and responsibilities
 

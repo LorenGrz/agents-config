@@ -8,13 +8,13 @@ paths:
 
 ## Zero `useEffect` for logic
 
-- Derived values: compute during render, not in an effect + state. `useMemo` only once you've measured the computation is actually expensive.
-- Responses to a user event (click, submit, input change): put the logic in the event handler, not in an effect watching state the handler just set.
-- Don't mirror a prop into local state with an effect; read the prop directly, or derive from it during render.
-- Need to reset a component's state when an id/prop changes? Use `key={id}` on the component, not an effect that resets state.
-- Data loading lives in a custom hook per screen/resource (`useBookDetail`, `useHomeCatalog`), or in TanStack Query / your framework's loaders / React Server Components — never as an inline effect bolted onto a component. The hook owns fetch state (data/loading/error) and exposes a reload function; nothing else in the component reaches for `useEffect` to fetch.
+- Derived values: compute during render, not in an effect + state. `useMemo` only when measured as expensive.
+- User events (click, submit, input change): logic goes in the event handler, not in an effect watching state the handler set.
+- Don't mirror a prop into local state with an effect; read it directly or derive from it during render.
+- Reset a component's state when an id/prop changes with `key={id}`, not an effect.
+- Data loading lives in a custom hook per screen/resource (`useBookDetail`, `useHomeCatalog`), or in TanStack Query / the framework's loaders / React Server Components, never in an inline effect in a component. The hook owns fetch state (data/loading/error) and exposes a reload function; nothing else in the component uses `useEffect` to fetch.
 - `useEffect` is allowed only to synchronize with something outside React: subscriptions, browser APIs (resize, media queries, `localStorage` events), non-React widgets. If it subscribes, it must return a cleanup function.
-- One effect doing several unrelated things is always wrong — split it into one effect per external system, or remove it entirely if none of the pieces actually need one.
+- Never one effect for several unrelated things: one effect per external system, or none if no piece needs one.
 
 ## Components
 
@@ -29,12 +29,11 @@ paths:
 
 ## Enforcement
 
-Projects scaffolded with the `project-init` skill enforce this doctrine with
-`eslint-plugin-react-hooks` (compiler rules such as `set-state-in-effect`) and
-`eslint-plugin-react-you-might-not-need-an-effect`. Run `pnpm lint` and fix the
-violation — don't disable the rule.
+`project-init` projects enforce this with `eslint-plugin-react-hooks` (compiler rules such as
+`set-state-in-effect`) and `eslint-plugin-react-you-might-not-need-an-effect`. Run `pnpm lint` and fix the
+violation; don't disable the rule.
 
-Reference implementation (one example pattern, not the only valid one):
-`~/projects/booklibre/frontend` — `useOnInit` + a hook per screen + domain classes.
+Reference implementation (one valid pattern, not the only one): `~/projects/booklibre/frontend`
+(`useOnInit` + a hook per screen + domain classes).
 
 For effects and lifecycle use `react-component-validator`; for building and reviewing UI use the project's `ui-builder` / `ui-review` skills when installed.

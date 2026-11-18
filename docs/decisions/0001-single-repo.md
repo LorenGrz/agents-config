@@ -1,37 +1,25 @@
-# 0001 — One repo for agent config and skills
+# 0001 — Un solo repo para la config de agentes y las skills
 
-## Context
+Estado: aceptado (2026-10-10).
 
-Agent config (`CLAUDE.md`, `AGENTS.md`, `rules/`, `hooks/`, subagents) and skills lived in
-the same tree already, but AWS skills (`cost-optimizer`, `iam-least-privilege`,
-`lambda-patterns`, `sam-deploy`, `serverless-scanner`) were a separate repo
-(`LorenGrz/aws-skills`), symlinked in and gitignored. A second, near-duplicate repo
-(`LorenGrz/serverless-scanner-skill`) held one of those skills again. Three repos to
-keep in sync for one person's setup added overhead with no real isolation benefit —
-none of them has independent versioning, contributors, or a release cycle of its own.
+## Contexto
 
-## Decision
+Las skills de AWS vivían en otro repo (`LorenGrz/aws-skills`), enlazado con symlinks e ignorado, y
+`LorenGrz/serverless-scanner-skill` repetía una de ellas: tres repos sin versionado ni releases propios para
+el setup de una sola persona.
 
-Fold `aws-skills` into this repo at `aws/` with `git subtree add --prefix=aws`, preserving
-its commit history. Drop the external symlinks and the matching `.gitignore` entries.
-`serverless-scanner-skill`'s `SKILL.md` and all four `references/*.md` files were
-byte-identical to `aws/serverless-scanner` after the merge, so no second copy was kept —
-`aws/serverless-scanner` (from the subtree) is the only copy, and no
-`aws/serverless-scanner-migration` was needed.
+## Decisión
 
-This repo (then `LorenGrz/claude-skills`) was renamed to `LorenGrz/agent-config` on GitHub
-to reflect the broader scope: it is not just skills, it is the whole agent config +
-skills hub for every AI tool Loren uses.
+- `aws-skills` se incorpora en `aws/` con `git subtree add --prefix=aws`, conservando su historial. Se quitan
+  los symlinks externos y sus entradas en `.gitignore`.
+- El `SKILL.md` y los cuatro `references/*.md` de `serverless-scanner-skill` eran idénticos byte a byte a
+  `aws/serverless-scanner`: queda solo esa copia (la del subtree), sin `aws/serverless-scanner-migration`.
+- El repo (entonces `LorenGrz/claude-skills`) se renombra en GitHub a `LorenGrz/agent-config`: es el hub de
+  config y skills de todas las IA, no solo skills.
+- Oracle APEX (`apexlang`) y Omarchy (`omarchy`, `diagnose-crash`) siguen como symlinks externos: pertenecen a
+  otros proyectos o al sistema y se actualizan aparte.
 
-## Consequences
+## Consecuencias
 
-- One `git clone` + `install.sh` sets up skills, rules, hooks, subagents, and settings.
-- `sync.sh`'s existing glob (`<category>/<skill>/SKILL.md`, two levels deep) already covers
-  `aws/<skill>/SKILL.md` — no new discovery logic was needed, only repointing the
-  `~/.claude/skills` mirror entries that used to target `/home/loren/projects/aws-skills/*`.
-- `/home/loren/projects/aws-skills` and `/home/loren/projects/serverless-scanner-skill` keep
-  existing on disk as of this change (not archived/renamed — out of scope for an agent to do
-  without Loren's direct action) but are no longer the source of truth; update them to point
-  here or retire them in a follow-up.
-- Oracle APEX (`apexlang`) and Omarchy (`omarchy`, `diagnose-crash`) stay as external
-  symlinks: they genuinely belong to other projects/the OS and update independently.
+- Un `git clone` + `install.sh` instala skills, rules, hooks, subagentes y settings.
+- El glob de `sync.sh` (`<category>/<skill>/SKILL.md`, dos niveles) ya cubre `aws/<skill>/SKILL.md`.

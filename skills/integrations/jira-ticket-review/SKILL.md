@@ -7,9 +7,8 @@ description: Use when the user asks to review, analyze or take their assigned ti
 
 ## Objective
 
-Turn the user's assigned tickets into one page they can read in two minutes: what fails, why (with
-the code that causes it), what to change, what must be decided first, and which tickets ship together
-in one PR. Read-only: nothing changes in the tracker or the repos.
+One page the user reads in two minutes: what fails, why (with the code that causes it), what to change,
+what must be decided first, and which tickets ship together in one PR.
 
 ## Prerequisites
 
@@ -34,7 +33,7 @@ in one PR. Read-only: nothing changes in the tracker or the repos.
      option first and one line of why; missing access (logs, prod data) as a blocker.
    - If a cause is not confirmed, mark it "a confirmar" and say what is missing.
 4. **Group into PRs.** Same PR when tickets touch the same functions or queries, the same screen and
-   the same repo, so fixing them apart would edit the same code twice. Separate when the module
+   the same repo. Separate when the module
    differs, one is blocked, or it depends on an open PR. A ticket that spans back and front is one PR
    per repo with the same branch name.
 5. **Draw each cause** (load `artifact-diagramming`). One small inline SVG per ticket showing the real

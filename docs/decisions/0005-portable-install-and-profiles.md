@@ -1,63 +1,50 @@
-# 0005 — Portable install, personal profiles, and a plugin marketplace
+# 0005 — Instalación portable, perfiles personales y marketplace de plugins
 
-## Context
+Estado: aceptado (2026-10-10).
 
-This hub mixed shareable config (`config/AGENTS.md`, `config/CLAUDE.md`) with Lorenzo
-Graizzaro's own identity, learning stage, GitHub owner, and absolute `/home/loren/...`
-paths, and `install.sh`/`sync.sh` hardcoded `~/.agents/skills` as the hub location. Anyone
-cloning the repo got Loren's personal instructions mixed into the generic ones, with no
-guidance on how to make the setup their own, and `devops/project-init` defaulted its GitHub
-owner to `LorenGrz` unconditionally.
+## Contexto
 
-## Decision
+El hub mezclaba config compartible con la identidad, la etapa, el owner de GitHub y las rutas
+`/home/loren/...` de Lorenzo Graizzaro. `install.sh`/`sync.sh` fijaban `~/.agents/skills` como ubicación del
+hub y `devops/project-init` usaba `LorenGrz` como owner por defecto.
 
-- **Split personal from generic.** `config/AGENTS.md` and `config/CLAUDE.md` now carry only
-  shareable instructions — no names, no roadmap detail, no personal paths. Everything
-  personal (identity, language preference, English-coaching toggle, GitHub owner, learning
-  stage, project/tool paths, OS settings repo) moved to `config/profiles/loren.md`, with
-  `config/profiles/_template.md` as the commented starting point for anyone else.
-- **`install.sh --profile <name>`** resolves which profile to import: the flag, then a
-  persisted choice (`~/.config/agents-config/profile`), then `gh api user --jq .login` if it
-  matches an existing profile, then the same login with `config/profiles/_template.md`
-  copied in for the user to fill, then the template directly if `gh` isn't available. The state
-  dir can be overridden with `AGENTS_CONFIG_STATE_DIR`; the legacy names (`AGENT_CONFIG_STATE_DIR`,
-  `~/.config/agent-config`) are still read (see ADR 0007).
-- **`~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` became generated files**, not symlinks:
-  the former `@`-imports `config/AGENTS.md` + the chosen profile + `config/CLAUDE.md`; the
-  latter concatenates `config/AGENTS.md` + the profile (Codex has no `@`-import). Both carry
-  a header comment marking them as generated and owning only files with that marker get
-  silently regenerated — a real pre-existing file is backed up once (`.bak.<timestamp>`),
-  matching the existing symlink-repair behavior for `rules/hooks/agents`.
-- **`install.sh`/`sync.sh` derive the hub location from the script's own path**
-  (`$(dirname "${BASH_SOURCE[0]}")`), not a hardcoded `~/.agents/skills` — the repo now
-  works cloned anywhere.
-- **`devops/project-init`'s `--owner`** defaults to `gh api user --jq .login`, then
-  `git config github.user`, and is required if neither resolves — no more silent
-  `LorenGrz` default in `init.sh` or `bootstrap-github.sh`.
-- **A root `AGENTS.md`/`CLAUDE.md`** (distinct from `config/`'s) tell an agent that just
-  opened this repo how to guide a user through install — dry-run, resolve/create a profile,
-  confirm, install, verify — implemented as the `meta/agents-config-setup` skill.
-- **A Claude Code plugin marketplace** (`.claude-plugin/marketplace.json` +
-  `.claude-plugin/plugin.json`) offers a second, lighter install path: skills (via
-  category-directory `skills` entries — `aws/`, `development/`, etc., each already a
-  directory of `<name>/SKILL.md` folders, so no flattening needed), the three subagents, and
-  a generic hook subset (`hooks/hooks.json`, using `${CLAUDE_PLUGIN_ROOT}`) excluding
-  `guard-omarchy.sh` (desktop-specific, left to `install.sh`) and the untracked
-  cost-tracking status line. Rules are **not** a Claude Code plugin component (verified
-  against the plugin manifest/components reference — the standard-layout table has no
-  "rules" entry) — they only come via `install.sh`. The plugin method and `install.sh` are
-  documented as alternatives, not meant to be combined on one machine; the plugin is not
-  installed on this machine, to avoid duplicating the symlinked `install.sh` setup.
+## Decisión
 
-## Consequences
+- **Lo personal, separado de lo genérico.** `config/AGENTS.md` y `config/CLAUDE.md` llevan solo instrucciones
+  compartibles: sin nombres, detalle de roadmap ni rutas personales. Lo personal (identidad, idioma, English
+  coaching, owner de GitHub, etapa, rutas de proyectos y herramientas, repo de settings del SO) va a
+  `config/profiles/loren.md`; `config/profiles/_template.md` es el punto de partida comentado.
+- **`install.sh --profile <name>`** resuelve el perfil en este orden: el flag; la elección guardada
+  (`~/.config/agents-config/profile`); `gh api user --jq .login` si coincide con un perfil existente; ese
+  login con `config/profiles/_template.md` copiado para completar; el template directo si no hay `gh`. El
+  directorio de estado se cambia con `AGENTS_CONFIG_STATE_DIR`; los nombres viejos (`AGENT_CONFIG_STATE_DIR`,
+  `~/.config/agent-config`) se siguen leyendo (ADR 0007).
+- **`~/.claude/CLAUDE.md` y `~/.codex/AGENTS.md` son archivos generados**, no symlinks: el primero importa con
+  `@` `config/AGENTS.md` + el perfil + `config/CLAUDE.md`; el segundo concatena `config/AGENTS.md` + el perfil
+  (Codex no tiene `@`-import). Llevan un comentario de cabecera que los marca como generados; solo esos se
+  regeneran en silencio, y un archivo real previo se respalda una vez (`.bak.<timestamp>`), igual que la
+  reparación de symlinks de `rules/hooks/agents`.
+- **`install.sh`/`sync.sh` derivan la ubicación del hub de su propia ruta**
+  (`$(dirname "${BASH_SOURCE[0]}")`), no de `~/.agents/skills`: el repo funciona clonado en cualquier lado.
+- **`--owner` de `devops/project-init`** toma `gh api user --jq .login`, después `git config github.user`, y
+  es obligatorio si ninguno resuelve: no más `LorenGrz` silencioso en `init.sh` ni en `bootstrap-github.sh`.
+- **`AGENTS.md`/`CLAUDE.md` en la raíz** (distintos de los de `config/`) le dicen al agente que abre el repo
+  cómo guiar la instalación (dry-run, resolver o crear el perfil, confirmar, instalar, verificar),
+  implementado como la skill `meta/agents-config-setup`.
+- **Marketplace de plugins de Claude Code** (`.claude-plugin/marketplace.json` + `.claude-plugin/plugin.json`)
+  como segunda vía, más liviana: skills (entradas `skills` por directorio de categoría, `aws/`,
+  `development/`, etc., que ya son directorios de `<name>/SKILL.md`, sin aplanar), los tres subagentes y un
+  subconjunto genérico de hooks (`hooks/hooks.json`, con `${CLAUDE_PLUGIN_ROOT}`) sin `guard-omarchy.sh`
+  (propio del escritorio, queda para `install.sh`) ni la status line de costos no versionada. Las rules no son
+  componente de plugin (verificado en la referencia de componentes): llegan solo por `install.sh`.
+- El plugin e `install.sh` son alternativas y no se combinan en una máquina; en esta el plugin no está
+  instalado.
 
-- Anyone can clone this repo, run `./install.sh --dry-run`, create their own profile from
-  `_template.md`, and get a working setup with none of Loren's personal content leaking in.
-- Loren's own machine keeps working identically — `./install.sh --profile loren` reproduces
-  the prior behavior, with the same imported content now split across three files instead
-  of two, and `~/.claude/CLAUDE.md`/`~/.codex/AGENTS.md` as generated files instead of
-  symlinks (functionally equivalent: same content loads, just assembled from three sources).
-- `devops/project-init` works for any GitHub user without a `--owner` override, as long as
-  `gh` is authenticated or `git config github.user` is set.
-- Future personal preferences go in a profile, not in `config/AGENTS.md`/`config/CLAUDE.md`
-  — reviewers should reject a PR that adds a name or personal path to either file.
+## Consecuencias
+
+- Cualquiera clona, corre `./install.sh --dry-run`, crea su perfil desde `_template.md` y tiene un setup sin
+  contenido personal de Loren; `./install.sh --profile loren` reproduce el de Loren.
+- `devops/project-init` sirve a cualquier usuario de GitHub sin `--owner` si `gh` está autenticado o
+  `git config github.user` está definido.
+- Las preferencias personales nuevas van a un perfil: se rechaza un PR que agregue un nombre o una ruta
+  personal a `config/AGENTS.md` o `config/CLAUDE.md`.

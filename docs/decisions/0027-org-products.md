@@ -1,33 +1,34 @@
-# 0027 — Organizations with products
+# 0027 — Organizaciones con productos
 
-Status: accepted (2026-11-13). Builds on ADR 0012 (organizations) and 0026 (self-sufficient org repos).
+Estado: aceptado (2026-11-13). Se apoya en ADR 0012 (organizaciones) y 0026 (repos de org autosuficientes).
 
-## Context
+## Contexto
 
-An organization can run several product lines with different stacks and different teams. Its repo kept
-every skill in one flat `skills/` folder, so a project of one product received the other product's skills
-too, and a teammate installing the org as a plugin got everything at once. Splitting the org into two
-repos would duplicate the shared policies and the tool skills (GitHub, tracker, chat) and let them drift.
+Una organización puede tener varias líneas de producto con stacks y equipos distintos. Su repo guardaba todas
+las skills en un `skills/` plano, así un proyecto de un producto recibía también las del otro.
 
-## Decision
+## Decisión
 
-- **`products` in `org.json`** (optional): `{"<product>": {"remote_patterns": [regex, ...]}}`. With it, each
-  product has its own folder `<product>/` with `skills/`, `commands/` and a full `POLICIES.md`. The root
-  `POLICIES.md` stays: it is the org-wide core that the global index and `~/.claude` import.
-- **`orgs.sh validate`** checks each product folder (exists, has `POLICIES.md`, skills and commands well
-  formed, no baseline weakening) and accepts a `replaces` target that exists in any product.
-- **`project-agents.sh`** takes `--product <name>`, or picks the product whose patterns match the project's
-  `origin` (in a workspace folder, its child repos). No single match fails closed with the list of
-  products. Everything else (stack filters, `replaces`, index and critical rows) works on the chosen
-  product as it did on the org root.
-- How an org keeps the copies of its shared skills in step across products is the org repo's business (a
-  sync script with a `--check` is the expected shape); the hub reads only the product folders.
-- The POLICIES template of ADR 0026 applies to each product's `POLICIES.md`; the root one has the summary,
-  the core and the project section, without product sections.
+- **`products` en `org.json`** (opcional): `{"<product>": {"remote_patterns": [regex, ...]}}`. Con él, cada
+  producto tiene su carpeta `<product>/` con `skills/`, `commands/` y un `POLICIES.md` completo. El
+  `POLICIES.md` raíz sigue: es el núcleo de toda la org que importan el índice global y `~/.claude`.
+- **`orgs.sh validate`** revisa cada carpeta de producto (existe, tiene `POLICIES.md`, skills y comandos bien
+  formados, sin debilitar el baseline) y acepta un destino de `replaces` que exista en cualquier producto.
+- **`project-agents.sh`** acepta `--product <name>`, o elige el producto cuyos patrones coinciden con el
+  `origin` del proyecto (en una carpeta workspace, con los de sus repos hijos). Si no hay una sola
+  coincidencia, falla cerrado con la lista de productos. Lo demás (filtros de stack, `replaces`, filas de
+  índice y críticas) funciona sobre el producto elegido como antes sobre la raíz de la org.
+- Cómo mantiene una org sincronizadas las copias de sus skills comunes entre productos es asunto del repo de
+  la org (la forma esperada es un script de sync con `--check`); el hub lee solo las carpetas de producto.
+- Descartado: partir la org en dos repos, porque duplicaría las políticas comunes y las skills de herramientas
+  (GitHub, tracker, chat), que terminarían divergiendo.
+- La plantilla de POLICIES de ADR 0026 aplica al `POLICIES.md` de cada producto; el raíz lleva el resumen, el
+  núcleo y la sección de proyecto, sin secciones de producto.
 
-## Consequences
+## Consecuencias
 
-- An org without `products` works exactly as before.
-- A project or workspace whose remotes match no product (or several) must pass `--product`.
-- `.agents/skills.lock` records the org name and version, not the product; the installed files show which
-  product it is.
+- Una org sin `products` funciona igual que antes.
+- Un proyecto o workspace cuyos remotos no coinciden con ningún producto (o con varios) tiene que pasar
+  `--product`.
+- `.agents/skills.lock` registra el nombre y la versión de la org, no el producto; los archivos instalados
+  muestran cuál es.

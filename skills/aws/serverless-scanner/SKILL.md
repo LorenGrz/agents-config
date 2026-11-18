@@ -15,7 +15,7 @@ Identify high-ROI **partial** AWS serverless migration opportunities inside an e
 
 The user provides screenshots, workflow or architecture diagrams, a product description, README or feature list, the current stack, cloud cost or operational pain points, or a migration plan or RFP asking about serverless.
 
-Ask only if the input is too vague to infer the product type, and one targeted question maximum:
+Ask only if the input is too vague to infer the product type, one targeted question maximum:
 
 > "Can you describe what the product does and roughly how it's currently hosted?"
 
@@ -23,7 +23,7 @@ If any product context exists, proceed with inferred information and flag confid
 
 ## Workflow
 
-Follow these steps in order.
+In order:
 
 1. Identify product type (SaaS, marketplace, internal tool, etc.).
 2. Extract or infer user-facing workflows from the input.
@@ -42,7 +42,7 @@ Follow these steps in order.
 ## Rules
 
 1. **Never recommend serverless for everything.** Always include a "Do Not Migrate Yet" section.
-2. **Prefer isolated, stateless, event-driven, bursty, async, or scheduled workflows.** These are the strongest candidates.
+2. **Prefer isolated, stateless, event-driven, bursty, async, or scheduled workflows.**
 3. **Be skeptical of core transactional systems** (primary CRUD APIs, checkout, auth flows, real-time bidirectional features). Flag these as risky.
 4. **Use confidence levels** (`High`, `Medium`, `Low`) whenever you infer workflows from incomplete input.
 5. **For screenshots**, explicitly separate observed facts (what is visible) from inferred workflows (what probably happens behind the scenes).

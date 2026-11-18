@@ -42,14 +42,11 @@ Profile with AWS Lambda Power Tuning (open source) or manually:
 | Response streaming | Yes (InvokeWithResponseStream) | No |
 | Use when | Need streaming or advanced features | Simple Lambda proxy |
 
-For a personal site or simple API without streaming requirements, HTTP API is 3.5× cheaper.
-
 ## S3
 
-- **Versioning**: disable unless needed — stores every version of every object.
-- **Lifecycle policies**: add a rule to expire objects > 90 days in temp buckets.
-- **Data transfer (egress)**: S3 → internet costs $0.09/GB. Serve large assets via CloudFront.
-- **CloudFront**: use it for static sites (free tier above).
+- **Versioning** stores every version of every object: disable unless needed.
+- **Lifecycle policies**: expire objects > 90 days in temp buckets.
+- **Egress**: S3 → internet costs $0.09/GB. Serve large assets and static sites via CloudFront (free tier above).
 
 ## DynamoDB on-demand vs provisioned
 

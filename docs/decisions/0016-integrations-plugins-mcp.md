@@ -1,40 +1,47 @@
-# 0016 — Integrations: plugins, user-scope MCP and outbound guardrails
+# 0016 — Integraciones: plugins, MCP de usuario y barandas para lo que sale
 
-Status: accepted (2026-11-08)
+Estado: aceptado (2026-11-08).
 
-## Context
-The hub versioned skills, hooks and rules, but not the third-party plugins and MCP servers actually in use
-(paste-preview, skill-creator, Codex, claude-obsidian, NotebookLM, Obsidian). Re-running `install.sh` would
-also have flipped plugins that were enabled by hand, and nothing limited what an agent can send out through
-Slack, Gmail, Calendar, Jira, GitHub or Drive. Per-project MCP already exists (ADR 0011); a personal, global
-layer did not.
+## Contexto
 
-## Decision
-- **Account connectors** (Slack, Atlassian/Jira, GitHub, Gmail, Calendar, Drive) come from the claude.ai account
-  and are not declared in files. The hub adds usage skills and guardrails only.
-- **Plugins** are declared in `config/settings.base.json` (`enabledPlugins` + `extraKnownMarketplaces`, merged
-  key by key by `install.sh`): paste-preview, mattpocock-skills, claudex-loop, codex, claude-obsidian,
-  andrej-karpathy-skills, skill-creator, modern-web-guidance (Chrome team; global so it reaches every front, org
-  repos included; it runs `npx modern-web-guidance@latest`, which needs network). The `github` plugin is off: it fails to authenticate and duplicates the
-  claude.ai connector and `gh`. The Vercel plugin is on (it was enabled by hand; the base used to turn it off and
-  `install.sh` would have disabled it on the next run). n8n, impeccable, higgsfield and graphify stay out for now.
-- **User-scope MCP** servers live in `config/mcp.user.json` and are registered by
-  `install.sh --with-integrations` (`claude mcp add-json --scope user`, idempotent, no secrets): `notebooklm`
-  (`notebooklm-py` pinned, login by hand) and `obsidian` (`@bitbonsai/mcpvault` pinned; reads and writes the
-  vault by filesystem, confined to it; path from `$OBSIDIAN_VAULT`). This is a deliberate exception to "MCP is
-  opt-in per repo": both are personal tools, not tied to a stack. Machine-specific servers (e.g. `cao-mcp-server`)
-  stay out.
-- **Guardrails**: `permissions.ask` in `settings.base.json` covers outbound or hard-to-reverse tools (send,
-  schedule, create/update/delete events, create/edit/transition Jira, merge/create PR, push files, share/trash
-  Drive, delete/move in Obsidian). Reads and drafts are not gated.
-- **Local patch**: paste-preview opens its editor on every paste and has no setting for it.
-  `config/patches/paste-preview-no-autoedit.sh` comments that one line; `install.sh` re-runs it (idempotent)
-  because a plugin update overwrites it. The Edit button still opens the editor.
-- Plugins were audited from source before declaring them (hooks, network, exec). Codex's Stop review gate stays
-  off (opt-in in the plugin); claude-obsidian's SessionStart context is off by default.
+El hub no versionaba los plugins de terceros ni los servidores MCP en uso, volver a correr `install.sh`
+apagaba plugins prendidos a mano, y nada limitaba lo que un agente manda por Slack, Gmail, Calendar, Jira,
+GitHub o Drive. Había MCP por proyecto (ADR 0011) pero no una capa personal global.
 
-## Consequences
-`install.sh` now touches more of the machine only behind `--with-integrations`; plain runs just merge settings
-and re-apply the patch. Pinned versions need a deliberate bump. The paste-preview patch can break if upstream
-changes that line (the script warns instead of failing). Writes through the Obsidian MCP are not gated except
-delete/move, so keep the vault under backup or git.
+## Decisión
+
+- **Conectores de cuenta** (Slack, Atlassian/Jira, GitHub, Gmail, Calendar, Drive): vienen de la cuenta de
+  claude.ai y no se declaran en archivos. El hub suma solo skills de uso y barandas.
+- **Plugins** declarados en `config/settings.base.json` (`enabledPlugins` + `extraKnownMarketplaces`,
+  fusionados clave por clave por `install.sh`): paste-preview, mattpocock-skills, claudex-loop, codex,
+  claude-obsidian, andrej-karpathy-skills, skill-creator y modern-web-guidance (del equipo de Chrome; global
+  para que llegue a todo front, repos de org incluidos; corre `npx modern-web-guidance@latest`, que necesita
+  red).
+  - El plugin `github` queda apagado: falla al autenticar y duplica el conector de claude.ai y `gh`.
+  - El plugin de Vercel queda prendido: se había prendido a mano, y la base lo apagaba y `install.sh` lo iba a
+    desactivar en la próxima corrida.
+  - n8n, impeccable, higgsfield y graphify quedan afuera por ahora.
+- **MCP de usuario** en `config/mcp.user.json`, registrados por `install.sh --with-integrations`
+  (`claude mcp add-json --scope user`, idempotente, sin secretos): `notebooklm` (`notebooklm-py` fijado, login
+  a mano) y `obsidian` (`@bitbonsai/mcpvault` fijado; lee y escribe el vault por filesystem, confinado a él;
+  ruta desde `$OBSIDIAN_VAULT`). Es una excepción deliberada a «MCP opt-in por repo»: son herramientas
+  personales, no de un stack. Los servidores propios de la máquina (por ejemplo `cao-mcp-server`) quedan
+  afuera.
+- **Barandas**: `permissions.ask` en `settings.base.json` cubre las herramientas que mandan algo afuera o son
+  difíciles de revertir (enviar, agendar, crear/editar/borrar eventos, crear/editar/transicionar en Jira,
+  mergear/crear PR, push de archivos, compartir o mandar a la papelera en Drive, borrar/mover en Obsidian).
+  Lecturas y borradores no se frenan.
+- **Parche local**: paste-preview abre su editor en cada pegado y no tiene setting para evitarlo.
+  `config/patches/paste-preview-no-autoedit.sh` comenta esa línea; `install.sh` lo vuelve a correr
+  (idempotente) porque una actualización del plugin lo pisa. El botón Edit sigue abriendo el editor.
+- Los plugins se auditaron desde el código antes de declararlos (hooks, red, exec). El Stop review gate de
+  Codex queda apagado (opt-in en el plugin); el contexto de SessionStart de claude-obsidian viene apagado por
+  defecto.
+
+## Consecuencias
+
+- `install.sh` toca más de la máquina solo con `--with-integrations`; las corridas normales solo fusionan
+  settings y reaplican el parche.
+- Las versiones fijadas necesitan una subida deliberada.
+- El parche de paste-preview se puede romper si upstream cambia esa línea (el script avisa en vez de fallar).
+- Las escrituras por el MCP de Obsidian no se frenan salvo borrar y mover: el vault va con backup o git.

@@ -1,29 +1,20 @@
 <!--
-  Profile template for agents-config.
-
-  Copy this file to config/profiles/<your-name>.md and fill in the sections
-  below. install.sh imports this file (alongside config/AGENTS.md and
-  config/CLAUDE.md) into ~/.claude/CLAUDE.md and ~/.codex/AGENTS.md, so
-  everything you write here becomes part of every agent session on this
-  machine.
-
-  Keep this file personal: names, preferred language, your own project
-  paths, stack/learning stage, and anything else config/AGENTS.md should
-  stay generic about. Do not edit config/AGENTS.md or config/CLAUDE.md to
-  add personal content — add it here instead.
+  Profile template. Copy to config/profiles/<your-name>.md and fill it in.
+  install.sh imports it into ~/.claude/CLAUDE.md and ~/.codex/AGENTS.md, so it
+  reaches every agent session on this machine. Personal content goes here, never
+  in config/AGENTS.md or config/CLAUDE.md.
 -->
 
 # Profile: <your name>
 
-<!-- One line: who you are, and anything an agent should know about you
-     up front (role, timezone, primary language). -->
+<!-- One line: role, timezone, primary language. -->
 
 ## Identity
 
 - Name: <your name>
 - Preferred language for replies: <e.g. English, Spanish>
-- English coaching notes (add a short "English note" + "Better" line when a
-  message is written partly/fully in English): <yes | no>
+- English coaching notes ("English note" + "Better" line for messages written partly/fully in
+  English): <yes | no>
 
 ## GitHub
 
@@ -32,8 +23,7 @@
 
 ## Stack and learning stage
 
-<!-- Delete this section if not relevant. Keep it short — detail that's
-     rarely needed belongs in a skill's references/, not here. -->
+<!-- Optional. Keep it short; rarely needed detail goes in a skill's references/. -->
 
 - Current stack: <e.g. TypeScript, React, NestJS>
 - Current learning stage / roadmap pointer: <stage, or link to your own roadmap repo>
@@ -50,27 +40,22 @@
 
 ## Local tool paths
 
-<!-- Paths to tools you've installed locally that skills should reference,
-     e.g. MarkItDown for PDF conversion, a personal skills root, etc. -->
+<!-- Locally installed tools that skills should reference (e.g. MarkItDown for PDFs). -->
 
 - <tool name>: `<absolute or ~-relative path>`
 
 ## Skill routing
 
-<!-- Personal skill routing: which skill to load for which of your tools
-     or workflows (e.g. a desktop environment, a database tool). Delete this
-     section if you have none. -->
+<!-- Optional. Which skill to load for which of your tools or workflows. -->
 
 - <area>: `<skill>` before <doing what>.
 
 ## OS / desktop config
 
-<!-- Only if you use a specific desktop environment (e.g. Omarchy) with its
-     own settings repo. Delete this section otherwise. -->
+<!-- Optional: a desktop environment (e.g. Omarchy) with its own settings repo. -->
 
 - Settings repo: `<path>`
 
 ## Notes
 
-<!-- Anything else persistent that every agent session on this machine
-     should know about your working style or preferences. -->
+<!-- Anything else every agent session on this machine should know about your preferences. -->

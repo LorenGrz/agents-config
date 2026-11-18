@@ -1,10 +1,9 @@
 # Architecture - {{PROJECT}}
 
 <!--
-Update this file whenever architecture, modules, data model, external services, env vars,
-or deploy change - in the same PR as the code change (see AGENTS.md "Documentation rules").
-This is a skeleton: fill each section in as the project grows, delete the guidance comments
-once real content replaces them.
+Update this file in the same PR whenever architecture, modules, data model, external services,
+env vars or deploy change (AGENTS.md "Documentation rules"). Fill each section as the project
+grows; delete a guidance comment once real content replaces it.
 -->
 
 ## Overview
@@ -13,13 +12,12 @@ once real content replaces them.
 
 ## Modules / boundaries
 
-<!-- One entry per module/package/service: its responsibility and what it must not do.
-     Table or list, whichever reads clearer for this stack. -->
+<!-- One entry per module/package/service: its responsibility and what it must not do. -->
 
 ## Data model
 
-<!-- Main entities/tables and how they relate. Link to the actual schema/migrations/types
-     instead of duplicating them if the project already has one. -->
+<!-- Main entities/tables and how they relate. Link the real schema/migrations/types instead of
+     duplicating them. -->
 
 ## Key flows
 

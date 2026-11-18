@@ -4,14 +4,14 @@ Single source of truth for humans and AI agents (Codex, Cursor, Claude, others) 
 
 ## Documentation map (read this instead of the code)
 
-A new agent session should understand this project from these files alone, in this order:
+A new session should understand this project from these files alone, in this order:
 
 1. `AGENTS.md` (this file) - map, how we work, engineering standards.
 2. `.agents/CONTEXT.md` - current stack/architecture snapshot and repo facts.
 3. `docs/plans/HANDOFF.md` - current state and how to resume, read first if work is mid-flight.
 4. `docs/architecture.md` - overview, modules, data model, key flows, external services, env, deploy.
 5. `docs/decisions/` - ADRs: why a non-trivial trade-off was decided the way it was.
-6. `docs/superpowers/specs/` and `docs/superpowers/plans/` - what is being built and how, per unit of work.
+6. `docs/superpowers/specs/` and `docs/superpowers/plans/` - spec and plan of the work in progress, deleted in the merge that finishes it.
 7. `docs/prompts.md` - every AI prompt the app sends (verbatim, where it lives, history and lessons). Only if the app calls an AI model.
 
 Read `.agents/CONTEXT.md` before exploring the code: it holds the current state.
@@ -57,7 +57,7 @@ Non-negotiable for every agent and model working in this repo (source: agents-co
 3. `fix` work: superpowers `systematic-debugging`; only write a spec if the fix changes behavior.
 4. `scripts/gh-flow.sh start <feat|fix|refactor> <slug> --issue N` (or create a worktree with superpowers `using-git-worktrees` for parallel work).
 5. Execute with superpowers `subagent-driven-development` + `test-driven-development`.
-6. Superpowers `verification-before-completion` -> `scripts/gh-flow.sh pr` -> wait for CI to go green -> `scripts/gh-flow.sh merge`. The issue closes and the Project moves it to Done automatically.
+6. Superpowers `verification-before-completion` -> `scripts/gh-flow.sh pr` (the PR that finishes the work deletes its spec and plan; what must outlive them goes to an ADR) -> wait for CI to go green -> `scripts/gh-flow.sh merge`. The issue closes and the Project moves it to Done automatically.
 7. Agents without superpowers installed: follow the same seven steps manually.
 
 ### Branch and PR rules
@@ -69,7 +69,7 @@ Non-negotiable for every agent and model working in this repo (source: agents-co
 
 ### Workflow contract (where each rule is enforced)
 
-These rules live in several places. Changing one (base branch, branch naming, merge strategy, required checks, commit format) means updating **every** row below in the same PR, plus an ADR in `docs/decisions/`. A rule that changes in only one place is a bug.
+Changing one of these rules (base branch, branch naming, merge strategy, required checks, commit format) means updating **every** row below in the same PR, plus an ADR in `docs/decisions/`.
 
 | Rule | Documented | Enforced by |
 |---|---|---|
@@ -96,14 +96,12 @@ Mechanical rules live in {{ENFORCEMENT_FILES}} - this section is what no linter 
 - **LLM-facing code** (only if this app sends untrusted text to an LLM): separate instructions from data, validate model output against a schema, least-privilege tools, human approval for high-risk actions. Deeper: `prompt-injection-defense`.
 - **Testing**: behavior over implementation, name by `should <expected> when <condition>`, mock at the boundary, cover happy path + edge cases + errors. Deeper: `unit-test-generator` to write, `execute-test-suite` to run and fix.
 - **Commits**: Conventional Commits (`type(scope): subject`), one logical change per commit. Deeper: `conventional-commit-generator`.
-- **Docs**: see "Documentation rules" below for what gets saved where and when.
 
 {{STACK_CONVENTIONS}}
 
 ## Documentation rules
 
-- Every approved spec/plan is saved under `docs/superpowers/specs/` or `docs/superpowers/plans/` before implementation starts. A Claude plan-mode plan (saved outside the repo, in `~/.claude/plans`) must be copied into `docs/superpowers/plans/YYYY-MM-DD-<slug>.md` before work begins.
-- Plans and specs created during a session are saved too, not only the first approved one: worker/subagent specs and mid-session follow-up plans go to `docs/superpowers/plans/YYYY-MM-DD-<slug>.md` in the same PR as the work they describe.
+- Spec and plan live in `docs/superpowers/specs/` and `docs/superpowers/plans/` only while the work runs: copy the approved plan (a Claude plan-mode plan lives in `~/.claude/plans`) into `docs/superpowers/plans/YYYY-MM-DD-<slug>.md` before implementing, and delete both in the PR that finishes the work. What must outlive them goes to an ADR.
 - If the app sends prompts to an AI model, every prompt lives in `docs/prompts.md`: a verbatim copy, the file/function that owns it (the code stays the source of truth), and a short history of what was tried and why it changed. Update it in the same PR as any prompt change.
 - Any decision with a real trade-off (architecture, a hard-to-reverse library/service choice, data model, security trade-off) gets a new ADR in `docs/decisions/` - copy `docs/decisions/0000-template.md`.
 - When work pauses mid-flight, update `docs/plans/HANDOFF.md` before stopping, not after.

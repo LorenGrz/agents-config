@@ -22,7 +22,7 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 ```
 
 - Current stage (as of 2026-10-23): NestJS and Next.js pending — the active focus. Supabase and WebSockets understood. React in-depth study completed. JavaScript, Node.js, and TypeScript foundations done. Next stage after that: React Native. Also now learning Python.
-- Roadmap progress is auto-tracked: when Loren says he understood/finished a roadmap topic, or finished work shows it (e.g. a completed project in that tech), update the stage line above yourself — run `~/.agents/skills/meta/roadmap-coach/scripts/update-stage.sh "<new stage text>"` without asking, then tell him in one line. Don't edit copies elsewhere; this line is the only source.
+- When Loren says a roadmap topic is understood or finished, or finished work shows it, update the stage line above: run `~/.agents/skills/meta/roadmap-coach/scripts/update-stage.sh "<new stage text>"` without asking, then say so in one line. This line is the only source; don't edit copies elsewhere.
 - Keep roadmap tasks small and aligned to the current stage; do not introduce later frameworks just to make a project look advanced.
 - Current roadmap repo: `~/projects/roadmap`. Repository context file: `~/projects/roadmap/.agents/CONTEXT.md`.
 - Long-term product track: Study Tracker / Developer Progress Tracker (StudyQuest).
@@ -30,8 +30,8 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 
 ## Model routing
 
-- Main session: Opus at high effort (ADR 0024). Opus designs plans (Plan S/L, plan mode), executes them and delegates to workers (subagents); never pass `model: fable` to a subagent. Fable is only the advisor (`advisorModel: "fable"` in `~/.claude/settings.json`), since 2026-11-16. Decisions outside a plan still go to `reasoner` (Opus, effort high), ADR 0018.
-- `worker` = Sonnet: implements common writing tasks (code, docs, tests): every non-trivial repo change, in the background (ADR 0029). `reasoner` = Opus: decisions only. `scout` = Haiku: light read-only lookups.
+- Main session: Opus at high effort (ADR 0024). Opus designs plans (Plan S/L, plan mode), executes Plan S inline and delegates Plan L to workers (subagents); never pass `model: fable` to a subagent. Fable is only the advisor (`advisorModel: "fable"` in `~/.claude/settings.json`). Decisions outside a plan go to `reasoner` (Opus, effort high), ADR 0018.
+- `worker` = Sonnet: code, docs, tests; every non-trivial repo change, in the background (ADR 0029). `reasoner` = Opus: decisions only. `scout` = Haiku: light read-only lookups.
 - Gemini (`agy`) for bulk mechanical writing or wide reading when its quota is the better spend.
 - `reviewer` = Gemini 4 Argon (`gemini-4-argon`, thought level high; `gemini-4-argon-high` in `agy`) through
   Antigravity: reviews the diff before every PR and before a Plan L merge. Fallback when it is unavailable:
@@ -40,7 +40,7 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 ## Local tool paths
 
 - MarkItDown (PDF conversion, use first for PDF work): `~/projects/markitdown/.venv/bin/markitdown`.
-- AWS skills history: `skills/aws/` in this hub (folded in via `git subtree`, no longer a separate `~/projects/aws-skills` clone — see ADR 0001).
+- AWS skills: `skills/aws/` in this hub, not a separate `~/projects/aws-skills` clone (ADR 0001).
 
 ## Skill routing (personal)
 
@@ -52,11 +52,11 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 
 ## Codex workflow adapter
 
-`skills/meta/codex-workflows` adapts Claude Code to this existing personal setup. Its extra skill roots, beyond this hub, are:
+`skills/meta/codex-workflows` adapts Claude Code to this setup. Extra skill roots beyond this hub:
 
 - `~/.codex/skills`
 - `~/.local/share/omarchy/default/omarchy-skill/SKILL.md`
 
 ## Notes
 
-- All of Loren's repos are public except `omarchy-loren` (private: per-machine config and the new-PC setup). Baseline rule 1 (no secrets) applies to all of them, private included.
+- All of Loren's repos are public except `omarchy-loren` (per-machine config and the new-PC setup). Baseline rule 1 (no secrets) applies to all of them, private included.

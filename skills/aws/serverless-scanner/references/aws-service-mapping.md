@@ -1,7 +1,7 @@
 # AWS Service Mapping
 Read when: mapping detected workflow patterns to AWS serverless services (steps 4 and 9 of `SKILL.md`).
 
-Map detected workflow patterns to the most appropriate AWS serverless service. Always recommend the simplest service that solves the problem.
+Always recommend the simplest service that solves the problem.
 
 ## Pattern → Service Map
 
@@ -27,8 +27,6 @@ Map detected workflow patterns to the most appropriate AWS serverless service. A
 | **Caching** | ElastiCache Serverless | Lambda | Add caching in Lambda using the ElastiCache SDK. Keep Lambda warm-start time in mind — connection reuse matters. |
 
 ## Decision Shortcuts
-
-**When you see this in the product → reach for this first:**
 
 | Signal | First recommendation |
 |--------|---------------------|

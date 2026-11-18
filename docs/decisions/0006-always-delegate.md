@@ -1,34 +1,31 @@
-# 0006 — The main session delegates open lookups and large changes
+# 0006 — La sesión principal delega las búsquedas abiertas y los cambios grandes
 
-> Partly superseded by [0009](0009-opusplan-and-critical-reasoning-hook.md) and then [0018](0018-opus-medium-default-reasoner-high.md): the main session runs on Opus at medium effort; deep decisions go to `reasoner` (effort high).
+Estado: aceptado (2026-10-23). Reemplazado en parte por [0009](0009-opusplan-and-critical-reasoning-hook.md) y
+luego [0018](0018-opus-medium-default-reasoner-high.md): la sesión principal corre en Opus con esfuerzo medio
+y las decisiones profundas van a `reasoner` (esfuerzo alto).
 
-## Context
+## Contexto
 
-ADR 0003 allowed skipping subagents when a change touched ≤3 known files. Combined with the
-harness default of not spawning agents unless the user asks, the main session (Opus) ended up
-doing lookups and writing inline. Example, 2026-10-23: 6 search calls ran inline on Opus to
-research a plugin, spending Opus tokens on work `scout` handles fine.
+ADR 0003 permitía saltear subagentes con ≤3 archivos conocidos y, sumado al default del harness de no lanzar
+agentes sin pedido, Opus terminaba buscando y escribiendo inline (el 2026-10-23, 6 búsquedas para investigar
+un plugin).
 
-## Decision
+## Decisión
 
-The main session (Opus) decides, writes specs, reviews results, and reports.
+- La sesión principal (Opus) decide, escribe specs, revisa resultados e informa.
+- Búsquedas abiertas (rutas que no se conocen, recorrer directorios o caches, búsqueda web, docs) → `scout`,
+  con una pregunta concreta. Leer un archivo conocido para decidir sigue inline.
+- Cambios grandes (más de 3 archivos, o escritura masiva o mecánica) → `worker`, con la spec decidida, los
+  archivos exactos y un comando de aceptación. Los cambios chicos a ≤3 archivos conocidos siguen inline.
+- Decisiones caras de errar → `reasoner` o la sesión principal, nunca `worker`/`scout`.
+- Las subtareas independientes se despachan en paralelo, en un solo mensaje.
+- Es una instrucción permanente del usuario y pisa el default del harness.
+- Conserva la regla de 0003 de «≤3 archivos conocidos inline» para escribir, limitada a archivos conocidos.
+- Descartado: delegar *toda* edición (primera versión del mismo día), porque el arranque en frío de un
+  subagente cuesta más que una edición chica a un archivo conocido.
 
-- Open lookups (paths not already known, sweeping directories or caches, web search, docs
-  lookup) → `scout`, with one concrete question. Reading a known file to decide stays inline.
-- Large changes (more than 3 files, or bulk/mechanical writing) → `worker`, with the decided
-  spec, exact files, and an acceptance command. Small changes to ≤3 known files stay inline.
-- Costly-to-get-wrong decisions → `reasoner` or the main session, never `worker`/`scout`.
-- Independent subtasks are dispatched in parallel in one message.
-- This is a standing user instruction and overrides the harness default.
+## Consecuencias
 
-A first version of this ADR (same day) delegated *every* edit; it was narrowed to the above
-because a subagent's cold start costs more than a small known-file edit.
-
-Keeps 0003's "≤3 known files inline" rule for writing, but limits it to known files: open
-lookups always go to `scout`.
-
-## Consequences
-
-- Opus no longer spends tokens on open-ended searches or bulk writing.
-- Small known-file edits stay fast, with no cold-start cost.
-- The main session has to write clear specs for what it delegates.
+- Opus no gasta tokens en búsquedas abiertas ni en escritura masiva, y las ediciones chicas siguen sin
+  arranque en frío.
+- La sesión principal tiene que escribir specs claras para lo que delega.

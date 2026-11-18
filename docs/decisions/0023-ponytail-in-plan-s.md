@@ -1,42 +1,31 @@
-# 0023 — PonyTail, only in Plan S
+# 0023 — PonyTail, solo en Plan S
 
-Status: accepted (2026-11-09). Completes ADR 0022 (Plan S) and settles the PonyTail trial left open in ADR 0020.
+Estado: aceptado (2026-11-09). Completa ADR 0022 (Plan S) y cierra la prueba de PonyTail que dejó abierta ADR
+0020.
 
-## Context
+## Contexto
 
-Plan S is the light path: a short plan executed inline (ADR 0022). PonyTail (`DietrichGebert/ponytail`,
-5.3.3, MIT) is a Claude Code plugin that biases the agent toward the smallest complete change: reuse what
-exists, stdlib first, no unrequested abstractions. Its published savings are its own claims.
+PonyTail (`DietrichGebert/ponytail`, 5.3.3, MIT) empuja al cambio completo más chico; sus ahorros son
+autodeclarados. Leído el código: tres hooks de Node (SessionStart, SubagentStart, UserPromptSubmit), modo
+`full` por defecto, una band de UI que guarda un CSV por turno y red solo por un webhook opcional vacío.
 
-What the code does, read before installing:
-- **Hooks.** Three Node hooks: SessionStart, SubagentStart and UserPromptSubmit.
-- **Default mode.** `full`, active in every session. `PONYTAIL_DEFAULT_MODE` or `~/.config/ponytail/config.json`
-  change it. With `off`, the SessionStart hook writes nothing (`hooks/ponytail-activate.js`).
-- **Changing the mode.** It changes only when the user types `/ponytail` (the UserPromptSubmit hook reads the
-  user's prompt).
-- **The band.** A UI module ("band") above the prompt writes one CSV row per turn to
-  `~/.config/ponytail/band/` unless the plugin option `ledger` is `false`. The file `~/.claude/.ponytail-band`
-  containing `off` hides it.
-- **Network.** Only an optional webhook, empty by default. It runs `git ls-files` for its repo map.
-- **Cost.** `claude plugin details`: ~641 tokens always on (six skill descriptions); the `ponytail` skill
-  costs ~1.1k each time it is invoked.
+## Decisión
 
-## Decision
+- **Instalado y habilitado globalmente**, pero **apagado por defecto**: `settings.base.json` lo habilita y
+  fija `env.PONYTAIL_DEFAULT_MODE = "off"` y `pluginConfigs["ponytail@ponytail"].options.ledger = false` (la
+  band no escribe su fila CSV por turno en `~/.config/ponytail/band/`).
+- **Plan S lo carga explícitamente**: en `config/CLAUDE.md`, Plan S corre inline con la skill
+  `ponytail:ponytail` cargada al empezar la ejecución. Fuera de Plan S no se invoca ninguna skill `ponytail*`
+  salvo pedido, digan lo que digan sus descripciones ("use on any coding task").
+- **`install.sh`** fusiona `env` y `pluginConfigs` igual que `enabledPlugins` (la base gana en sus claves, las
+  del usuario sobreviven; las opciones de plugin con merge profundo). También crea `~/.claude/.ponytail-band`
+  con `off` (oculta la band) una vez, sin pisar nunca la elección del usuario.
 
-- **Installed and enabled globally**, but **off by default**. `settings.base.json` enables it and sets
-  `env.PONYTAIL_DEFAULT_MODE = "off"` and `pluginConfigs["ponytail@ponytail"].options.ledger = false`.
-- **Plan S loads it explicitly.** `config/CLAUDE.md`: Plan S runs inline with the `ponytail:ponytail` skill
-  loaded when execution starts. Outside Plan S no `ponytail*` skill is invoked unless asked, whatever their
-  descriptions say ("use on any coding task").
-- **`install.sh`** merges `env` and `pluginConfigs` the same way it merges `enabledPlugins` (base wins on
-  its keys, user keys survive; plugin options deep-merged). It also creates `~/.claude/.ponytail-band`
-  containing `off` once, never overwriting the user's own choice.
+## Consecuencias
 
-## Consequences
-
-- Every session pays ~641 tokens for the skill list, Plan S sessions ~1.1k more when the skill loads, and
-  other sessions nothing more: with mode `off` the hooks add no context.
-- Typing `/ponytail` turns it on for the rest of a session; "stop ponytail" turns it off.
-- Third-party code runs on every session start and prompt (Node hooks, plus the band module in the UI).
-  Updating the plugin pulls new code: review the diff before `claude plugin marketplace update ponytail`.
-- A plugin installed mid-session is only available from the next session.
+- Toda sesión paga ~641 tokens por la lista de skills, las de Plan S ~1.1k más cuando carga la skill, y las
+  demás nada más: con modo `off` los hooks no suman contexto.
+- Escribir `/ponytail` lo prende por el resto de la sesión; "stop ponytail" lo apaga.
+- Corre código de terceros en cada inicio de sesión y en cada prompt. Actualizar el plugin trae código nuevo:
+  se revisa el diff antes de `claude plugin marketplace update ponytail`.
+- Un plugin instalado a mitad de sesión recién está disponible en la sesión siguiente.

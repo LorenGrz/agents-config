@@ -7,7 +7,7 @@ description: Use when the user mentions Jira tickets, issues, sprints, JQL, tran
 
 ## Objective
 
-Read and search Jira/Confluence freely; change anything only after the user approves the exact text.
+Read and search Jira/Confluence freely. In Jira only a new ticket and a comment wait for the user's OK on the exact text; Confluence pages too.
 
 ## Prerequisites
 
@@ -25,17 +25,18 @@ Read and search Jira/Confluence freely; change anything only after the user appr
 
 ## Rules
 
-- In a repo that matches an organization, use that organization's replacement skill when one is installed (e.g. in `.claude/skills/`); its rules win. The org's `POLICIES.md` and the `github-usage` skill (Organizations) apply too: tracker writes need the user's OK on the exact text; a policy may add restrictions, never relax these.
-- Exception in an organization repo: the transitions its skill marks as automatic (typically To Do → In
-  Progress when work starts, and the test column when the PR opens) run without asking and are reported in
-  one line, never put to the user as a question. Comments, new issues, edits and every other transition still
-  need the OK on the exact text.
+- In a repo that matches an organization, use that organization's replacement skill when one is installed (e.g. in `.claude/skills/`); its rules win. The org's `POLICIES.md` and the `github-usage` skill (Organizations) apply too: a new ticket or a comment needs the user's OK on the exact text; a policy may add restrictions, never relax these.
+- An organization's skill may name the transitions that happen by themselves (typically To Do → In
+  Progress when work starts, and the test column when the PR opens): they are never put to the user as a
+  question.
 
-### Write rules (approval required)
+### Write rules
 
-- Create, edit, comment, transition, worklog, link, and Confluence create/update: show the exact text (fields, comment body, page content) and the target, then wait for an explicit OK.
-- Before any other transition, call `getTransitionsForJiraIssue`, show the available transitions, and let the user pick.
-- Re-confirm if the text changes after approval.
+- Create a ticket, comment, and Confluence create/update: show the exact text (fields, comment body, page
+  content) and the target, then wait for an explicit OK. Re-confirm if the text changes after approval.
+- Edit a ticket, transition, worklog and link: do it without asking and report it in one line.
+- Before a transition, call `getTransitionsForJiraIssue` and pick by name; ask only when the request does
+  not say which status.
 
 ### Operating Rules
 
@@ -47,4 +48,4 @@ Read and search Jira/Confluence freely; change anything only after the user appr
 ## Shortcuts
 <!-- parsed by scripts/gen-intents.sh -->
 - tools: `^mcp__claude_ai_Atlassian_Rovo__`
-- intent: Jira ticket — `\bjira\b|\bticket\b|\b[a-z]{2,10}-[0-9]+\b|\bsprint\b|\bconfluence\b` → `getJiraIssue or JQL search; writes (create, edit, transition, comment) only after showing the exact text and getting an OK; in an org repo, the transitions its skill marks as automatic go without asking`
+- intent: Jira ticket — `\bjira\b|\bticket\b|\b[a-z]{2,10}-[0-9]+\b|\bsprint\b|\bconfluence\b` → `getJiraIssue or JQL search; a new ticket, a comment or a Confluence page only after showing the exact text and getting an OK; ticket edits, transitions, worklogs and links without asking, reported in one line`

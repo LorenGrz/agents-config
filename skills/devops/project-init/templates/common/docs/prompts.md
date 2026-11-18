@@ -1,10 +1,9 @@
 # Prompts
 
 <!--
-Every prompt this app sends to an AI model (LLM, image model, embeddings...).
-The code is the source of truth; this file is the readable copy plus the history of what was
-tried. Update it in the same PR as any prompt change (see AGENTS.md "Documentation rules").
-Delete this file if the app never calls an AI model.
+Every prompt this app sends to an AI model (LLM, image model, embeddings...). The code is the
+source of truth; this file is the readable copy plus the history of what was tried. Update it in
+the same PR as any prompt change. Delete this file if the app never calls an AI model.
 -->
 
 | Prompt | Model | Code |

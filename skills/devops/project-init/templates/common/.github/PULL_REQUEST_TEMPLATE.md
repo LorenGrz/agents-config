@@ -8,7 +8,7 @@ Closes #<issue-number>
 
 ## Spec/plan link
 
-<!-- docs/superpowers/specs/... and/or docs/superpowers/plans/... if this went through the spec-driven workflow. -->
+<!-- The spec/plan this PR followed, if any. The PR that finishes the work deletes them from docs/superpowers/; what must last goes to an ADR. -->
 
 ## How to test
 
@@ -19,7 +19,6 @@ Closes #<issue-number>
 - [ ] `{{CMD_LINT}}` passes
 - [ ] `{{CMD_TYPECHECK}}` passes
 - [ ] `{{CMD_TEST}}` passes
-- [ ] `AGENTS.md` updated if this changes commands, architecture, or conventions
-- [ ] Spec/plan saved in docs/superpowers
+- [ ] If this PR finishes the work: spec/plan deleted from docs/superpowers, lasting decisions moved to an ADR
 - [ ] ADR added if a trade-off was made
-- [ ] AGENTS.md/CONTEXT.md/architecture.md updated if structure changed
+- [ ] AGENTS.md/CONTEXT.md/architecture.md updated if commands, architecture, conventions or structure changed

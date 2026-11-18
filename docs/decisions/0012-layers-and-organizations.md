@@ -1,17 +1,34 @@
-# 0012 — Layers: base, organizations, projects
+# 0012 — Capas: base, organizaciones y proyectos
 
-Status: accepted (2026-11-04)
+Estado: aceptado (2026-11-04).
 
-## Context
-One person works for several companies or clients. Company rules, skills and domain knowledge were mixed with personal practices, and this repo is public.
+## Contexto
 
-## Decision
-Three layers: the public **base** (this repo, with `config/baseline.md` as the floor no one can lower), **organizations** (`organizations/<name>/`, each its own private git repo, cloned but ignored here), and the **project** (`.agents/project.json`, `POLICIES.md`, `skills.lock`). An org overrides conventions and adds skills, commands and questions through `org.json` (contract in `organizations/README.md`); it cannot weaken the baseline. `scripts/orgs.sh` manages them. Nested ignored repos, not submodules: a submodule would record the private URL and SHA in this public repo. The per-org identifying terms go to a local blocklist (ADR 0015).
+Una persona trabaja para varias empresas o clientes. Las reglas, skills y conocimiento de dominio de cada
+empresa se mezclaban con las prácticas personales, y este repo es público.
 
-## Consequences
-- Pushes are per repo; the public repo never sees org commits. Versions are independent, frozen per project in `.agents/skills.lock`; updating is explicit.
-- Recognition by GitHub owner via the local, untracked `organizations/INDEX.md` (imported by `install.sh`); `project-init` proposes the org and always asks.
-- A policy that replaces a base practice is recorded as an ADR in the project.
-- The baseline floor is **advisory**. `orgs.sh validate` (run on `add`, `pull` and before `--org` installs, failing closed) catches contract mistakes and obvious weakening phrases in policies, skills and commands; it is not a security boundary. An org repo is trusted code: install only orgs you control.
-- `project-agents.sh --org` validates the org, its names, `replaces` keys and symlinks before writing anything; `init.sh` asks before copying an org's private policies into a project whose owner is not one of the org's GitHub owners.
-- `meta/org-creator` is the entry point for a new company or client.
+## Decisión
+
+- Tres capas: la **base** pública (este repo, con `config/baseline.md` como piso que nadie puede bajar), las
+  **organizaciones** (`organizations/<name>/`, cada una su propio repo git privado, clonado pero ignorado acá)
+  y el **proyecto** (`.agents/project.json`, `POLICIES.md`, `skills.lock`).
+- Una org pisa convenciones y suma skills, comandos y preguntas con `org.json` (contrato en
+  `organizations/README.md`); no puede debilitar el baseline. `scripts/orgs.sh` las administra.
+- Repos anidados e ignorados. Los términos que identifican a cada org van a una blocklist local (ADR 0015).
+- Se reconoce la org por el owner de GitHub con `organizations/INDEX.md`, local y no versionado (lo importa
+  `install.sh`); `project-init` propone la org y siempre pregunta.
+- Una política que reemplaza una práctica base se registra como ADR en el proyecto.
+- `orgs.sh validate` (corre en `add`, `pull` y antes de instalar con `--org`; falla cerrado) detecta errores
+  de contrato y frases obvias de debilitamiento en políticas, skills y comandos.
+- `project-agents.sh --org` valida la org, sus nombres, las claves de `replaces` y los symlinks antes de
+  escribir nada; `init.sh` pregunta antes de copiar las políticas privadas de una org a un proyecto cuyo owner
+  no es uno de los owners de GitHub de la org.
+- `meta/org-creator` es la entrada para una empresa o un cliente nuevo.
+- Descartado: submódulos, porque registrarían la URL privada y el SHA en este repo público.
+
+## Consecuencias
+
+- Los push son por repo: el repo público nunca ve commits de una org. Las versiones son independientes,
+  fijadas por proyecto en `.agents/skills.lock`; actualizar es explícito.
+- El piso del baseline es **orientativo**: `orgs.sh validate` no es una frontera de seguridad. Un repo de org
+  es código de confianza: se instalan solo orgs que uno controla.
