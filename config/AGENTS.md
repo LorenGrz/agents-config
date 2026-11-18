@@ -28,7 +28,7 @@ your profile (`config/profiles/<your-name>.md`, imported alongside this file) �
 - Add or keep scripts for `dev`, `test`, `lint`, `format`, and `typecheck` when the project needs them.
 - Maintain a short `README.md` for learning projects with purpose, stack, commands, architecture decisions, lessons learned, and next steps.
 - Per-repo context lives in `AGENTS.md` (single source of truth for every agent). `CLAUDE.md`, when present, contains only `@AGENTS.md` plus Claude-specific instructions. Never duplicate content between them; when a repo has both with overlapping content, merge into AGENTS.md.
-- Every repo keeps: (a) `AGENTS.md` as the map new sessions read instead of the code; (b) `.agents/CONTEXT.md` for current state; (c) `docs/superpowers/specs/` and `docs/superpowers/plans/` for every approved spec/plan created in a session — including subagent/worker specs and mid-session follow-up plans, not only the first one — copy an approved plan-mode plan into `docs/superpowers/plans/YYYY-MM-DD-<slug>.md` before implementing (plan mode saves outside the repo, in `~/.claude/plans`); (d) `docs/decisions/NNNN-<slug>.md` ADRs for decisions with trade-offs; (e) `docs/prompts.md` with every AI prompt the app sends to a model (verbatim copy, where it lives in code, and a short history of what was tried and why it changed) — update it in the same PR as any prompt change. Update these after merging.
+- Every repo keeps: (a) `AGENTS.md` as the map new sessions read instead of the code; (b) `.agents/CONTEXT.md` for current state; (c) `docs/superpowers/specs/` and `docs/superpowers/plans/` for the spec and plan being executed: copy an approved plan-mode plan into `docs/superpowers/plans/YYYY-MM-DD-<slug>.md` before implementing, and delete both in the merge that finishes the work; what must outlive them goes to an ADR; (d) `docs/decisions/NNNN-<slug>.md` ADRs for decisions with trade-offs; (e) `docs/prompts.md` with every AI prompt the app sends to a model (verbatim copy, where it lives in code, and a short history of what was tried and why it changed) — update it in the same PR as any prompt change. Update these after merging.
 
 ## Workflow lanes
 
@@ -45,6 +45,16 @@ your profile (`config/profiles/<your-name>.md`, imported alongside this file) �
   at a time (the `mattpocock-skills:grilling` skill where available) until nothing is left to assume. Its
   design step does not re-ask what was answered, and its work goes to subagents or workers, each one in
   the worktree of the branch it touches.
+- **Plan L splits the work:** one worker per repo or layer (backend, frontend), in parallel, each in its
+  own worktree; the main session writes the briefs, integrates and commits, and writes no code.
+- **A reviewer checks the work before every PR is opened**, and before the merge that closes a Plan L when
+  there is no PR: a model from another provider (named in the profile) reviews the diff against the
+  original request with the repo's review skill and runs the checks, without editing. The main session
+  fixes small findings, sends large ones to a worker and asks for one re-review; what is still open after
+  it goes to the user. No reviewer available: the profile's fallback reviews, and the user is told in one
+  line.
+- **An agent started from a brief** (worker, delegated child, reviewer) executes it: no lane question, no
+  subagents of its own.
 - **Every plan (S or L) is shown in the terminal with a table:** who does what, whether it runs in
   parallel, files, and how it is verified. Parallel or visual work adds an ASCII diagram of the order. It
   goes in the message, not only in the plan file.
