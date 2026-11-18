@@ -50,6 +50,7 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 ## OS / desktop config
 
 - Desktop: Omarchy (Arch-based Linux). Settings repo: `~/projects/omarchy/settings`. Never edit Omarchy source under `~/.local/share/omarchy/` (the generic rules are in `AGENTS.md` "OS and desktop config").
+- "Suspendé la PC" / "suspend the PC" (usually remote, through T3 Code): finish the reply's work first, then run `suspend-later` (30 s delay so the reply arrives). If it aborts listing active work, show the list and ask before `suspend-later --force`. `suspend-later --cancel` stops it.
 
 ## Codex workflow adapter
 
