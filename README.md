@@ -131,7 +131,7 @@ base (this repo, public) -> organization (private repo in organizations/) -> pro
 
 - Add a company or client: `scripts/orgs.sh add <name> <git-url>` or `--init`, or the `org-creator` skill. Details: `organizations/README.md`.
 - Packs: `packs/<name>/pack.json` says when it applies; `scripts/project-agents.sh --manifest <file> [--org <name>]` installs it.
-- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `scripts/test-intents.sh`, `scripts/test-cli-baselines.sh`, `scripts/test-lane-guard.sh`, `skills/devops/project-init/scripts/test-manifest.sh`, `skills/devops/project-init/scripts/test-docs-check.sh`, and `e2e.sh` per stack under `skills/devops/project-init/scripts/`.
+- Tests: `scripts/test-packs.sh`, `scripts/test-orgs.sh`, `scripts/test-intents.sh`, `scripts/test-cli-baselines.sh`, `scripts/test-lane-guard.sh`, `scripts/test-stack-sync.sh`, `skills/devops/project-init/scripts/test-manifest.sh`, `skills/devops/project-init/scripts/test-docs-check.sh`, and `e2e.sh` per stack under `skills/devops/project-init/scripts/`.
 - Guards: `scripts/leak-guard.sh` (blocklist stays local; hooks pre-commit, commit-msg, pre-push), `scripts/gen-plugin.sh --check`, `scripts/gen-intents.sh --check` and `scripts/lint-docs.sh` (markdown templates, see `skills/README.md`); enable the hooks with `git config core.hooksPath .githooks`. Test: `scripts/test-leak-guard.sh`.
 - Requirements: bash 4+, `jq`, GNU sed/awk/xargs/tar (Linux; on macOS `brew install bash gnu-sed gawk findutils gnu-tar`).
 
