@@ -30,9 +30,9 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 
 ## Model routing
 
-- Main session: Opus at high effort (ADR 0024). Opus designs plans (Plan S/L, plan mode), executes Plan S inline and delegates Plan L to repo leads or workers; never pass `model: fable` to a subagent. Fable is only the advisor (`advisorModel: "fable"` in `~/.claude/settings.json`). Decisions outside a plan go to `reasoner` (Opus, effort high), ADR 0018.
-- `worker` = Sonnet: code, docs, tests; every non-trivial repo change, in the background (ADR 0029). `reasoner` = Opus: decisions only. `scout` = Haiku: light read-only lookups.
-- Repo lead (Plan L across repos) = Opus at high effort: one per repo, in that repo's own session and with that repo's skills; it may start `worker` (Sonnet) and `scout` (Haiku).
+- Main session: Opus at high effort (ADR 0024). Opus designs plans (Plan S/L, plan mode), executes Plan S inline and delegates Plan L to leads or workers; never pass `model: fable` to a subagent. Fable is only the advisor (`advisorModel: "fable"` in `~/.claude/settings.json`). A reasoner is Opus at high effort consulting that advisor: the main session is one, and so is every lead.
+- `worker` = Sonnet: code, docs, tests; every non-trivial repo change, in the background (ADR 0029). The `reasoner` subagent = Opus: decisions only. `scout` = Haiku: light read-only lookups.
+- Lead (Plan L across repos) = a reasoner session, not the `reasoner` subagent: one per repo, in that repo's own session and with that repo's skills, or in the workspace folder when the skills live there; a workspace lead may send a lead to each child repo. Leads start `worker` (Sonnet) and `scout` (Haiku).
 - Gemini (`agy`) for bulk mechanical writing or wide reading when its quota is the better spend.
 - `reviewer` = Gemini 4 Argon (`gemini-4-argon`, thought level high; `gemini-4-argon-high` in `agy`) through
   Antigravity: reviews the diff before every PR and before a Plan L merge. Fallback when it is unavailable:
@@ -50,6 +50,7 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 ## OS / desktop config
 
 - Desktop: Omarchy (Arch-based Linux). Settings repo: `~/projects/omarchy/settings`. Never edit Omarchy source under `~/.local/share/omarchy/` (the generic rules are in `AGENTS.md` "OS and desktop config").
+- "Suspendé la PC" / "suspend the PC" (usually remote, through T3 Code): finish the reply's work first, then run `suspend-later` (30 s delay so the reply arrives). If it aborts listing active work, show the list and ask before `suspend-later --force`. `suspend-later --cancel` stops it.
 
 ## Codex workflow adapter
 

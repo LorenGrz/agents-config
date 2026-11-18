@@ -38,10 +38,10 @@ una sola pregunta con tres opciones, siempre en este orden (`lane-guard.sh` lo i
 |---|---|
 | Continuar | directo, sin plan |
 | Plan S | plan corto (archivos, cambio, check) ejecutado inline; sin entrevista, solo las preguntas críticas en un lote |
-| Plan L | entrevista de `mattpocock-skills:grilling`, spec y plan en `docs/superpowers/`, un líder por repo cuando el trabajo cruza repos |
+| Plan L | entrevista de `mattpocock-skills:grilling`, spec y plan en `docs/superpowers/`, un líder por repo o workspace cuando el trabajo cruza repos |
 
 - **Orquestador**: la sesión principal. Planifica, escribe los briefs e integra; en Plan L no escribe código.
-- **Líder de repo**: una sesión en cada repo que toca el trabajo, con las skills y restricciones de ese repo. Implementa, puede lanzar `worker` y `scout`, commitea en la rama de la tarea y hace revisar su diff. En un solo repo es el orquestador.
+- **Líder**: una sesión en cada repo que toca el trabajo, con las skills y restricciones de ese repo, o en la carpeta del workspace cuando las skills viven ahí (ese líder puede mandar un líder a cada repo hijo). Implementa, puede lanzar `worker` y `scout`, commitea en la rama de la tarea y hace revisar su diff. En un solo repo es el orquestador.
 - **`worker`**: implementa algo ya decidido, en segundo plano. Default para todo cambio no trivial. **`scout`**: solo lectura.
 - **`reasoner`**: decisiones caras de errar (arquitectura, bugs sin causa conocida, cambios difíciles de revertir).
 - **Reviewer**: otro proveedor revisa el diff contra el pedido y corre los checks, sin editar, antes de cada PR y del
@@ -53,16 +53,16 @@ flowchart LR
   Q -- no --> P{"Continuar / Plan S / Plan L"}
   P -- Continuar --> W[worker en su worktree]
   P -- Plan S --> S[Plan corto, inline]
-  P -- Plan L --> G[grilling, spec y plan] --> WL[un líder por repo, con sus workers]
+  P -- Plan L --> G[grilling, spec y plan] --> WL[un líder por repo o workspace, con sus workers]
   W --> O[El orquestador revisa y commitea]
   D & S & O & WL --> R[Reviewer de otro proveedor] --> M["PR o merge: se borran spec y plan, lo que queda va a un ADR"]
 ```
 
-| Harness | Líder de repo | `worker` | Reviewer |
+| Harness | Líder | `worker` | Reviewer |
 |---|---|---|---|
-| Claude Code | subagente con la ruta del repo en el brief | subagente `worker` con `run_in_background` | `gemini-delegate` |
-| T3 Code | `t3_thread_launch` en el proyecto de ese repo | `delegate_task` con `isolation: "worktree"` | `delegate_task` |
-| Orca | worker de Orca en ese repo | workers de Orca (skill `orchestration`) | worker de Orca |
+| Claude Code | subagente con la ruta en el brief | subagente `worker` con `run_in_background` | `gemini-delegate` |
+| T3 Code | `t3_thread_launch` en el proyecto de ese repo o workspace | `delegate_task` con `isolation: "worktree"` | `delegate_task` |
+| Orca | worker de Orca en ese repo o workspace | workers de Orca (skill `orchestration`) | worker de Orca |
 
 El modelo de cada rol lo define tu perfil («Model routing»). Un agente lanzado con un brief lo ejecuta, sin preguntar la
 lane. Reglas: `config/AGENTS.md` («Workflow lanes»), `config/CLAUDE.md` («Agent Routing»), ADR 0022, 0029, 0033, 0034 y 0036.

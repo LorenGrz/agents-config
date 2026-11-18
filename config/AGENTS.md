@@ -53,17 +53,19 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   design step does not re-ask what was answered.
 - **Plan L splits the work by repo:** the main session plans, writes the briefs, integrates, and writes no
   code. Work that spans repos (backend, frontend) gets one lead per repo: a session opened in that repo, in
-  the one worktree of its task branch, so that repo's `AGENTS.md`, skills and restrictions apply. A lead
-  implements with the repo's skills, may start `worker` and `scout` agents there, commits on the task
-  branch and gets its diff reviewed before handing it back; it never pushes or opens the PR. In a single
-  repo the main session is the lead.
+  the one worktree of its task branch, so that repo's `AGENTS.md`, skills and restrictions apply. When the
+  repos sit in a workspace folder that holds their skills, the lead opens in that folder and may send a
+  lead to each child repo. A lead implements with the repo's skills, may start `worker` and `scout` agents
+  there, commits on the task branch and gets its diff reviewed before handing it back; it never pushes or
+  opens the PR. In a single repo the main session is the lead.
 - **A reviewer checks the work before every PR is opened**, and before the merge that closes a Plan L when
   there is no PR: a model from another provider (named in the profile) reviews the diff against the
   original request with the repo's review skill and runs the checks, without editing. Whoever asked for
   the review fixes small findings, sends large ones to a worker and asks for one re-review; what is still
   open goes to the user. No reviewer available: the profile's fallback reviews, and the user is told in one line.
-- **An agent started from a brief** (repo lead, worker, scout, reviewer) executes it without the lane
-  question. Only a repo lead may start agents of its own (`worker`, `scout`).
+- **An agent started from a brief** (lead, worker, scout, reviewer) executes it without the lane
+  question. Only a lead may start agents of its own: `worker` and `scout`, and a workspace lead also the
+  leads of its child repos.
 - **Every plan (S or L) is shown in the terminal message, not only in the plan file, with a table:** who
   does what, whether it runs in parallel, files, and how it is verified. Parallel or visual work adds an
   ASCII diagram of the order.

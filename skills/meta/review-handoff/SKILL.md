@@ -14,7 +14,7 @@ before the PR is opened or the Plan L is merged. It never edits.
 
 - Before opening any PR, and before the merge that closes a Plan L when there is no PR.
 - The user asks for a cross-model review of a diff.
-- In work split by repo, each repo lead runs it for its own diff, with that repo's review skill, before
+- In work split by repo, each lead runs it for its own diff, with that repo's review skill, before
   handing the work back.
 
 ## Workflow

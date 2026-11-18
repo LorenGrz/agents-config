@@ -25,7 +25,7 @@ AGENTS.md index say which. Where skills overlap, one default per task:
 - The lane question is one `AskUserQuestion`; its fixed order (Continuar first) overrides the tool's
   "recommended first". Plan S/L call `EnterPlanMode`. Plan S loads `ponytail:ponytail` at the start and
   uses no `worker`/`reasoner`. Plan L loads `mattpocock-skills:grilling` right after, then
-  `superpowers:brainstorming`, `writing-plans`, and repo leads or `worker`/`reasoner` in the worktree of the
+  `superpowers:brainstorming`, `writing-plans`, and leads or `worker`/`reasoner` in the worktree of the
   task branch. A plan the user starts directly ends with "Plan S/L because …".
 - Outside a plan, never invoke `brainstorming`, `writing-plans`, `executing-plans`,
   `subagent-driven-development`, `reasoner` or `ponytail*` unless asked; this overrides `using-superpowers`
@@ -41,13 +41,13 @@ Pick the agent by role; each role's model is in your profile ("Model routing").
   calls. Never bulk writing. A decision costly to get wrong never goes to `worker` or `scout`.
 - **Implement** (`worker`): code, docs, tests, given the exact files, the decided change and an acceptance
   command; default for every non-trivial repo change, inside or outside a plan (ADR 0029). Whoever started
-  it (the main session or a repo lead) reviews its diff and reported checks, then commits.
+  it (the main session or a lead) reviews its diff and reported checks, then commits.
 - **Review** (the profile's reviewer): load `review-handoff` for the brief, the transport and the findings
   loop. Its fallback may review in any lane, `reasoner` included.
-- Transport. Repo lead: T3 Code `t3_thread_launch` in that repo's project, Orca a
-  worker in that repo, Claude Code a subagent given the repo path. `worker`: `run_in_background`,
-  `delegate_task` or an Orca worker (`orchestration`). Every brief says to read the repo's
-  `AGENTS.md`/`CLAUDE.md` and `.claude/skills` first; a worker's also carries its definition: no commit or push.
+- Transport. Lead: T3 Code `t3_thread_launch` in that repo's or workspace's project, Orca a worker there,
+  Claude Code a subagent given the path. `worker`: `run_in_background`, `delegate_task` or an Orca worker
+  (`orchestration`). Every brief says to read the repo's `AGENTS.md`/`CLAUDE.md` and `.claude/skills`
+  first; a worker's also carries its definition: no commit or push.
 - Superpowers subagents: implementer, routine reviewer -> `worker`; security/architecture reviewer ->
   `reasoner`; search -> `scout`.
 - **Bulk (external)** (`gemini-delegate`, `agy`): mechanical writing or wide reading when that quota is
