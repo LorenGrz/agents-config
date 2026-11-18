@@ -21,7 +21,7 @@ Pick the mode first:
 
 1. **Interview**: follow `references/interview.md` (org, stack, backend/frontend architecture, data and auth, testing and deploy, SDD), plus project name and visibility (default `public`). Critical answers are never defaulted: "no sé" goes to `pending`. Write the answers as a manifest (schema in that file) outside the target dir, e.g. in the session scratchpad, and check it with `bash scripts/manifest.sh validate <manifest>`. Remind the user: never commit secrets.
 
-2. **Generate the app, if the target dir is empty**, with the stack's own official generator in its non-interactive form, then overlay this skill's templates. The dir/package name must be lowercase (npm rule) and may differ from the GitHub repo name (repo `Disfrazate`, dir/package `disfrazate`); `--name` below is the **GitHub repo name**:
+2. **Generate the app, if the target dir is empty**, with the stack's official generator in its non-interactive form, then overlay this skill's templates. The dir/package name must be lowercase (npm rule) and may differ from the GitHub repo name (repo `Disfrazate`, dir/package `disfrazate`); `--name` below is the **GitHub repo name**:
    - react-vite: `pnpm create vite@latest <dir> --template react-ts --no-interactive --no-immediate`, then `pnpm -C <dir> install` (run from the parent dir; vite resolves `<dir>` relative to cwd)
    - next: `pnpm create next-app@latest <dir> --yes --use-pnpm --disable-git`
    - nestjs: `pnpm dlx @nestjs/cli new <dir> --directory <dir> --package-manager pnpm --skip-git --no-observe`
@@ -37,16 +37,16 @@ Pick the mode first:
    - `--owner` defaults to `gh api user --jq .login` (if `gh` is authenticated), then `git config github.user`; pass it explicitly if neither resolves.
    - Without `--install`, `init.sh` only prints the commands needed (devDependencies, missing package.json scripts); nothing is installed or written to `package.json` scripts.
    - With an org (manifest `org` or `--org <name>`) whose GitHub owners do not include `--owner`, `init.sh` warns that the org's private `POLICIES.md` would be copied and asks; non-interactive runs fail unless `--allow-org-mismatch` is passed. Never pass it without the user's OK.
-   - `init.sh` also installs the stack's skills/rules/MCP into `.claude/` and `.mcp.json` and the matching packs via the hub's `scripts/project-agents.sh` (details in `references/script-notes.md`). Stack skills are NOT global anymore.
+   - `init.sh` also installs the stack's skills/rules/MCP into `.claude/` and `.mcp.json` and the matching packs via the hub's `scripts/project-agents.sh` (details in `references/script-notes.md`). Stack skills are not global.
 
 3. **Local git setup** (do this, do not delegate it):
    - `git init -b main` if the directory is not already a repo.
-   - Confirm `.gitignore` exists and covers the minimum list in the `github-usage` skill (`references/gitignore-gate.md`) plus `.superpowers/`. `init.sh` writes it: it merges any missing baseline lines into the generator's `.gitignore`; only fix it if something is still missing.
+   - Confirm `.gitignore` covers the minimum list in the `github-usage` skill (`references/gitignore-gate.md`) plus `.superpowers/`. `init.sh` merges any missing baseline lines into the generator's `.gitignore`; only fix it if something is still missing.
    - `git config core.hooksPath .githooks`
    - `git add -A && git commit -m "chore: initial project setup"`
    - `bash scripts/verify-ci.sh --dir <path>` - clones the committed HEAD and runs CI's steps (install --frozen-lockfile, format:check, lint, typecheck, test, build). Fix anything red before step 4.
 
-4. **External steps, one at a time, each confirmed by the user before running.** Never hand these to a background agent - they touch GitHub and real resources. `--owner` defaults the same way as `init.sh`'s.
+4. **External steps, one at a time, each confirmed by the user before running.** Never hand these to a background agent - they touch GitHub and real resources. `--owner` defaults as in `init.sh`.
    ```
    bash scripts/bootstrap-github.sh repo     [--owner <owner>] --name <name> --visibility public
    bash scripts/bootstrap-github.sh dev      [--owner <owner>] --name <name>
@@ -55,20 +55,20 @@ Pick the mode first:
    bash scripts/bootstrap-github.sh project  [--owner <owner>] --name <name>
    bash scripts/bootstrap-github.sh protect  [--owner <owner>] --name <name>
    ```
-   `project` creates the Project, then replaces `TBD`/`{{PROJECT_NUMBER}}` in the repo (`.github/ISSUE_TEMPLATE/*.yml`, `AGENTS.md`, `.agents/CONTEXT.md`), commits it (`chore: set project number to N`) and pushes the current branch itself - no manual commit.
-   Add `--dry-run` to preview the exact `gh`/`git` commands without touching GitHub. `bootstrap-github.sh all` only runs with `--dry-run` (refuses otherwise).
+   `project` creates the Project, replaces `TBD`/`{{PROJECT_NUMBER}}` in the repo (`.github/ISSUE_TEMPLATE/*.yml`, `AGENTS.md`, `.agents/CONTEXT.md`), commits it (`chore: set project number to N`) and pushes the current branch itself - no manual commit.
+   `--dry-run` previews the exact `gh`/`git` commands without touching GitHub. `bootstrap-github.sh all` only runs with `--dry-run` (refuses otherwise).
 
 5. **Verify and report**: repo URL, dev as default branch, Project URL, CI green on the first PR.
 
 ### Daily workflow (what the generated AGENTS.md documents)
 
-Everything starts as an issue in the Project. Non-trivial `feat`/`refactor` work goes through superpowers `brainstorming` -> a spec in `docs/superpowers/specs/` -> `writing-plans` -> a plan in `docs/superpowers/plans/`. `fix` work goes through `systematic-debugging` and only gets a spec if behavior changes. Then `scripts/gh-flow.sh start <type> <slug> --issue N`, implement with `subagent-driven-development` + `test-driven-development`, `verification-before-completion`, `scripts/gh-flow.sh pr`, wait for CI, `scripts/gh-flow.sh merge`. Base branch is always `dev`; `main` only moves via `scripts/gh-flow.sh release`. Agents without superpowers installed follow the same steps manually.
+Everything starts as an issue in the Project. Non-trivial `feat`/`refactor` work goes through superpowers `brainstorming` -> a spec in `docs/superpowers/specs/` -> `writing-plans` -> a plan in `docs/superpowers/plans/`; both are deleted in the PR that finishes the work, and what must outlive them goes to an ADR. `fix` work goes through `systematic-debugging` and only gets a spec if behavior changes. Then `scripts/gh-flow.sh start <type> <slug> --issue N`, implement with `subagent-driven-development` + `test-driven-development`, `verification-before-completion`, `scripts/gh-flow.sh pr`, wait for CI, `scripts/gh-flow.sh merge`. Base branch is always `dev`; `main` only moves via `scripts/gh-flow.sh release`. Agents without superpowers follow the same steps manually.
 
-The generated `AGENTS.md` is the source of truth for the new repo - read it there, not here, once a project exists. If the code and the doc disagree, fix the doc.
+Once a project exists, its generated `AGENTS.md` is the source of truth, not this skill. If the code and the doc disagree, fix the doc.
 
 ## Rules
 
-- **AGENTS.md only.** New and adopted repos get `AGENTS.md` as the single source and **no `CLAUDE.md`**: Claude Code >= 2.1.277 reads `AGENTS.md` natively (main session and subagents) as long as there is no `CLAUDE.md` in the working directory or any parent directory; one in a parent directory disables that. `init.sh --claude-shim` / `adopt.sh --claude-shim` write a `CLAUDE.md` whose whole content is `@AGENTS.md`, for older Claude Code versions (optional and harmless). An existing `CLAUDE.md` is never deleted or overwritten; one that only says `@AGENTS.md` can stay.
+- **AGENTS.md only.** New and adopted repos get `AGENTS.md` as the single source and **no `CLAUDE.md`**: Claude Code >= 2.1.277 reads `AGENTS.md` natively (main session and subagents) as long as there is no `CLAUDE.md` in the working directory or any parent directory; one in a parent directory disables that. `init.sh --claude-shim` / `adopt.sh --claude-shim` write a `CLAUDE.md` whose whole content is `@AGENTS.md`, for older Claude Code versions (optional). An existing `CLAUDE.md` is never deleted or overwritten; one that only says `@AGENTS.md` can stay.
 - `AGENTS.md` carries a `## Critical rules` block (between `<!-- baseline:start -->` and `<!-- baseline:end -->`, the agents-config baseline) and points every session at `.agents/CONTEXT.md` first.
 - **No overwrites.** `init.sh` never overwrites an existing file unless `--force`; it prints `skip <path> (exists)` and is safe to re-run. The deliberate exceptions (`eslint.config.*`, `AGENTS.md`, `.gitignore`) are in `references/script-notes.md`.
 - **Adopt is docs-only**: it never adds hooks, CI, ESLint, pre-push, or branch protection, and it runs in a worktree, never in the user's own working tree/branch.

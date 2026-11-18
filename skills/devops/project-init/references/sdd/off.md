@@ -1,1 +1,1 @@
-2. Specs and plans are not required in this project (decision `sdd: off`). Use superpowers `brainstorming` only when the design is unclear; any plan you do write is still saved in `docs/superpowers/plans/`.
+2. Specs and plans are not required in this project (decision `sdd: off`). Use superpowers `brainstorming` only when the design is unclear; any plan you do write goes in `docs/superpowers/plans/` while the work runs and is deleted in the PR that finishes it.
