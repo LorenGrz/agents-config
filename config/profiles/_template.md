@@ -35,7 +35,7 @@
 
 - Main session: <model / mode>
 - `worker` (implementation): <model>. `reasoner` (decisions): <model>. `scout` (lookups): <model>.
-- Repo lead (one per repo when a Plan L spans repos): <model>.
+- Lead (one per repo, or per workspace folder, when a Plan L spans repos): <model>.
 - `reviewer` (reviews the diff before every PR and before a Plan L merge): <a model from another
   provider, and how it is reached>. Fallback when it is unavailable: <model or role>.
 
