@@ -7,18 +7,17 @@ description: Use when work involves existing Codex skills, migration from Codex 
 
 ## Objective
 
-Adapts Claude Code to an existing Codex setup without duplicating stale instructions. This
-skill is Loren's own example, not a generic tool — if you're adapting it for your own
-setup, copy it, point it at your own skill roots, and list them in your profile
-(`config/profiles/<your-name>.md`) instead of hardcoding them here.
+Adapt Claude Code to an existing Codex setup without duplicating stale instructions. This is Loren's
+own example: to adapt it, copy it and list your own skill roots in your profile instead of hardcoding
+them here.
 
 ## Workflow
 
 Identify the task category, then read only the relevant source skill files before acting.
 
-Skill roots: this hub's `skills/` folder (`~/.agents/skills`, linked by `install.sh`) plus any
-extra roots listed under "Codex workflow adapter" in your profile
-(`config/profiles/<your-name>.md`) — e.g. `~/.codex/skills` or an OS-specific skill path.
+Skill roots: this hub's `skills/` folder (`~/.agents/skills`, linked by `install.sh`) plus any extra
+roots listed under "Codex workflow adapter" in your profile (`config/profiles/<your-name>.md`), e.g.
+`~/.codex/skills` or an OS-specific skill path.
 
 ### Routing
 
@@ -45,10 +44,9 @@ browser automation.
 - Load skills progressively. Do not paste every skill into context.
 - Prefer local project scripts and local dependencies.
 - Preserve user changes. Do not revert unrelated files.
-- For desktop/OS config, test first and ask before pushing to the settings repo named in
-  your profile.
-- For roadmap work, keep the next step small and aligned with the sequence in your profile
-  or the `roadmap-coach` skill.
+- For desktop/OS config, test first and ask before pushing to the settings repo named in your profile.
+- For roadmap work, keep the next step small and aligned with the sequence in your profile or the
+  `roadmap-coach` skill.
 - If your profile names a roadmap repo, read, when relevant: `<roadmap-repo>/README.md`,
-  `<roadmap-repo>/.agents/CONTEXT.md`, and `pnpm-workspace.yaml` if package installation or
-  workspace behavior is involved. `node_modules/` must stay untracked.
+  `<roadmap-repo>/.agents/CONTEXT.md`, and `pnpm-workspace.yaml` if package installation or workspace
+  behavior is involved. `node_modules/` must stay untracked.

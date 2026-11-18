@@ -7,9 +7,8 @@ description: Use when the task touches git or GitHub - branches, commits, push, 
 
 ## Objective
 
-One skill for anything git or GitHub: the local push workflow, the work-repo (organization) rules, and
-remote reads and writes on GitHub. The always-loaded `config/AGENTS.md` keeps only the hard git rules;
-this skill holds the full procedure.
+The full git and GitHub procedure: local push workflow, organization rules, remote reads and writes.
+`config/AGENTS.md` keeps only the hard git rules.
 
 ## When to use
 
@@ -61,7 +60,7 @@ some repos use `master`). Use that name wherever `<default>` appears.
 
 8. **Update project context after merging into `<default>`/`main`/`master`.** If the merged changes alter stack, architecture, modules, env vars, deploy/infra, commands, or known issues, update the project's `AGENTS.md` (and `CLAUDE.md` only if it holds Claude-specific content) to match the code, refresh `.agents/CONTEXT.md` per `repository-context-maintainer`, commit it as `docs: update AGENTS.md after <branch> merge`, and push it in the same session. Skip only when nothing documented changed, and say so.
 
-If the repo has branch protection or a PR-based flow, stop after step 6 and open a PR with `gh pr create` instead of merging locally.
+If the repo has branch protection or a PR-based flow, stop after step 6 and open a PR with `gh pr create` instead of merging locally. Before `gh pr create`, the committed diff is reviewed through the `review-handoff` skill; the PR opens only after its findings loop.
 
 ## Rules
 
@@ -69,27 +68,28 @@ If the repo has branch protection or a PR-based flow, stop after step 6 and open
 
 ### Organizations (work repos)
 
-Applies to every repo that matches an organization (`organizations/INDEX.md`); personal repos keep the
-lighter flow above. An org's `POLICIES.md` may add to these rules, never relax them.
+Every repo that matches an organization (`organizations/INDEX.md`); personal repos keep the flow above.
+An org's `POLICIES.md` may add to these rules, never relax them.
 
-- **Never commit on the base or release branches** (`main`, `master`, `dev`). Each task starts on a new branch
-  named after what it solves, cut from the remote base: `git fetch` then
-  `git checkout -b <type>/<scope>-<topic> origin/<base>`. If the org's base branch does not exist yet, cut
-  from `origin/main` and rebase onto the base when it appears. Check before the first commit with
+- **Never commit on the base or release branches** (`main`, `master`, `dev`). Each task starts on a new
+  branch named after what it solves, cut from the remote base: `git fetch` then
+  `git checkout -b <type>/<scope>-<topic> origin/<base>`. If the base branch does not exist yet, cut from
+  `origin/main` and rebase onto the base when it appears. Check before the first commit with
   `git merge-base --is-ancestor origin/<base> HEAD`. Never stack a task on an old working branch.
 - **Ask before every push or PR**, even when the plan already mentions it. A slash command the user invokes
   for that run (e.g. a ship command) counts as asking.
-- **PR flow.** With the user's OK, the PR opens against the org's base branch with the explanation already
-  agreed. Opening it also moves each ticket to the project's review/test status without asking (reported in
-  one line). The short closing comment on each ticket (the cause and what changed, as already explained in
-  the PR, in one or two lines, plus the PR link) is shown first and posted only with the user's OK on that text.
+- **PR flow.** Before `gh pr create`, the committed diff is reviewed through the `review-handoff` skill; the
+  PR opens only after its findings loop. With the user's OK, the PR opens against the org's base branch with
+  the agreed explanation. Opening it moves each ticket to the project's review/test status without asking
+  (reported in one line). The short closing comment on each ticket (cause and change as explained in the PR,
+  one or two lines, plus the PR link) is shown first and posted only with the user's OK on that text.
 - **Everything else on the tracker is asked first.** Proposals, questions, new tickets, edits or any
-  transition outside the PR flow above are shown first and published only after the user's explicit OK on
-  that exact text. An approved plan that contains the text does not count.
-- **Suggest issues, don't fix them in passing.** Anything found along the way that is out of scope but has
-  real impact (security, a user-visible bug, docs that mislead the next person) and is simple to explain is
-  proposed at the end of the task: title, impact in one line, proposal in one line, priority and evidence
-  (`path:line`). No lint warnings or style preferences, nothing unverified. Filed only with the user's OK.
+  transition outside the PR flow are shown first and published only after the user's explicit OK on that
+  exact text. An approved plan that contains the text does not count.
+- **Suggest issues, don't fix them in passing.** Anything out of scope with real impact (security, a
+  user-visible bug, docs that mislead the next person) and simple to explain is proposed at the end of the
+  task: title, impact in one line, proposal in one line, priority and evidence (`path:line`). No lint
+  warnings or style preferences, nothing unverified. Filed only with the user's OK.
 - **Say exactly where work landed.** Report the branch name; never write "committed to main" for work on a
   branch cut from main.
 

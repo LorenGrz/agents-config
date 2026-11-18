@@ -28,8 +28,7 @@ Read and search Jira/Confluence freely; change anything only after the user appr
 - In a repo that matches an organization, use that organization's replacement skill when one is installed (e.g. in `.claude/skills/`); its rules win. The org's `POLICIES.md` and the `github-usage` skill (Organizations) apply too: tracker writes need the user's OK on the exact text; a policy may add restrictions, never relax these.
 - Exception in an organization repo: the transitions its skill marks as automatic (typically To Do → In
   Progress when work starts, and the test column when the PR opens) run without asking and are reported in
-  one line, never put to the user as a question. Comments, new issues, edits and every other transition still
-  need the OK on the exact text.
+  one line, never put to the user as a question. Everything else follows the write rules below.
 
 ### Write rules (approval required)
 

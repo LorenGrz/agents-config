@@ -7,71 +7,64 @@ description: Use this skill when the user wants to install, set up, update, or p
 
 ## Objective
 
-Guide a user through installing or updating this repo's config on their machine. Never run
-a real (non-dry-run) install without the user confirming the plan first — `install.sh`
-touches `~/.claude/` and `~/.codex/`.
+Install or update this repo's config on the user's machine. Never run a real (non-dry-run) install
+without the user confirming the plan first: `install.sh` touches `~/.claude/` and `~/.codex/`.
 
 ## Workflow
 
-1. **Dry run.** From the repo root, run `./install.sh --dry-run` (add `--profile <name>` if
-   the user already told you their profile). Show the plan: what it would generate, link,
-   or back up. Nothing changes yet.
+1. **Dry run.** From the repo root, `./install.sh --dry-run` (add `--profile <name>` if the user
+   named their profile). Show the plan: what it would generate, link, or back up. Nothing changes yet.
 
 2. **Resolve the profile.**
-   - If the user already has `config/profiles/<name>.md`, confirm that's the one to use.
+   - If `config/profiles/<name>.md` exists, confirm that's the one to use.
    - If not, ask: their name, preferred language for replies, whether they want a 2-line
-     `English note` + `Better` line added when they write partly/fully in English, their
-     GitHub owner/username (for `skills/devops/project-init` defaults), and a short line on their
-     current stack/learning stage. Create `config/profiles/<name>.md` from
-     `config/profiles/_template.md` with their answers filled in. Don't put any of this in
-     `config/AGENTS.md` or `config/CLAUDE.md` — those must stay shareable.
+     `English note` + `Better` line when they write partly/fully in English, their GitHub
+     owner/username (for `skills/devops/project-init` defaults), and a short line on their current
+     stack/learning stage. Create `config/profiles/<name>.md` from `config/profiles/_template.md`
+     with the answers. None of this goes in `config/AGENTS.md` or `config/CLAUDE.md`: those stay
+     shareable.
    - Without `--profile`, `install.sh` reuses `~/.config/agents-config/profile` (persisted by a
-     previous run), else auto-detects via `gh api user --jq .login`; mention this but still
-     confirm with the user rather than relying on it silently.
+     previous run), else auto-detects via `gh api user --jq .login`; mention it and still confirm
+     with the user.
 
 3. **Real install**, only after the user confirms the dry-run plan:
    ```
    ./install.sh --profile <name>
    ```
-   This generates `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` (backing up any
-   pre-existing real file once, as `.bak.<timestamp>`), symlinks
-   `~/.claude/{rules,hooks,agents}` into the repo, mirrors skills into `~/.claude/skills`
-   via `sync.sh`, and merges `config/settings.base.json` into `~/.claude/settings.json`.
+   It generates `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` (backing up any pre-existing real
+   file once, as `.bak.<timestamp>`), symlinks `~/.claude/{rules,hooks,agents}` into the repo,
+   mirrors skills into `~/.claude/skills` via `sync.sh`, and merges `config/settings.base.json`
+   into `~/.claude/settings.json`.
 
 4. **Verify:**
-   - `cat ~/.claude/CLAUDE.md` — a generated file (header comment) importing
-     `config/AGENTS.md`, `config/baseline.md`, the chosen profile and `config/CLAUDE.md`;
-     confirm each imported path exists.
-   - `cat ~/.codex/AGENTS.md` — the same header comment, followed by `config/AGENTS.md`,
-     the baseline and the profile content concatenated.
-   - `readlink ~/.claude/rules ~/.claude/hooks ~/.claude/agents` — each resolves into the
-     repo.
-   - `ls ~/.claude/skills | head` — populated; `readlink ~/.claude/skills/<any-name>`
-     resolves to a real `skills/<category>/<skill>/` directory in the repo.
-   - Re-run `./install.sh --profile <name>`: it should report everything already up to
-     date (idempotent).
+   - `cat ~/.claude/CLAUDE.md`: a generated file (header comment) importing `config/AGENTS.md`,
+     `config/baseline.md`, the chosen profile and `config/CLAUDE.md`; each imported path exists.
+   - `cat ~/.codex/AGENTS.md`: the same header comment, then `config/AGENTS.md`, the baseline and
+     the profile content concatenated.
+   - `readlink ~/.claude/rules ~/.claude/hooks ~/.claude/agents`: each resolves into the repo.
+   - `ls ~/.claude/skills | head` is populated; `readlink ~/.claude/skills/<any-name>` resolves to a
+     real `skills/<category>/<skill>/` directory in the repo.
+   - Re-run `./install.sh --profile <name>`: everything reported up to date (idempotent).
 
 5. **Optional extras**, each asked about before running, never bundled silently:
-   - `--with-rulesync`: also generates rulesync output for Codex CLI, Google Antigravity
-     (Gemini) and Cursor via `config/rulesync/`. Explain: Codex and Claude Code already work
-     without it; only useful if the user also drives those tools. Requires `pnpm dlx` (network).
-   - `--with-rtk`: installs [`rtk`](https://github.com/rtk-ai/rtk), a separate token-
-     reduction tool (its hook is already wired, no `rtk init -g` needed). Explain it's
-     unrelated to the config above — skip unless the user specifically wants it.
+   - `--with-rulesync`: rulesync output for Codex CLI, Google Antigravity (Gemini) and Cursor via
+     `config/rulesync/`. Explain: Codex and Claude Code work without it; only useful if the user drives
+     those tools. Requires `pnpm dlx` (network).
+   - `--with-rtk`: installs [`rtk`](https://github.com/rtk-ai/rtk), a separate token-reduction tool
+     (its hook is already wired, no `rtk init -g` needed). Explain it's unrelated to the config above;
+     skip unless the user specifically wants it.
 
 ### Alternative: the plugin marketplace
 
-If the user only wants skills/agents/hooks (not rules, not the generated `CLAUDE.md`/
-`AGENTS.md`, not `settings.json` merging), point them at
-`claude plugin marketplace add <this-repo>` instead of `install.sh` — see `README.md`'s
-Install section. The two methods aren't meant to be combined on the same machine.
+If the user only wants skills/agents/hooks (not rules, not the generated `CLAUDE.md`/`AGENTS.md`, not
+`settings.json` merging), point them at `claude plugin marketplace add <this-repo>` instead of
+`install.sh` (`README.md`, Install section). Don't combine the two methods on one machine.
 
 ## Rules
 
-- `install.sh` never deletes a real file; it backs up anything it doesn't already own
-  before writing over it. If something looks wrong after install, check for a
-  `.bak.<timestamp>` sibling next to the file in question.
+- `install.sh` never deletes a real file; it backs up anything it doesn't own before writing over it.
+  If something looks wrong after install, check for a `.bak.<timestamp>` sibling.
 - With no `--profile` and a `gh` login that has no profile yet, `install.sh` copies
-  `config/profiles/_template.md` to `config/profiles/<login>.md`; if `gh` isn't
-  installed/authenticated it uses `config/profiles/_template.md` directly. Point this out so
-  the user doesn't end up running with unfilled placeholder content by accident.
+  `config/profiles/_template.md` to `config/profiles/<login>.md`; if `gh` isn't installed/authenticated
+  it uses `config/profiles/_template.md` directly. Point this out so the user doesn't run with unfilled
+  placeholder content.
