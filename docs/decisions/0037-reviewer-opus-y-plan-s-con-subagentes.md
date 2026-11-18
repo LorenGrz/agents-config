@@ -1,7 +1,7 @@
 # 0037 — El reviewer es un agente Opus; otro proveedor, solo a pedido
 
-Estado: aceptado (2026-11-18). Ajusta 0033 (reviewer de otro proveedor), y 0022 y 0023 (Plan S inline, sin
-`worker` ni `reasoner`).
+Estado: aceptado (2026-11-18). Ajusta 0033 (reviewer de otro proveedor), 0022 y 0023 (Plan S inline, sin
+`worker` ni `reasoner`) y 0010 (delegación a Gemini).
 
 ## Contexto
 
@@ -23,6 +23,8 @@ resolvió que el Plan S pueda lanzar subagentes cuando el trabajo los pida.
 - Un modelo de otro proveedor (Gemini por `agy`, Codex por `codex-review`) revisa solo cuando el usuario lo
   pide. Si ese proveedor no está disponible, revisa el reviewer por defecto y se avisa en una línea.
 - La skill `review-handoff` lleva los dos caminos; el modelo sale del perfil.
+- La delegación de trabajo a Gemini (`gemini-delegate`) también queda manual: solo cuando el usuario la
+  pide. Una tarea grande o mecánica no la dispara por sí sola, y una segunda corrida también se pide.
 - Plan S: sigue sin entrevista, sin brainstorming y sin specs. Lo ejecuta la sesión principal y lanza
   subagentes solo cuando el trabajo los necesita.
 
@@ -31,4 +33,5 @@ resolvió que el Plan S pueda lanzar subagentes cuando el trabajo los pida.
 - La revisión deja de gastar cuota de otro proveedor, a cambio de perder la mirada de un modelo distinto:
   el reviewer y el autor son la misma familia de modelo, en contextos separados.
 - Las revisiones corren sobre la cuota de Anthropic.
-- `gemini-delegate` y `codex-review` quedan como herramientas a pedido.
+- `gemini-delegate` y `codex-review` quedan como herramientas a pedido; nada gasta cuota de Gemini sin que
+  Loren lo pida.

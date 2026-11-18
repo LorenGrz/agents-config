@@ -50,8 +50,8 @@ Pick the agent by role; each role's model is in your profile ("Model routing").
   first; a worker's also carries its definition: no commit or push.
 - Superpowers per-task subagents: implementer, routine reviewer -> `worker`; security/architecture reviewer ->
   `reasoner`; search -> `scout`.
-- **Bulk (external)** (`gemini-delegate`, `agy`): mechanical writing or wide reading when that quota is
-  cheaper; review the diff, run the acceptance command (ADR 0010).
+- **Bulk (external)** (`gemini-delegate`, `agy`): only when the user asks; then review the diff and run the
+  acceptance command (ADR 0010).
 - A plan recommends the subagents (which, why) and asks. While executing an approved plan, delegating per
   these rules is a standing instruction (it overrides the default "don't spawn agents unless asked").
 - Independent subtasks: one message, in parallel. A `worker` gets its own worktree (`isolation: "worktree"`);

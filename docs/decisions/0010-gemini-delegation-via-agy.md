@@ -1,6 +1,6 @@
 # 0010 — Delegar trabajo a Gemini con `agy`
 
-Estado: aceptado (2026-10-31).
+Estado: aceptado (2026-10-31). Ajustado por 0037: se usa solo cuando el usuario lo pide.
 
 ## Contexto
 
