@@ -9,7 +9,10 @@
 #   skipped when the hub itself was cloned to ~/.agents/skills.
 # - Runs sync.sh to (re)build the flat ~/.claude/skills mirror.
 # - Merges config/settings.base.json into ~/.claude/settings.json (jq):
-#     * hooks / statusLine / model / theme: base wins (full overwrite).
+#     * statusLine / model: base wins (full overwrite).
+#     * hooks: base entries + existing entries that run no hub hook (other tools',
+#       e.g. Orca's) kept after them; existing hub entries are replaced (ADR 0038).
+#     * theme: the base's only when the file has none (ADR 0038).
 #     * permissions.defaultMode: base wins when base sets it.
 #     * enabledPlugins / extraKnownMarketplaces: union of existing + base; base
 #       wins only on conflicting keys, user-added entries survive.
@@ -365,19 +368,28 @@ if [ ! -f "$SETTINGS" ]; then
     cp "$BASE" "$SETTINGS"
   fi
 else
+  # hooks (ADR 0038): an existing entry is "owned" by the hub when one of its commands runs a script in the
+  # installed hooks folder, i.e. contains `~/.claude/hooks/<name>` (also spelled `$HOME/` or `${HOME}/`) as a
+  # whole word, the way settings.base.json writes them. Owned entries are replaced by the base's; every other
+  # entry (Orca's `~/.orca/agent-hooks/claude-hook.sh`, any other tool's) is kept after the base entries of
+  # its event, in its order, and events only the existing file has stay when they keep any entry.
   MERGED="$(jq -s '
+    def owned: any((.hooks // [])[]; (.command // "") | test("(^|\\s)(~|\\$HOME|\\$\\{HOME\\})/\\.claude/hooks/[^/\\s]+"));
     .[0] as $cur | .[1] as $base
+    | ($base.hooks // {}) as $bh | ($cur.hooks // {}) as $ch
     | $cur
     | .model = $base.model
     | .effortLevel = $base.effortLevel
     | .modelSettings = ((.modelSettings // {}) * ($base.modelSettings // {}))
-    | .hooks = $base.hooks
+    | .hooks = (reduce (($bh | keys_unsorted[]), ($ch | keys_unsorted[])) as $e ({};
+        if has($e) then . else .[$e] = (($bh[$e] // []) + [($ch[$e] // [])[] | select(owned | not)]) end)
+        | with_entries(select(.value | length > 0)))
     | .statusLine = $base.statusLine
     | .enabledPlugins = (($cur.enabledPlugins // {}) + ($base.enabledPlugins // {}))
     | .extraKnownMarketplaces = (($cur.extraKnownMarketplaces // {}) + ($base.extraKnownMarketplaces // {}))
     | (if $base.env then .env = (($cur.env // {}) + $base.env) else . end)
     | (if $base.pluginConfigs then .pluginConfigs = (($cur.pluginConfigs // {}) * $base.pluginConfigs) else . end)
-    | .theme = $base.theme
+    | (if .theme == null and $base.theme != null then .theme = $base.theme else . end)
     | (if $base.permissions.defaultMode then .permissions.defaultMode = $base.permissions.defaultMode else . end)
     | .permissions.allow = ((($cur.permissions.allow // []) + ($base.permissions.allow // [])) | unique)
     | .permissions.ask   = ((($cur.permissions.ask   // []) + ($base.permissions.ask   // [])) | unique)

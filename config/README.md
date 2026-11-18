@@ -22,8 +22,12 @@ en `~/.claude/` y `~/.codex/`, combinados con tu perfil (`<repo>` es donde clona
 
 `install.sh` además mergea `settings.base.json` en `~/.claude/settings.json` (siempre con backup antes):
 
-- `hooks`, `statusLine`, `model`, `effortLevel` y `theme`: gana la base. `modelSettings`: merge profundo, la base
-  gana en las claves que define.
+- `statusLine`, `model` y `effortLevel`: gana la base. `modelSettings`: merge profundo, la base gana en las
+  claves que define.
+- `hooks`: quedan las entradas de la base y, después de ellas en su evento, las que ya tenías y no corren un
+  hook del hub (las de otra herramienta, como Orca). Una entrada es del hub si un comando suyo corre un script
+  de `~/.claude/hooks/`; esas se reemplazan por las de la base (ADR 0038).
+- `theme`: el de la base solo si el archivo no tiene uno (ADR 0038).
 - `permissions.defaultMode`: gana la base cuando la define.
 - `enabledPlugins`, `extraKnownMarketplaces`, `env` y `pluginConfigs`: unión; la base gana solo en claves
   en conflicto y lo que agregaste vos se queda. Con PonyTail activo crea una vez `~/.claude/.ponytail-band`
