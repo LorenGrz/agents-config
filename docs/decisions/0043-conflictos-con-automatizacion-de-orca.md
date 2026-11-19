@@ -1,6 +1,6 @@
 # 0043 — Los conflictos de PR los resuelve una automatización de Orca
 
-Estado: aceptado (2026-11-19). Ajusta 0032 en cómo se lanza el agente; 0041 y 0042 siguen.
+Estado: aceptado (2026-11-19). Ajusta 0032 en cómo se lanza el agente. Ajustado por 0044 (sin timer: la automatización sincroniza y el agente pushea).
 
 ## Contexto
 
