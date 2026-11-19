@@ -38,6 +38,11 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
   reviews the diff before every PR and before a Plan L merge. Optional, only when Loren asks: Gemini 4 Argon
   (`gemini-4-argon`, thought level high; `gemini-4-argon-high` in `agy`) through Antigravity, or Codex
   (`codex-review`). A day of Argon reviews used almost the whole weekly Gemini quota.
+- Checks run once, at the end, by the orchestrator (since 2026-11-19): leads and workers write the code and its
+  tests but do not run lint, typecheck or the test suite while implementing, and their briefs say so. When all the
+  implementation is in, the main session (the orchestrator) runs lint, typecheck and tests once per repo and sends
+  failures back to the lead or worker. The final `reviewer` reruns them and reviews the result. Working alone in
+  Plan S, the main session also runs them once at the end. Reason: per-step checks cost Loren too much time.
 
 ## Local tool paths
 
