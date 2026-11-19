@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# stack-sync: keeps Loren's stacked PR branches up to date, each one in its own worktree (ADR 0032).
+# stack-sync: keeps Loren's PR branches up to date, each one in its own worktree (ADR 0032, 0041).
 # For every open PR of mine in the repos found under the roots, bottom-up:
-#   1. its base branch's PR is merged   -> merge origin/<trunk>, push, retarget the PR to <trunk>
-#   2. its base branch got new commits  -> merge origin/<base>, push
-#   3. base is the trunk and the PR conflicts with it -> merge origin/<trunk>, push
+#   1. its base branch's PR is merged   -> merge origin/<trunk> (then push + retarget to <trunk>, by Loren)
+#   2. its base branch got new commits  -> merge origin/<base>
+#   3. base is the trunk and the PR conflicts with it -> merge origin/<trunk>
 #   4. a merge conflicts -> abort, and open a visible Claude agent in that worktree with `orca agent launch`
-#      (no coordinator needed, so it works from a systemd timer) to resolve, run the checks and push;
+#      (no coordinator needed, so it works from a systemd timer) to resolve, run the checks and commit;
 #      launched once per (PR, base commit).
-# Never: rebase, force, amend; never touches a dirty worktree or one whose HEAD is not the PR head (local
+# It never pushes (ADR 0041): the merge stays committed in the worktree and the notification carries the
+# push command. Never: rebase, force, amend; never touches a worktree with uncommitted changes to tracked
+# files (untracked ones, like a pnpm-lock.yaml, don't count) or one whose HEAD is not the PR head (local
 # commits not pushed, or behind): it skips it and says so. Only the worktree of that branch is touched.
 #
 # Usage: stack-sync.sh [--dry-run] [--roots dir1:dir2] [--owner <gh-owner>] [--trunk dev]
@@ -78,20 +80,21 @@ for r in "${root_list[@]}"; do
   while IFS= read -r g; do scan_repo "$(dirname "$g")"; done < <(find "$r" -maxdepth 3 -name .git -type d 2>/dev/null)
 done
 
-# merge_and_push <slug> <pr> <branch> <path> <ref-to-merge> <reason> [retarget]
-merge_and_push() {
+# push_cmd <slug> <pr> <branch> <path> [retarget]: what Loren runs to publish the local merge (ADR 0041)
+push_cmd() {
+  printf 'git -C %s push origin HEAD:%s' "$4" "$3"
+  [ -n "${5:-}" ] && printf ' && gh pr edit %s --repo %s --base %s' "$2" "$1" "$5"
+}
+
+# merge_local <slug> <pr> <branch> <path> <ref-to-merge> <reason> [retarget]
+merge_local() {
   local slug="$1" pr="$2" branch="$3" path="$4" ref="$5" why="$6" retarget="${7:-}"
   if [ "$dry" -eq 1 ]; then
     say "dry-run: #$pr ($slug, $branch): $why -> merge $ref${retarget:+, retarget a $retarget}"
     return 0
   fi
   if git -C "$path" merge --no-edit "$ref" >/dev/null 2>&1; then
-    if git -C "$path" push -q origin "HEAD:$branch" 2>/dev/null; then
-      [ -n "$retarget" ] && tgh pr edit "$pr" --repo "$slug" --base "$retarget" >/dev/null 2>&1
-      say "#$pr ($slug, $branch): $why -> mergeado $ref y pusheado${retarget:+; base -> $retarget}"
-    else
-      say "#$pr ($slug, $branch): mergeé $ref pero el push falló; queda local en $path"
-    fi
+    say "#$pr ($slug, $branch): $why -> mergeé $ref sin conflictos, sin pushear. Pusheá: $(push_cmd "$slug" "$pr" "$branch" "$path" "$retarget")"
     return 0
   fi
   git -C "$path" merge --abort >/dev/null 2>&1
@@ -108,6 +111,8 @@ launch_resolver() {
   cat >"$spec" <<EOF
 # Resolver conflictos de merge (stack-sync)
 
+Esto es un brief: ejecutalo sin la pregunta de carril ni la de Continuar/Orquestar.
+
 Repo: \`$path\` (rama \`$branch\`, PR #$pr de $slug). Trabajá SIEMPRE con \`cd\` a esa ruta y no toques
 ningún otro worktree. Leé el \`AGENTS.md\`/\`CLAUDE.md\` del repo antes.
 
@@ -117,11 +122,12 @@ Motivo: $why. Hay que traer \`$ref\` a esta rama y da conflictos.
 2. Resolvé cada conflicto conservando lo de los dos lados (la rama trae su cambio; \`$ref\` trae lo ya
    mergeado). Si un conflicto pide una decisión de producto, no la tomes: \`git merge --abort\` y reportá.
 3. Corré los checks del repo (los de su \`AGENTS.md\`; en CX: \`pnpm lint\`, \`pnpm typecheck\`, \`pnpm test\`).
-4. Si pasan: \`git commit --no-edit\` (commit del merge) y \`git push origin HEAD:$branch\`.$( [ -n "$retarget" ] && printf '\n   Después: `gh pr edit %s --repo %s --base %s`.' "$pr" "$slug" "$retarget")
+   Si el merge cambió el schema de Prisma, antes \`pnpm exec prisma generate\` (no toca la base).
+4. Si pasan: \`git commit --no-edit\` (commit del merge). **No pushees ni edites el PR**: lo hace Loren.
 5. Nunca rebase, force, amend ni \`--no-verify\`.
 
-Al terminar, avisá con \`notify-send "stack-sync: PR #$pr" "<resultado en una línea>"\` y dejá en el chat qué conflictos
-había, cómo los resolviste, la salida de los checks y si pusheaste.
+Al terminar, avisá con \`notify-send "stack-sync: PR #$pr" "<resultado en una línea>. Pusheá: $(push_cmd "$slug" "$pr" "$branch" "$path" "$retarget")"\`
+y dejá en el chat qué conflictos había, cómo los resolviste y la salida de los checks.
 EOF
   if [ "$dry" -eq 1 ]; then say "dry-run: #$pr ($slug): conflicto con $ref -> lanzaría un agente"; return 0; fi
   if [ -x "$orca" ] && "$orca" agent launch --agent claude --worktree "path:$path" \
@@ -148,22 +154,23 @@ for slug in "${!slug_of[@]}"; do
     path="${wt["$slug|$head"]:-}"
     [ -n "$path" ] || continue # no local worktree for this branch: nothing to do here
     git -C "$path" fetch -q origin 2>/dev/null || { note "#$pr ($slug): fetch falló"; continue; }
-    if [ -n "$(git -C "$path" status --porcelain 2>/dev/null)" ]; then
+    # -uno: un archivo sin trackear (el pnpm-lock.yaml que deja pnpm) no frena el merge; uno trackeado sí
+    if [ -n "$(git -C "$path" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
       note "#$pr ($slug, $head): salteado, $path tiene cambios sin commitear"; continue
     fi
     if [ "$(git -C "$path" rev-parse HEAD)" != "$oid" ]; then
       note "#$pr ($slug, $head): salteado, $path no está en la punta del PR (commits sin pushear o atrasado)"; continue
     fi
     if [ "$base" = "$trunk" ] || [ "$base" = main ] || [ "$base" = master ]; then
-      [ "$mergeable" = CONFLICTING ] && merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "choca con $base"
+      [ "$mergeable" = CONFLICTING ] && merge_local "$slug" "$pr" "$head" "$path" "origin/$base" "choca con $base"
       continue
     fi
     merged="$(tgh pr list --repo "$slug" --head "$base" --state merged --json number --limit 1 2>/dev/null | jq -r '.[0].number // empty')"
     if [ -n "$merged" ]; then
-      merge_and_push "$slug" "$pr" "$head" "$path" "origin/$trunk" "el PR de abajo (#$merged, $base) se mergeó" "$trunk"
+      merge_local "$slug" "$pr" "$head" "$path" "origin/$trunk" "el PR de abajo (#$merged, $base) se mergeó" "$trunk"
     elif git -C "$path" rev-parse -q --verify "origin/$base" >/dev/null &&
          ! git -C "$path" merge-base --is-ancestor "origin/$base" HEAD; then
-      merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "la rama de abajo ($base) tiene cambios nuevos"
+      merge_local "$slug" "$pr" "$head" "$path" "origin/$base" "la rama de abajo ($base) tiene cambios nuevos"
     fi
   done <<<"$rows"
 done

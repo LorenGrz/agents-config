@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # test-stack-sync.sh - offline checks for scripts/stack-sync.sh (ADR 0032): temp repos, a fake gh and a
-# fake Orca CLI. Covers: base merged (merge trunk + retarget), base with new commits, trunk conflict,
-# dirty worktree, worktree not at the PR head, and a merge conflict that launches one agent only once.
+# fake Orca CLI. Covers: base merged (merge trunk, push + retarget left to Loren), base with new commits, trunk
+# conflict, nothing pushed (ADR 0041), untracked files ignored, dirty worktree, worktree not at the PR head, and a merge conflict that launches one agent only once.
 set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SYNC="$HUB/scripts/stack-sync.sh"
@@ -57,6 +57,7 @@ git -C "$R" merge -q --squash origin/one >/dev/null; git -C "$R" commit -qm "squ
 c "$R" five.txt from-dev; git -C "$R" push -q origin dev
 c "$W/root/app-five" five.txt from-five; git -C "$W/root/app-five" push -q origin five
 echo dirty >"$W/root/app-six/six.txt"
+echo lock >"$W/root/app-four/pnpm-lock.yaml"   # untracked: must not block four
 c "$W/root/app-seven" local.txt not-pushed
 git -C "$R" fetch -q
 
@@ -67,11 +68,12 @@ printf '[%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three de
 echo '[{"number":1}]' >"$W/gh/merged-one.json"
 
 bash "$SYNC" >/dev/null 2>&1; out="$(cat "$W/state/stack-sync.log")"
-anc() { git -C "$W/root/app-$1" merge-base --is-ancestor "origin/$2" "origin/$1"; }
+anc() { git -C "$W/root/app-$1" merge-base --is-ancestor "origin/$2" HEAD; }
+pushed() { git -C "$W/root/app-$1" fetch -q origin; [ "$(git -C "$W/root/app-$1" rev-parse HEAD)" = "$(git -C "$W/root/app-$1" rev-parse "origin/$1")" ]; }
 
-check "base merged: two gets origin/dev and is pushed" 'anc two dev'
-check "base merged: two is retargeted to dev" 'grep -q "pr edit 2 --repo org/app --base dev" "$W/gh/calls"'
-check "base with new commits: four gets origin/three" 'anc four three'
+check "base merged: two gets origin/dev locally" 'anc two dev'
+check "base merged: nothing pushed, no retarget, the command is in the log" '! pushed two && ! grep -q "pr edit" "$W/gh/calls" && grep -q "#2.*Pusheá: git -C .*push origin HEAD:two && gh pr edit 2 --repo org/app --base dev" <<<"$out"'
+check "base with new commits: four gets origin/three despite an untracked file" 'anc four three && ! pushed four'
 check "trunk conflict on five: merge aborted, agent launched" 'grep -q "agent launch --agent claude .*PR #5" "$W/gh/orca" && [ -z "$(git -C "$W/root/app-five" status --porcelain)" ]'
 check "conflict with the base on eight: agent launched in its worktree" 'grep -q "path:$W/root/app-eight" "$W/gh/orca"'
 check "dirty worktree is skipped and kept" '[ "$(cat "$W/root/app-six/six.txt")" = dirty ] && grep -q "#6.*cambios sin commitear" <<<"$out"'
@@ -80,7 +82,7 @@ check "three (trunk-based, mergeable) is not touched" '! grep -q "#3 " <<<"$out"
 launches="$(wc -l <"$W/gh/orca")"
 bash "$SYNC" >/dev/null 2>&1
 check "a second run does not relaunch the same conflicts" '[ "$(wc -l <"$W/gh/orca")" = "$launches" ]'
-check "never force-pushes or rebases" '! grep -qE -- "git -C [^ ]+ (rebase|push[^#]*--force)" "$SYNC"'
+check "never pushes or rebases (the push command is only printed)" '! grep -v printf "$SYNC" | grep -qE -- "git -C [^ ]+ (rebase|push)"'
 check "dry-run changes nothing" 'before=$(git -C "$W/root/app-four" rev-parse HEAD); bash "$SYNC" --dry-run >/dev/null 2>&1; [ "$(git -C "$W/root/app-four" rev-parse HEAD)" = "$before" ]'
 
 echo "$pass passed, $failn failed"

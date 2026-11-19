@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# stack-sync-install.sh - opt-in: runs scripts/stack-sync.sh every 10 minutes as a systemd user timer
+# stack-sync-install.sh - opt-in: runs scripts/stack-sync.sh every 15 minutes as a systemd user timer
 # (ADR 0032). Units are generated with this hub's path, so nothing personal is committed.
 #   stack-sync-install.sh            install and start the timer
 #   stack-sync-install.sh --remove   stop it and delete the units
@@ -18,7 +18,7 @@ fi
 mkdir -p "$UNIT_DIR"
 cat >"$UNIT_DIR/stack-sync.service" <<EOF
 [Unit]
-Description=stack-sync: actualiza las ramas apiladas de mis PRs (agents-config, ADR 0032)
+Description=stack-sync: trae la base a las ramas de mis PRs, sin pushear (agents-config, ADR 0032, 0041)
 
 [Service]
 Type=oneshot
@@ -27,11 +27,11 @@ ExecStart=$HUB/scripts/stack-sync.sh
 EOF
 cat >"$UNIT_DIR/stack-sync.timer" <<'EOF'
 [Unit]
-Description=stack-sync cada 10 minutos
+Description=stack-sync cada 15 minutos
 
 [Timer]
 OnBootSec=2min
-OnUnitActiveSec=10min
+OnUnitActiveSec=15min
 Persistent=true
 
 [Install]
