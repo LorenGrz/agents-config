@@ -1,45 +1,44 @@
 #!/usr/bin/env bash
-# stack-sync: keeps Loren's PR branches up to date, each one in its own worktree (ADR 0032, 0041, 0043, 0044).
+# stack-sync: keeps Loren's PR branches up to date, each one in its own worktree (ADR 0032, 0041, 0043-0045).
 # For every open PR of mine in the repos found under the roots, bottom-up:
 #   1. its base branch's PR is merged   -> merge origin/<trunk>, push, retarget the PR to <trunk>
 #   2. its base branch got new commits  -> merge origin/<base>, push
-#   3. base is the trunk and the PR conflicts with it -> merge origin/<trunk>, push
-#   4. a merge conflicts -> abort, and queue a brief in $state/queue/ for the Orca automation (ADR 0043),
-#      whose Claude resolves it, runs the checks, commits and pushes (ADR 0044); queued once per
-#      (PR, base commit). A stacked PR whose base merged is retargeted on the next run.
-# It runs from the Orca automation's precheck, every 10 min (ADR 0044; no systemd timer):
-# `--sync-pending` syncs and then exits 0 only if a conflict waits in the queue, so the agent starts only then.
-# Never: rebase, force, amend; never touches a worktree with uncommitted changes to tracked
-# files (untracked ones, like a pnpm-lock.yaml, don't count) or one whose HEAD is not the PR head (local
-# commits not pushed, or behind): it skips it and says so. Only the worktree of that branch is touched.
+#   3. base is the trunk and the branch conflicts with it (checked locally with `git merge-tree`, so it does not
+#      wait for GitHub to recompute `mergeable` after a merge) -> merge origin/<trunk>, push
+#   4. a merge conflicts -> abort, and open a Claude in that PR's worktree through Orca with a brief: resolve,
+#      run the checks, commit and push (ADR 0045). Once per (PR, base commit); its tab stays open.
+# Then, for every merged PR of mine with a linked worktree: remove the worktree and delete the branch, local and
+# remote, when the worktree is clean, its HEAD is the merged head and no open PR is stacked on it.
+# Never: rebase, force, amend; never touches a worktree with uncommitted changes to tracked files (untracked
+# ones, like a pnpm-lock.yaml, don't count) or one whose HEAD is not the PR head: it skips it and says so.
 #
 # Usage: stack-sync.sh [--dry-run] [--roots dir1:dir2] [--owner <gh-owner>] [--trunk dev]
-#        stack-sync.sh --pending   (exit 0 if a conflict waits in the queue, 1 if not; changes nothing)
-#        stack-sync.sh --sync-pending   (sync, then exit like --pending: the automation's precheck)
+#        stack-sync.sh --precheck   the Orca automation's precheck, every 2 min (ADR 0045): asks GitHub with an
+#                                    ETag whether any PR of those repos changed (a 304 does not count against the
+#                                    rate limit) and syncs only then, or every 30 min anyway. Always exits 1, so
+#                                    the automation never starts an agent of its own: conflicts open their own.
 # Config (not committed): ~/.config/stack-sync/config, sourced as shell, e.g.
-#   STACK_SYNC_OWNER=<gh-owner>  STACK_SYNC_ROOTS=<dir>[:<dir>]  STACK_SYNC_TRUNK=dev
+#   STACK_SYNC_OWNER=<gh-owner>  STACK_SYNC_ROOTS=<dir>[:<dir>]  STACK_SYNC_TRUNK=dev  STACK_SYNC_ORCA=<orca cli>
 # Without an owner and roots it does nothing.
-# Env: STACK_SYNC_ROOTS, STACK_SYNC_OWNER, STACK_SYNC_TRUNK, STACK_SYNC_STATE (default ~/.local/state/stack-sync),
-#      STACK_SYNC_NOTIFY=0 to skip notify-send.
+# Env: STACK_SYNC_ROOTS, STACK_SYNC_OWNER, STACK_SYNC_TRUNK, STACK_SYNC_ORCA (default `orca`),
+#      STACK_SYNC_STATE (default ~/.local/state/stack-sync), STACK_SYNC_NOTIFY=0 to skip notify-send.
 set -uo pipefail
 
-dry=0
+dry=0 precheck=0
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}/stack-sync/config"
 # the environment wins over the config file (tests and one-off runs set it)
-env_roots="${STACK_SYNC_ROOTS:-}" env_owner="${STACK_SYNC_OWNER:-}" env_trunk="${STACK_SYNC_TRUNK:-}"
+env_roots="${STACK_SYNC_ROOTS:-}" env_owner="${STACK_SYNC_OWNER:-}" env_trunk="${STACK_SYNC_TRUNK:-}" env_orca="${STACK_SYNC_ORCA:-}"
 # shellcheck disable=SC1090
 [ -r "$cfg" ] && . "$cfg"
 roots="${env_roots:-${STACK_SYNC_ROOTS:-}}"
 owner="${env_owner:-${STACK_SYNC_OWNER:-}}"
-STACK_SYNC_TRUNK="${env_trunk:-${STACK_SYNC_TRUNK:-}}"
-trunk="${STACK_SYNC_TRUNK:-dev}"
+trunk="${env_trunk:-${STACK_SYNC_TRUNK:-dev}}"
+orca="${env_orca:-${STACK_SYNC_ORCA:-orca}}"
 state="${STACK_SYNC_STATE:-$HOME/.local/state/stack-sync}"
-pending=0 syncpend=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) dry=1 ;;
-    --pending) pending=1 ;;
-    --sync-pending) syncpend=1 ;;
+    --precheck) precheck=1 ;;
     --roots) roots="${2:-}"; shift ;;
     --owner) owner="${2:-}"; shift ;;
     --trunk) trunk="${2:-}"; shift ;;
@@ -47,19 +46,17 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-# precheck of the Orca automation: is there a conflict waiting? (no lock, no network)
-if [ "$pending" -eq 1 ]; then compgen -G "$state/queue/*.md" >/dev/null; exit $?; fi
-# with --sync-pending a no-op run says «nothing queued» (1), so the automation does not start an agent
-noop=0; [ "$syncpend" -eq 1 ] && noop=1
-[ -n "$owner" ] && [ -n "$roots" ] || exit "$noop"
-mkdir -p "$state/queue" "$state/failed"
+# the precheck always says «nothing for the automation's agent» (1); a plain run says 0
+done_code=0; [ "$precheck" -eq 1 ] && done_code=1
+[ -n "$owner" ] && [ -n "$roots" ] || exit "$done_code"
+mkdir -p "$state/failed" "$state/specs"
 log="$state/stack-sync.log"
 exec 9>"$state/lock"
-flock -n 9 || exit "$noop" # another run is still going
+flock -n 9 || exit "$done_code" # another run is still going
 
 summary=()
 say() { summary+=("$1"); printf '%s %s\n' "$(date '+%F %T')" "$1" >>"$log"; }
-# a skip is only logged (and printed on a manual run): a timer every 10 min must not notify the same skip
+# a skip is only logged (and printed on a manual run): a run every 2 min must not notify the same skip
 skips=()
 note() { skips+=("$1"); printf '%s %s\n' "$(date '+%F %T')" "$1" >>"$log"; }
 # gh with color off: some shells force it (GH_FORCE_TTY, CLICOLOR_FORCE) and jq cannot read ANSI codes
@@ -88,6 +85,27 @@ for r in "${root_list[@]}"; do
   while IFS= read -r g; do scan_repo "$(dirname "$g")"; done < <(find "$r" -maxdepth 3 -name .git -type d 2>/dev/null)
 done
 
+last="$state/last-full-sync"
+# --precheck: sync only when a PR of these repos changed (ETag; 304 = nothing new) or 30 min passed
+if [ "$precheck" -eq 1 ]; then
+  changed=0
+  [ -e "$last" ] && [ -n "$(find "$last" -mmin -30 2>/dev/null)" ] || changed=1
+  for slug in "${!slug_of[@]}"; do
+    etag_file="$state/etag-${slug//\//_}"
+    etag="$(cat "$etag_file" 2>/dev/null)"
+    head="$(tgh api -i "repos/$slug/pulls?state=all&sort=updated&direction=desc&per_page=1" \
+      ${etag:+-H "If-None-Match: $etag"} 2>/dev/null | sed -n '1,/^\r\{0,1\}$/p')"
+    case "$head" in
+      *" 304"*) ;;
+      *" 200"*) changed=1
+        printf '%s' "$(sed -nE 's/^[Ee][Tt][Aa][Gg]: *([^\r]*)\r?$/\1/p' <<<"$head")" >"$etag_file" ;;
+      *) changed=1 ;; # no answer: sync anyway, a missed merge costs more than one run
+    esac
+  done
+  [ "$changed" -eq 1 ] || exit 1
+fi
+: >"$last" # any full sync counts for the 30-min floor of --precheck
+
 # merge_and_push <slug> <pr> <branch> <path> <ref-to-merge> <reason> [retarget]
 merge_and_push() {
   local slug="$1" pr="$2" branch="$3" path="$4" ref="$5" why="$6" retarget="${7:-}"
@@ -105,24 +123,26 @@ merge_and_push() {
     return 0
   fi
   git -C "$path" merge --abort >/dev/null 2>&1
-  queue_resolver "$slug" "$pr" "$branch" "$path" "$ref" "$why" "$retarget"
+  launch_resolver "$slug" "$pr" "$branch" "$path" "$ref" "$why"
 }
 
-queue_resolver() {
-  local slug="$1" pr="$2" branch="$3" path="$4" ref="$5" why="$6" retarget="$7"
-  local refsha mark spec
+# launch_resolver: a Claude in that PR's worktree, through Orca, once per (PR, base commit)
+launch_resolver() {
+  local slug="$1" pr="$2" branch="$3" path="$4" ref="$5" why="$6"
+  local refsha mark spec fail
   refsha="$(git -C "$path" rev-parse --short "$ref" 2>/dev/null)"
   mark="$state/launched-${slug//\//_}-$pr-$refsha"
-  if [ -e "$mark" ]; then note "#$pr ($slug): conflicto con $ref ya está en la cola; espera"; return 0; fi
-  spec="$state/queue/${slug//\//_}-$pr.md"
-  [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug): conflicto con $ref -> lo pondría en la cola"; return 0; }
+  if [ -e "$mark" ]; then note "#$pr ($slug): conflicto con $ref ya tiene un agente; espera"; return 0; fi
+  [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug): conflicto con $ref -> abriría un Claude en $path"; return 0; }
+  spec="$state/specs/${slug//\//_}-$pr.md"
+  fail="$state/failed/${slug//\//_}-$pr.md"
   cat >"$spec" <<EOF
 # Resolver conflictos de merge (stack-sync)
 
 Esto es un brief: ejecutalo sin la pregunta de carril ni la de Continuar/Orquestar.
 
-Repo: \`$path\` (rama \`$branch\`, PR #$pr de $slug). Trabajá SIEMPRE con \`cd\` a esa ruta y no toques
-ningún otro worktree. Leé el \`AGENTS.md\`/\`CLAUDE.md\` del repo antes.
+Estás en el worktree del PR #$pr de $slug (\`$path\`, rama \`$branch\`). No toques ningún otro worktree. Leé el
+\`AGENTS.md\`/\`CLAUDE.md\` del repo antes.
 
 Motivo: $why. Hay que traer \`$ref\` a esta rama y da conflictos.
 
@@ -131,17 +151,53 @@ Motivo: $why. Hay que traer \`$ref\` a esta rama y da conflictos.
    mergeado). Si un conflicto pide una decisión de producto, no la tomes: \`git merge --abort\` y reportá.
 3. Corré los checks del repo (los de su \`AGENTS.md\`; en CX: \`pnpm lint\`, \`pnpm typecheck\`, \`pnpm test\`).
    Si el merge cambió el schema de Prisma, antes \`pnpm exec prisma generate\` (no toca la base).
-4. Si pasan: \`git commit --no-edit\` (commit del merge) y \`git push origin HEAD:$branch\` (sin force).
-   No edites el PR: si su base cambia, stack-sync lo retargetea en la próxima corrida.
+4. Si pasan: \`git commit --no-edit\` (commit del merge) y \`git push origin HEAD:$branch\` (sin force). No edites
+   el PR: si su base cambia, stack-sync lo retargetea solo.
 5. Nunca rebase, force, amend ni \`--no-verify\`.
 
-Al terminar: si quedó resuelto, borrá este archivo (\`rm "$spec"\`); si abortaste o fallaron los checks, movelo a
-\`$state/failed/\` con una línea al final que diga por qué. Avisá con
-\`notify-send "stack-sync: PR #$pr" "<resultado en una línea>"\` y dejá en el chat qué conflictos había, cómo los
-resolviste y la salida de los checks.
+Si abortaste, fallaron los checks o el push, escribí el motivo en una línea en \`$fail\`. Al terminar, avisá con
+\`notify-send "stack-sync: PR #$pr" "<resultado en una línea>"\` y dejá acá qué conflictos había, cómo los
+resolviste y la salida de los checks. Esta pestaña queda abierta para que Loren lo lea.
 EOF
-  : >"$mark"
-  say "#$pr ($slug, $branch): conflicto con $ref -> en la cola de la automatización de Orca ($spec)"
+  if "$orca" agent launch --agent claude --worktree "path:$path" --surface terminal \
+      --prompt "$(cat "$spec")" --json >/dev/null 2>&1; then
+    : >"$mark"
+    say "#$pr ($slug, $branch): conflicto con $ref -> abrí un Claude en su worktree ($path)"
+  else
+    say "#$pr ($slug, $branch): conflicto con $ref, pero no pude abrir el agente en Orca; reintento en la próxima corrida"
+  fi
+}
+
+# clean_merged <slug> <open-json>: remove the worktree and the branch of my merged PRs
+clean_merged() {
+  local slug="$1" open="$2" merged pr head oid path common
+  merged="$(tgh pr list --repo "$slug" --author @me --state merged --limit 30 \
+    --json number,headRefName,headRefOid 2>/dev/null)" || return 0
+  while IFS=$'\t' read -r pr head oid; do
+    [ -n "$pr" ] || continue
+    path="${wt["$slug|$head"]:-}"
+    [ -n "$path" ] || continue
+    [ -f "$path/.git" ] || continue # the main checkout (.git is a dir) is never removed
+    if jq -e --arg h "$head" 'any(.[]; .baseRefName == $h)' <<<"$open" >/dev/null 2>&1; then
+      note "#$pr ($slug, $head): mergeado, pero hay un PR apilado encima; el worktree espera"; continue
+    fi
+    if [ -n "$(git -C "$path" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+      note "#$pr ($slug, $head): mergeado, pero $path tiene cambios sin commitear; no lo borro"; continue
+    fi
+    if [ "$(git -C "$path" rev-parse HEAD 2>/dev/null)" != "$oid" ]; then
+      note "#$pr ($slug, $head): mergeado, pero $path tiene commits que no están en el PR; no lo borro"; continue
+    fi
+    [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug, $head): mergeado -> borraría $path y la rama local y remota"; continue; }
+    common="$(cd "$path" && cd "$(git rev-parse --git-common-dir)/.." && pwd)"
+    "$orca" worktree rm --worktree "path:$path" --json >/dev/null 2>&1 ||
+      git -C "$common" worktree remove "$path" >/dev/null 2>&1 ||
+      { note "#$pr ($slug, $head): no pude borrar $path"; continue; }
+    git -C "$common" branch -D "$head" >/dev/null 2>&1
+    git -C "$common" ls-remote --exit-code --heads origin "$head" >/dev/null 2>&1 &&
+      git -C "$common" push -q origin --delete "$head" >/dev/null 2>&1
+    unset 'wt[$slug|$head]'
+    say "#$pr ($slug, $head): mergeado -> borré el worktree y la rama local y remota"
+  done < <(jq -r '.[] | [.number, .headRefName, .headRefOid] | @tsv' <<<"$merged" 2>/dev/null)
 }
 
 # PRs, bottom-up: trunk-based first, then those stacked on them (depth by base chain)
@@ -167,7 +223,12 @@ for slug in "${!slug_of[@]}"; do
       note "#$pr ($slug, $head): salteado, $path no está en la punta del PR (commits sin pushear o atrasado)"; continue
     fi
     if [ "$base" = "$trunk" ] || [ "$base" = main ] || [ "$base" = master ]; then
-      [ "$mergeable" = CONFLICTING ] && merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "choca con $base"
+      # GitHub's `mergeable` lags behind a fresh merge (UNKNOWN): the local merge-tree answers right away
+      if [ "$mergeable" = CONFLICTING ] ||
+         { ! git -C "$path" merge-base --is-ancestor "origin/$base" HEAD &&
+           ! git -C "$path" merge-tree --write-tree "origin/$base" HEAD >/dev/null 2>&1; }; then
+        merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "choca con $base"
+      fi
       continue
     fi
     merged="$(tgh pr list --repo "$slug" --head "$base" --state merged --json number --limit 1 2>/dev/null | jq -r '.[0].number // empty')"
@@ -178,6 +239,7 @@ for slug in "${!slug_of[@]}"; do
       merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "la rama de abajo ($base) tiene cambios nuevos"
     fi
   done <<<"$rows"
+  clean_merged "$slug" "$json"
 done
 
 [ "${#skips[@]}" -gt 0 ] && { [ -t 1 ] || [ "$dry" -eq 1 ]; } && printf '%s\n' "${skips[@]}"
@@ -189,5 +251,4 @@ if [ "${#summary[@]}" -gt 0 ]; then
 elif [ "$dry" -eq 1 ] && [ "${#skips[@]}" -eq 0 ]; then
   echo "stack-sync: nada que hacer"
 fi
-if [ "$syncpend" -eq 1 ]; then compgen -G "$state/queue/*.md" >/dev/null; exit $?; fi
-exit 0
+exit "$done_code"
