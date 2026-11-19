@@ -133,7 +133,8 @@ Loren's open PRs are kept mergeable without asking (ADR 0032, 0041, 0043-0045); 
   (`orca agent launch`), which resolves, commits and pushes (no force), fast: only a real logic conflict runs
   the related tests, never lint or the whole suite; its tab stays open.
 - A merged PR of mine loses its worktree, its session and its branch, local and remote (only when clean, at the
-  PR head and with nothing stacked on it). The precheck always exits 1, so the automation itself starts nothing.
+  PR head and with nothing stacked on it; pnpm's untracked `pnpm-lock.yaml`/`pnpm-workspace.yaml` don't block it,
+  any other untracked file keeps it and is notified once, ADR 0046). The precheck always exits 1, so the automation itself starts nothing.
 - Install: `orca automations create` from ADR 0043 with the trigger, precheck and prompt of ADR 0045. Watch:
   `orca automations runs --id <id> --json`, log `~/.local/state/stack-sync/stack-sync.log`, failures in
   `~/.local/state/stack-sync/failed/`. Stop: `orca automations edit <id> --disabled`.
