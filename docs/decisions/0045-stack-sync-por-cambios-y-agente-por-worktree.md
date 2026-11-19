@@ -20,7 +20,9 @@ los repos de la org (webhook o GitHub Actions con un runner local), así que se 
 - El conflicto con el trunk se detecta también localmente (`git merge-tree --write-tree`), porque después de un
   merge GitHub tarda en recalcular `mergeable` (queda en `UNKNOWN`).
 - Cada conflicto abre un Claude en el worktree de ese PR con `orca agent launch --worktree path:<worktree>`, una
-  vez por (PR, commit base). Resuelve, corre los checks, commitea y pushea sin force. La pestaña queda abierta.
+  vez por (PR, commit base). Resuelve, commitea y pushea sin force, rápido: sin lint, typecheck ni la suite entera;
+  solo un conflicto real de lógica corre los tests relacionados con los archivos que chocaron (un conflicto de
+  doc, listas, imports o lockfiles no corre nada). La pestaña queda abierta.
 - Por cada PR propio mergeado con un worktree enlazado, limpio, en la punta del PR y sin un PR apilado encima:
   `orca worktree rm` (o `git worktree remove`), `git branch -D` y `git push origin --delete` de la rama.
 - Se van la cola y `--pending`/`--sync-pending`. La ruta del CLI de Orca va en `STACK_SYNC_ORCA` del config.

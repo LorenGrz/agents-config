@@ -6,7 +6,7 @@
 #   3. base is the trunk and the branch conflicts with it (checked locally with `git merge-tree`, so it does not
 #      wait for GitHub to recompute `mergeable` after a merge) -> merge origin/<trunk>, push
 #   4. a merge conflicts -> abort, and open a Claude in that PR's worktree through Orca with a brief: resolve,
-#      run the checks, commit and push (ADR 0045). Once per (PR, base commit); its tab stays open.
+#      commit and push; only a real logic conflict runs the related tests, never the whole suite (ADR 0045). Once per (PR, base commit); its tab stays open.
 # Then, for every merged PR of mine with a linked worktree: remove the worktree and delete the branch, local and
 # remote, when the worktree is clean, its HEAD is the merged head and no open PR is stacked on it.
 # Never: rebase, force, amend; never touches a worktree with uncommitted changes to tracked files (untracked
@@ -149,15 +149,19 @@ Motivo: $why. Hay que traer \`$ref\` a esta rama y da conflictos.
 1. \`git fetch origin\` y \`git merge --no-edit $ref\`.
 2. Resolvé cada conflicto conservando lo de los dos lados (la rama trae su cambio; \`$ref\` trae lo ya
    mergeado). Si un conflicto pide una decisión de producto, no la tomes: \`git merge --abort\` y reportá.
-3. Corré los checks del repo (los de su \`AGENTS.md\`; en CX: \`pnpm lint\`, \`pnpm typecheck\`, \`pnpm test\`).
-   Si el merge cambió el schema de Prisma, antes \`pnpm exec prisma generate\` (no toca la base).
-4. Si pasan: \`git commit --no-edit\` (commit del merge) y \`git push origin HEAD:$branch\` (sin force). No edites
-   el PR: si su base cambia, stack-sync lo retargetea solo.
+3. La resolución tiene que ser rápida: **no corras lint, typecheck ni la suite entera.**
+   - Conflicto trivial (doc, listas o tablas donde los dos agregaron, imports, lockfiles, archivos generados):
+     resolvé y seguí al paso 4 sin correr nada.
+   - Conflicto real (los dos cambiaron la misma lógica): corré solo los tests relacionados con los archivos que
+     chocaron (\`npx jest --findRelatedTests <archivos>\` en el back, \`npx vitest related --run <archivos>\` en el
+     front). Si el merge cambió el schema de Prisma, antes \`pnpm exec prisma generate\` (no toca la base).
+4. \`git commit --no-edit\` (commit del merge) y \`git push origin HEAD:$branch\` (sin force). No edites el PR: si
+   su base cambia, stack-sync lo retargetea solo.
 5. Nunca rebase, force, amend ni \`--no-verify\`.
 
 Si abortaste, fallaron los checks o el push, escribí el motivo en una línea en \`$fail\`. Al terminar, avisá con
 \`notify-send "stack-sync: PR #$pr" "<resultado en una línea>"\` y dejá acá qué conflictos había, cómo los
-resolviste y la salida de los checks. Esta pestaña queda abierta para que Loren lo lea.
+resolviste y, si corriste tests, su salida. Esta pestaña queda abierta para que Loren lo lea.
 EOF
   if "$orca" agent launch --agent claude --worktree "path:$path" --surface terminal \
       --prompt "$(cat "$spec")" --json >/dev/null 2>&1; then

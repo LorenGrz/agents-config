@@ -130,7 +130,8 @@ Loren's open PRs are kept mergeable without asking (ADR 0032, 0041, 0043-0045); 
   hours, only while Orca is open; no systemd timer): `scripts/stack-sync.sh --precheck` asks GitHub with an ETag
   whether any PR changed and only then syncs: merges the base into each PR branch in its worktree and pushes,
   retargets a stacked PR when its base merged, and opens a Claude in the worktree of each conflicting PR
-  (`orca agent launch`), which resolves, runs the checks, commits and pushes (no force); its tab stays open.
+  (`orca agent launch`), which resolves, commits and pushes (no force), fast: only a real logic conflict runs
+  the related tests, never lint or the whole suite; its tab stays open.
 - A merged PR of mine loses its worktree, its session and its branch, local and remote (only when clean, at the
   PR head and with nothing stacked on it). The precheck always exits 1, so the automation itself starts nothing.
 - Install: `orca automations create` from ADR 0043 with the trigger, precheck and prompt of ADR 0045. Watch:
