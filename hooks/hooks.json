@@ -48,6 +48,15 @@
             "statusMessage": "formatting"
           }
         ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/config/hooks/orquestar.sh\""
+          }
+        ]
       }
     ],
     "SessionStart": [

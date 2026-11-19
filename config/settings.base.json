@@ -155,6 +155,15 @@
             "statusMessage": "formatting"
           }
         ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/orquestar.sh"
+          }
+        ]
       }
     ],
     "SessionStart": [

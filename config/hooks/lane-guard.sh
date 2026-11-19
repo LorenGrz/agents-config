@@ -2,8 +2,9 @@
 # PreToolUse(AskUserQuestion|ExitPlanMode) hook: enforces the workflow-lane rules of config/CLAUDE.md
 # (ADR 0022, ADR 0025, ADR 0031) instead of leaving them as prompt text.
 #  - AskUserQuestion: a question offering the lanes must list them in the fixed order
-#    Continuar -> Plan S -> Plan L. The recommended one is marked in its label, never moved first
-#    (the tool's own "recommended first" guidance loses here).
+#    Continuar -> Plan S -> Plan L, or, for the follow-up question of ADR 0039, Continuar -> Orquestar.
+#    The recommended one is marked in its label, never moved first (the tool's own
+#    "recommended first" guidance loses here).
 #  - ExitPlanMode: a Plan L is presented only after a grilling interview: the
 #    `mattpocock-skills:grilling` skill must have been loaded since the session last entered plan mode.
 #    Plan S has no interview (ADR 0031), so it is only checked when the last lane picked was Plan L.
@@ -17,7 +18,7 @@ tool=$(jq -r '.tool_name // empty' <<<"$input")
 case "$tool" in
   AskUserQuestion)
     # For every question whose options mention a lane, the lane options (in the order given)
-    # must be exactly: Continuar, Plan S, Plan L.
+    # must be exactly: Continuar, Plan S, Plan L — or Continuar, Orquestar (ADR 0039).
     bad=$(jq -r '
       [.tool_input.questions[]?
         | [.options[]?.label
@@ -25,10 +26,11 @@ case "$tool" in
            | if startswith("continuar") then "C"
              elif startswith("plan s") then "S"
              elif startswith("plan l") then "L"
+             elif startswith("orquestar") then "O"
              else empty end]
-        | select(length > 0 and . != ["C","S","L"])] | length' <<<"$input")
+        | select(length > 0 and . != ["C","S","L"] and . != ["C","O"])] | length' <<<"$input")
     if [ "${bad:-0}" != 0 ]; then
-      echo "lane-guard: las opciones de carril van siempre en este orden: Continuar, Plan S, Plan L (las tres). Marcá la recomendada con \"(Recomendado)\" en su label sin moverla de lugar; esto pisa la guía de AskUserQuestion de poner la recomendada primero." >&2
+      echo "lane-guard: las opciones de carril van siempre en este orden: Continuar, Plan S, Plan L (las tres), o Continuar, Orquestar (las dos). Marcá la recomendada con \"(Recomendado)\" en su label sin moverla de lugar; esto pisa la guía de AskUserQuestion de poner la recomendada primero." >&2
       exit 2
     fi ;;
   ExitPlanMode)
