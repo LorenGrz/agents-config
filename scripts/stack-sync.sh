@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# stack-sync: keeps Loren's PR branches up to date, each one in its own worktree (ADR 0032, 0041).
+# stack-sync: keeps Loren's PR branches up to date, each one in its own worktree (ADR 0032, 0041-0043).
 # For every open PR of mine in the repos found under the roots, bottom-up:
 #   1. its base branch's PR is merged   -> merge origin/<trunk>, push, retarget the PR to <trunk>
 #   2. its base branch got new commits  -> merge origin/<base>, push
 #   3. base is the trunk and the PR conflicts with it -> merge origin/<trunk>, push
-#   4. a merge conflicts -> abort, and open a visible Claude agent in that worktree with `orca agent launch`
-#      (no coordinator needed, so it works from a systemd timer) to resolve, run the checks, commit and
-#      leave a marker with its commit; launched once per (PR, base commit).
+#   4. a merge conflicts -> abort, and queue a brief in $state/queue/ for the Orca automation (ADR 0043),
+#      whose Claude resolves it, runs the checks, commits and leaves a marker with its commit; queued once
+#      per (PR, base commit). `--pending` exits 0 when the queue has work: the automation's precheck.
 #   5. a worktree ahead of its PR with that marker -> push it (the agent never pushes: ADR 0042), then go on
 #      with 1-3 (a stacked PR still gets retargeted).
 # Never: rebase, force, amend; never touches a worktree with uncommitted changes to tracked
@@ -14,11 +14,11 @@
 # commits not pushed, or behind): it skips it and says so. Only the worktree of that branch is touched.
 #
 # Usage: stack-sync.sh [--dry-run] [--roots dir1:dir2] [--owner <gh-owner>] [--trunk dev]
+#        stack-sync.sh --pending   (exit 0 if a conflict waits in the queue, 1 if not; changes nothing)
 # Config (not committed): ~/.config/stack-sync/config, sourced as shell, e.g.
 #   STACK_SYNC_OWNER=<gh-owner>  STACK_SYNC_ROOTS=<dir>[:<dir>]  STACK_SYNC_TRUNK=dev
 # Without an owner and roots it does nothing.
 # Env: STACK_SYNC_ROOTS, STACK_SYNC_OWNER, STACK_SYNC_TRUNK, STACK_SYNC_STATE (default ~/.local/state/stack-sync),
-#      STACK_SYNC_ORCA (Orca CLI; default $ORCA_CLI_COMMAND or ~/.config/orca/linux-orca-cli-shim/orca),
 #      STACK_SYNC_NOTIFY=0 to skip notify-send.
 set -uo pipefail
 
@@ -33,10 +33,11 @@ owner="${env_owner:-${STACK_SYNC_OWNER:-}}"
 STACK_SYNC_TRUNK="${env_trunk:-${STACK_SYNC_TRUNK:-}}"
 trunk="${STACK_SYNC_TRUNK:-dev}"
 state="${STACK_SYNC_STATE:-$HOME/.local/state/stack-sync}"
-orca="${STACK_SYNC_ORCA:-${ORCA_CLI_COMMAND:-$HOME/.config/orca/linux-orca-cli-shim/orca}}"
+pending=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) dry=1 ;;
+    --pending) pending=1 ;;
     --roots) roots="${2:-}"; shift ;;
     --owner) owner="${2:-}"; shift ;;
     --trunk) trunk="${2:-}"; shift ;;
@@ -44,8 +45,10 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# precheck of the Orca automation: is there a conflict waiting? (no lock, no network)
+if [ "$pending" -eq 1 ]; then compgen -G "$state/queue/*.md" >/dev/null; exit $?; fi
 [ -n "$owner" ] && [ -n "$roots" ] || exit 0
-mkdir -p "$state/specs"
+mkdir -p "$state/queue" "$state/failed"
 log="$state/stack-sync.log"
 exec 9>"$state/lock"
 flock -n 9 || exit 0 # another run is still going
@@ -98,16 +101,17 @@ merge_and_push() {
     return 0
   fi
   git -C "$path" merge --abort >/dev/null 2>&1
-  launch_resolver "$slug" "$pr" "$branch" "$path" "$ref" "$why" "$retarget"
+  queue_resolver "$slug" "$pr" "$branch" "$path" "$ref" "$why" "$retarget"
 }
 
-launch_resolver() {
+queue_resolver() {
   local slug="$1" pr="$2" branch="$3" path="$4" ref="$5" why="$6" retarget="$7"
   local refsha mark spec
   refsha="$(git -C "$path" rev-parse --short "$ref" 2>/dev/null)"
   mark="$state/launched-${slug//\//_}-$pr-$refsha"
-  if [ -e "$mark" ]; then note "#$pr ($slug): conflicto con $ref ya enviado a un agente; espera"; return 0; fi
-  spec="$state/specs/${slug//\//_}-$pr.md"
+  if [ -e "$mark" ]; then note "#$pr ($slug): conflicto con $ref ya está en la cola; espera"; return 0; fi
+  spec="$state/queue/${slug//\//_}-$pr.md"
+  [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug): conflicto con $ref -> lo pondría en la cola"; return 0; }
   cat >"$spec" <<EOF
 # Resolver conflictos de merge (stack-sync)
 
@@ -128,17 +132,13 @@ Motivo: $why. Hay que traer \`$ref\` a esta rama y da conflictos.
    stack-sync ve esa marca y pushea en su próxima corrida (cada 15 min).
 5. Nunca rebase, force, amend ni \`--no-verify\`.
 
-Al terminar, avisá con \`notify-send "stack-sync: PR #$pr" "<resultado en una línea>"\` y dejá en el chat qué
-conflictos había, cómo los resolviste y la salida de los checks.
+Al terminar: si quedó resuelto, borrá este archivo (\`rm "$spec"\`); si abortaste o fallaron los checks, movelo a
+\`$state/failed/\` con una línea al final que diga por qué. Avisá con
+\`notify-send "stack-sync: PR #$pr" "<resultado en una línea>"\` y dejá en el chat qué conflictos había, cómo los
+resolviste y la salida de los checks.
 EOF
-  if [ "$dry" -eq 1 ]; then say "dry-run: #$pr ($slug): conflicto con $ref -> lanzaría un agente"; return 0; fi
-  if [ -x "$orca" ] && "$orca" agent launch --agent claude --worktree "path:$path" \
-      --prompt "Conflictos del PR #$pr ($branch): seguí las instrucciones de $spec" --json >/dev/null 2>&1; then
-    : >"$mark"
-    say "#$pr ($slug, $branch): conflicto con $ref -> lancé un agente en Orca ($path)"
-  else
-    say "#$pr ($slug, $branch): conflicto con $ref y no pude lanzar el agente; resolvelo en $path (spec: $spec)"
-  fi
+  : >"$mark"
+  say "#$pr ($slug, $branch): conflicto con $ref -> en la cola de la automatización de Orca ($spec)"
 }
 
 # PRs, bottom-up: trunk-based first, then those stacked on them (depth by base chain)

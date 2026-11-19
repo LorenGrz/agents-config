@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # test-stack-sync.sh - offline checks for scripts/stack-sync.sh (ADR 0032): temp repos, a fake gh and a
-# fake Orca CLI. Covers: base merged (merge trunk, push, retarget), base with new commits, trunk
-# conflict, untracked files ignored, an agent's resolution pushed through its marker (ADR 0042), dirty worktree, worktree not at the PR head, and a merge conflict that launches one agent only once.
+# no Orca (ADR 0043: conflicts go to a queue). Covers: base merged (merge trunk, push, retarget), base with new commits, trunk
+# conflict, untracked files ignored, an agent's resolution pushed through its marker (ADR 0042), dirty worktree, worktree not at the PR head, a merge conflict queued only once, and --pending as the precheck.
 set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SYNC="$HUB/scripts/stack-sync.sh"
@@ -23,12 +23,8 @@ if [ "$1 $2" = "pr list" ]; then
 fi
 exit 0
 EOF
-cat >"$W/bin/orca" <<'EOF'
-#!/usr/bin/env bash
-echo "$*" >>"$FAKE_GH/orca"
-EOF
-chmod +x "$W/bin/gh" "$W/bin/orca"
-export PATH="$W/bin:$PATH" FAKE_GH="$W/gh" STACK_SYNC_ORCA="$W/bin/orca" STACK_SYNC_NOTIFY=0
+chmod +x "$W/bin/gh"
+export PATH="$W/bin:$PATH" FAKE_GH="$W/gh" STACK_SYNC_NOTIFY=0
 export STACK_SYNC_STATE="$W/state" STACK_SYNC_ROOTS="$W/root" STACK_SYNC_OWNER=org
 
 # --- repos: bare origin "github.com/org/app", main clone on dev, one worktree per branch
@@ -85,14 +81,17 @@ check "base merged: two is retargeted to dev" 'grep -q "pr edit 2 --repo org/app
 check "base with new commits: four gets origin/three and is pushed despite an untracked file" 'anc four three && pushed four'
 check "agent resolution with its marker is pushed and the marker removed" 'pushed nine && ! ls "$W/state"/resolved-org_app-9-* >/dev/null 2>&1'
 check "a local commit without a marker is not pushed" '! pushed ten && grep -q "#10.*no está en la punta" <<<"$out"'
-check "trunk conflict on five: merge aborted, agent launched" 'grep -q "agent launch --agent claude .*PR #5" "$W/gh/orca" && [ -z "$(git -C "$W/root/app-five" status --porcelain)" ]'
-check "conflict with the base on eight: agent launched in its worktree" 'grep -q "path:$W/root/app-eight" "$W/gh/orca"'
+Q="$W/state/queue"
+check "trunk conflict on five: merge aborted, brief queued" 'grep -q "PR #5 de org/app" "$Q/org_app-5.md" && [ -z "$(git -C "$W/root/app-five" status --porcelain)" ]'
+check "conflict with the base on eight: its brief points at its worktree" 'grep -q "$W/root/app-eight" "$Q/org_app-8.md"'
+check "--pending exits 0 with a queued conflict" 'bash "$SYNC" --pending'
 check "dirty worktree is skipped and kept" '[ "$(cat "$W/root/app-six/six.txt")" = dirty ] && grep -q "#6.*cambios sin commitear" <<<"$out"'
 check "worktree not at the PR head is skipped" 'grep -q "#7.*no está en la punta" <<<"$out" && ! anc seven dev 2>/dev/null || true; grep -q "#7.*no está en la punta" <<<"$out"'
 check "three (trunk-based, mergeable) is not touched" '! grep -q "#3 " <<<"$out"'
-launches="$(wc -l <"$W/gh/orca")"
+rm -f "$Q"/*.md   # what the agent does once it resolved them
 bash "$SYNC" >/dev/null 2>&1
-check "a second run does not relaunch the same conflicts" '[ "$(wc -l <"$W/gh/orca")" = "$launches" ]'
+check "a second run does not requeue the same conflicts" '! ls "$Q"/*.md >/dev/null 2>&1'
+check "--pending exits 1 with an empty queue" '! bash "$SYNC" --pending'
 check "never force-pushes or rebases" '! grep -qE -- "git -C [^ ]+ (rebase|push[^#]*--force)" "$SYNC"'
 check "dry-run changes nothing" 'before=$(git -C "$W/root/app-four" rev-parse HEAD); bash "$SYNC" --dry-run >/dev/null 2>&1; [ "$(git -C "$W/root/app-four" rev-parse HEAD)" = "$before" ]'
 
