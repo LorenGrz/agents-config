@@ -1,6 +1,6 @@
 # 0042 — stack-sync vuelve a pushear, también la resolución de conflictos
 
-Estado: aceptado (2026-11-19). Reemplaza la parte de 0041 que sacaba el push; lo demás de 0041 sigue.
+Estado: reemplazado por 0044 (2026-11-19). Reemplazaba la parte de 0041 que sacaba el push; lo demás de 0041 sigue.
 
 ## Contexto
 
