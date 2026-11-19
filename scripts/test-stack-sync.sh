@@ -3,7 +3,7 @@
 # orca. Covers: base merged (merge trunk, push, retarget), base with new commits, trunk conflict (also with GitHub's
 # mergeable still UNKNOWN), untracked files ignored, a local commit not pushed is left alone, dirty worktree, worktree
 # not at the PR head, a conflict opens one Claude in its worktree once, merged PRs lose worktree and branch (not when
-# stacked), and --precheck (ETag: syncs only when something changed, always exits 1).
+# stacked; with pnpm's untracked files too; another untracked file keeps it and is notified once), and --precheck (ETag: syncs only when something changed, always exits 1).
 set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SYNC="$HUB/scripts/stack-sync.sh"
@@ -63,6 +63,8 @@ branch eight three        # PR 8 stacked on three, conflicts with three
 branch ten dev            # PR 10: local merge commit not pushed
 branch eleven dev         # PR 11: conflicts with dev, but GitHub still says UNKNOWN
 branch twelve dev         # PR 12: merged, clean worktree at its head -> removed
+branch thirteen dev       # PR 13: merged, only pnpm's untracked files -> removed with --force
+branch fourteen dev       # PR 14: merged, another untracked file -> kept, notified once
 git -C "$R" fetch -q
 c "$W/root/app-three" shared.txt from-three; git -C "$W/root/app-three" push -q origin three
 c "$W/root/app-eight" shared.txt from-eight; git -C "$W/root/app-eight" push -q origin eight
@@ -73,6 +75,8 @@ c "$W/root/app-five" five.txt from-five; git -C "$W/root/app-five" push -q origi
 c "$W/root/app-eleven" five.txt from-eleven; git -C "$W/root/app-eleven" push -q origin eleven
 echo dirty >"$W/root/app-six/six.txt"
 echo lock >"$W/root/app-four/pnpm-lock.yaml"   # untracked: must not block four
+echo lock >"$W/root/app-thirteen/pnpm-lock.yaml"; echo ws >"$W/root/app-thirteen/pnpm-workspace.yaml"
+echo notes >"$W/root/app-fourteen/notas.txt"
 c "$W/root/app-seven" local.txt not-pushed
 c "$W/root/app-ten" ten-merge.txt not-pushed
 git -C "$R" fetch -q
@@ -86,7 +90,8 @@ printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 th
   "$(row 5 five dev CONFLICTING)" "$(row 6 six dev MERGEABLE)" "$(row 7 seven dev MERGEABLE)" "$(row 8 eight three MERGEABLE)" \
   "$(rowp 10 ten)" "$(row 11 eleven dev UNKNOWN)" >"$W/gh/open.json"
 echo '[{"number":1}]' >"$W/gh/merged-one.json"
-printf '[{"number":1,"headRefName":"one","headRefOid":"%s"},{"number":12,"headRefName":"twelve","headRefOid":"%s"}]\n' "$(oid one)" "$(oid twelve)" >"$W/gh/merged-mine.json"
+printf '[{"number":1,"headRefName":"one","headRefOid":"%s"},{"number":12,"headRefName":"twelve","headRefOid":"%s"},{"number":13,"headRefName":"thirteen","headRefOid":"%s"},{"number":14,"headRefName":"fourteen","headRefOid":"%s"}]\n' \
+  "$(oid one)" "$(oid twelve)" "$(oid thirteen)" "$(oid fourteen)" >"$W/gh/merged-mine.json"
 
 bash "$SYNC" >/dev/null 2>&1; out="$(cat "$W/state/stack-sync.log")"
 anc() { git -C "$W/root/app-$1" merge-base --is-ancestor "origin/$2" HEAD; }
@@ -107,9 +112,12 @@ check "three (trunk-based, mergeable) is not touched" '! grep -q "#3 " <<<"$out"
 check "merged twelve: worktree and local branch removed" '[ ! -d "$W/root/app-twelve" ] && ! git -C "$R" rev-parse -q --verify refs/heads/twelve >/dev/null'
 check "merged twelve: remote branch deleted" '! git -C "$R" ls-remote --exit-code --heads origin twelve >/dev/null'
 check "merged one keeps its worktree: two is stacked on it" '[ -d "$W/root/app-one" ] && grep -q "#1.*apilado encima" <<<"$out"'
+check "merged thirteen with only pnpm's untracked files: worktree and branch removed" '[ ! -d "$W/root/app-thirteen" ] && ! git -C "$R" rev-parse -q --verify refs/heads/thirteen >/dev/null'
+check "merged fourteen with another untracked file: kept, and the log names the file" '[ -f "$W/root/app-fourteen/notas.txt" ] && grep -q "#14.*lo frena: notas.txt" <<<"$out"'
 n_launch=$(grep -c "agent launch" "$L")
 bash "$SYNC" >/dev/null 2>&1
 check "a second run does not open the same conflicts again" '[ "$(grep -c "agent launch" "$L")" -eq "$n_launch" ]'
+check "a second run does not notify the blocked fourteen again" '[ "$(grep -c "#14" "$W/state/stack-sync.log")" -eq 1 ]'
 echo 304 >"$W/gh/api-status"; calls=$(wc -l <"$W/gh/calls")
 check "--precheck right after a sync, nothing changed (304): exits 1 without syncing" '! bash "$SYNC" --precheck >/dev/null 2>&1 && [ "$(tail -n +$((calls + 1)) "$W/gh/calls" | grep -c "pr list")" -eq 0 ]'
 echo 200 >"$W/gh/api-status"; calls=$(wc -l <"$W/gh/calls")

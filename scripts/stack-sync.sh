@@ -11,6 +11,8 @@
 # remote, when the worktree is clean, its HEAD is the merged head and no open PR is stacked on it.
 # Never: rebase, force, amend; never touches a worktree with uncommitted changes to tracked files (untracked
 # ones, like a pnpm-lock.yaml, don't count) or one whose HEAD is not the PR head: it skips it and says so.
+# A merged worktree whose only untracked files are pnpm's (pnpm-lock.yaml, pnpm-workspace.yaml) is removed with
+# --force; with any other untracked file it stays, and that is notified once, naming the file.
 #
 # Usage: stack-sync.sh [--dry-run] [--roots dir1:dir2] [--owner <gh-owner>] [--trunk dev]
 #        stack-sync.sh --precheck   the Orca automation's precheck, every 2 min (ADR 0045): asks GitHub with an
@@ -49,7 +51,7 @@ done
 # the precheck always says «nothing for the automation's agent» (1); a plain run says 0
 done_code=0; [ "$precheck" -eq 1 ] && done_code=1
 [ -n "$owner" ] && [ -n "$roots" ] || exit "$done_code"
-mkdir -p "$state/failed" "$state/specs"
+mkdir -p "$state/failed" "$state/specs" "$state/blocked"
 log="$state/stack-sync.log"
 exec 9>"$state/lock"
 flock -n 9 || exit "$done_code" # another run is still going
@@ -59,6 +61,15 @@ say() { summary+=("$1"); printf '%s %s\n' "$(date '+%F %T')" "$1" >>"$log"; }
 # a skip is only logged (and printed on a manual run): a run every 2 min must not notify the same skip
 skips=()
 note() { skips+=("$1"); printf '%s %s\n' "$(date '+%F %T')" "$1" >>"$log"; }
+# untracked files that never stop removing a merged worktree: pnpm leaves them in repos that use npm
+regenerable='pnpm-lock\.yaml|pnpm-workspace\.yaml'
+# blocked <slug> <pr> <msg>: a merged worktree that cannot be removed is notified once (say), not every 2 min;
+# it is notified again only if what blocks it changes
+blocked() {
+  local mark="$state/blocked/${1//\//_}-$2"
+  if [ "$(cat "$mark" 2>/dev/null)" = "$3" ]; then return 0; fi
+  printf '%s' "$3" >"$mark"; say "$3"
+}
 # gh with color off: some shells force it (GH_FORCE_TTY, CLICOLOR_FORCE) and jq cannot read ANSI codes
 tgh() { env -u GH_FORCE_TTY NO_COLOR=1 CLICOLOR_FORCE=0 timeout 30 gh "$@"; }
 
@@ -174,7 +185,7 @@ EOF
 
 # clean_merged <slug> <open-json>: remove the worktree and the branch of my merged PRs
 clean_merged() {
-  local slug="$1" open="$2" merged pr head oid path common
+  local slug="$1" open="$2" merged pr head oid path common blockers
   merged="$(tgh pr list --repo "$slug" --author @me --state merged --limit 30 \
     --json number,headRefName,headRefOid 2>/dev/null)" || return 0
   while IFS=$'\t' read -r pr head oid; do
@@ -193,9 +204,19 @@ clean_merged() {
     fi
     [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug, $head): mergeado -> borraría $path y la rama local y remota"; continue; }
     common="$(cd "$path" && cd "$(git rev-parse --git-common-dir)/.." && pwd)"
-    "$orca" worktree rm --worktree "path:$path" --json >/dev/null 2>&1 ||
-      git -C "$common" worktree remove "$path" >/dev/null 2>&1 ||
-      { note "#$pr ($slug, $head): no pude borrar $path"; continue; }
+    if ! "$orca" worktree rm --worktree "path:$path" --json >/dev/null 2>&1 &&
+       ! git -C "$common" worktree remove "$path" >/dev/null 2>&1; then
+      # git no borra un worktree con archivos sin trackear. Si son solo los que pnpm regenera (en repos
+      # que usan npm), se fuerza; con cualquier otro archivo se deja y se avisa una vez qué lo frena.
+      blockers="$(git -C "$path" ls-files --others --exclude-standard 2>/dev/null | grep -vxE "$regenerable")"
+      if [ -z "$blockers" ] && git -C "$common" worktree remove --force "$path" >/dev/null 2>&1; then
+        :
+      else
+        blocked "$slug" "$pr" "#$pr ($slug, $head): mergeado, pero no pude borrar $path${blockers:+; lo frena: $(tr '\n' ' ' <<<"$blockers")}"
+        continue
+      fi
+    fi
+    rm -f "$state/blocked/${slug//\//_}-$pr"
     git -C "$common" branch -D "$head" >/dev/null 2>&1
     git -C "$common" ls-remote --exit-code --heads origin "$head" >/dev/null 2>&1 &&
       git -C "$common" push -q origin --delete "$head" >/dev/null 2>&1
