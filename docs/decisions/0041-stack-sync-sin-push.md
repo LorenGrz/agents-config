@@ -1,6 +1,6 @@
 # 0041 — stack-sync no pushea y no lo frenan los archivos sin trackear
 
-Estado: aceptado (2026-11-19). Ajusta 0032.
+Estado: aceptado (2026-11-19). Ajusta 0032. La parte del push la reemplaza 0042.
 
 ## Contexto
 

@@ -18,7 +18,7 @@ fi
 mkdir -p "$UNIT_DIR"
 cat >"$UNIT_DIR/stack-sync.service" <<EOF
 [Unit]
-Description=stack-sync: trae la base a las ramas de mis PRs, sin pushear (agents-config, ADR 0032, 0041)
+Description=stack-sync: trae la base a las ramas de mis PRs, resuelve conflictos y pushea (agents-config, ADR 0032, 0041, 0042)
 
 [Service]
 Type=oneshot
