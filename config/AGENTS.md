@@ -39,19 +39,21 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 
 ## Workflow lanes
 
-- **Punctual change** (one file, clear intent): do it directly. No question, no plan.
-- **More than one file, or unclear scope** (unknown-cause bugs too): before editing, ask one question with
-  exactly three options, always in this order: **Continuar** (direct, no plan) · **Plan S** (short plan:
-  files, change, check; no brainstorming, no spec docs, subagents only when the work needs them) · **Plan L** (design,
-  spec and plan in `docs/superpowers/`, then delegated to subagents or workers). Option descriptions stay
-  minimal: «directo», «plan corto», «plan complejo». Mark the recommended one with "(Recomendado)" and one
+- **Trivial change** (one line or a typo): do it directly. No question, no plan.
+- **Every other task** (any non-trivial repo change, one file included; unknown-cause bugs too): before
+  editing, ask one question with exactly three options, always in this order: **Continuar** (direct, no
+  plan) · **Plan S** (short plan: files, change, check; no brainstorming, no spec docs, subagents only when
+  the work needs them) · **Plan L** (design, spec and plan in `docs/superpowers/`, then delegated to
+  subagents or workers). Option descriptions stay minimal: «directo», «plan corto», «plan complejo». Mark the recommended one with "(Recomendado)" and one
   short line of why, without moving it: Continuar stays first.
-- **Several tickets, or one ticket across back and front** (more than one task branch): once the lane is
-  chosen, one more question with exactly two options, in this order: **Continuar** (the main session runs
-  it) · **Orquestar** (one lead per branch or repo, as a separate session in its worktree with only the
-  context it needs, in parallel; each lead may start its own `worker`, `scout` and reviewer). Orquestar is
-  the recommended one. Work that depends on a contract (the front of a ticket whose back defines it)
-  starts when that contract is committed. Picking Orquestar loads the fixed procedure (ADR 0039).
+- **Always after the lane question** (ADR 0040), one more question with exactly two options, in this
+  order: **Continuar** (the main session runs it) · **Orquestar** (one lead per task branch and repo, as a
+  separate session in its worktree with that repo's skills and only the context it needs; several branches
+  run in parallel; each lead may start its own `worker`, `scout` and reviewer). It may go as the second
+  question of the same `AskUserQuestion`. With more than one task branch (several tickets, or back and
+  front) Orquestar is the recommended one; with one, recommend by size, with one short line of why. Work
+  that depends on a contract (the front of a ticket whose back defines it) starts when that contract is
+  committed. Picking Orquestar loads the fixed procedure (ADR 0039).
 - **Plan S has no interview:** investigate, then ask only the critical decisions that can't be deduced, in
   one batch. No rounds.
 - **Plan L starts with a grilling interview:** before designing anything, interview the user one question
@@ -80,7 +82,7 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   unless asked.
 - **Repo work goes to a background worker by default** (where the agent has subagents): every non-trivial
   change runs in a worker on the task branch, in its own worktree or in its lead's; whoever started it
-  reviews the diff and commits. Trivial changes (one line, or one file with no checks) are done directly.
+  reviews the diff and commits. Trivial changes (one line or a typo) are done directly.
   In Plan S the main session executes and starts one only when the work needs it.
 
 ## Organizations (work repos)
