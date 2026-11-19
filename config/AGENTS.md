@@ -46,6 +46,12 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   spec and plan in `docs/superpowers/`, then delegated to subagents or workers). Option descriptions stay
   minimal: «directo», «plan corto», «plan complejo». Mark the recommended one with "(Recomendado)" and one
   short line of why, without moving it: Continuar stays first.
+- **Several tickets, or one ticket across back and front** (more than one task branch): once the lane is
+  chosen, one more question with exactly two options, in this order: **Continuar** (the main session runs
+  it) · **Orquestar** (one lead per branch or repo, as a separate session in its worktree with only the
+  context it needs, in parallel; each lead may start its own `worker`, `scout` and reviewer). Orquestar is
+  the recommended one. Work that depends on a contract (the front of a ticket whose back defines it)
+  starts when that contract is committed. Picking Orquestar loads the fixed procedure (ADR 0039).
 - **Plan S has no interview:** investigate, then ask only the critical decisions that can't be deduced, in
   one batch. No rounds.
 - **Plan L starts with a grilling interview:** before designing anything, interview the user one question

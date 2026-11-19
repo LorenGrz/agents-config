@@ -97,7 +97,7 @@ scripts/gen-plugin.sh && scripts/gen-intents.sh   # plugin.json, hooks.json, int
 bash scripts/lint-docs.sh --strict     # plantillas de skills, reglas y comandos de packs
 scripts/leak-guard.sh --all            # nada de una organización privada en el repo público
 git config core.hooksPath .githooks    # activa la guarda en cada commit y push
-for t in leak-guard packs orgs intents cli-baselines install-blocks install-settings lane-guard worktree-cleanup stack-sync; do bash scripts/test-$t.sh; done
+for t in leak-guard packs orgs intents cli-baselines install-blocks install-settings lane-guard orquestar worktree-cleanup stack-sync; do bash scripts/test-$t.sh; done
 ```
 
 ## Problemas comunes
