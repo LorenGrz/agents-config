@@ -39,6 +39,8 @@ chmod +x "$W/bin/orca"
 echo 200 >"$W/gh/api-status"
 export PATH="$W/bin:$PATH" FAKE_GH="$W/gh" STACK_SYNC_NOTIFY=0
 export STACK_SYNC_STATE="$W/state" STACK_SYNC_ROOTS="$W/root" STACK_SYNC_OWNER=org
+# never the real config (it may point STACK_SYNC_ORCA at the real Orca): only the fakes above
+export XDG_CONFIG_HOME="$W/config" STACK_SYNC_ORCA="$W/bin/orca"
 
 # --- repos: bare origin "github.com/org/app", main clone on dev, one worktree per branch
 git init -q --bare "$W/origin.git"
