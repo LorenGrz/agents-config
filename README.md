@@ -31,8 +31,8 @@ claude plugin install agents-config@agents-config
 
 ## Cómo se trabaja
 
-Un cambio puntual (un archivo, intención clara) se hace directo. Con más de un archivo o alcance dudoso, el agente hace
-una sola pregunta con tres opciones, siempre en este orden (`lane-guard.sh` lo impone):
+Un cambio trivial (una línea o un typo) se hace directo. Cualquier otra tarea, aunque sea de un archivo, arranca con
+una pregunta con tres opciones, siempre en este orden (`lane-guard.sh` lo impone):
 
 | Lane | Qué es |
 |---|---|
@@ -49,8 +49,9 @@ una sola pregunta con tres opciones, siempre en este orden (`lane-guard.sh` lo i
 
 ```mermaid
 flowchart LR
-  Q{"¿Un archivo?"} -- sí --> D[Directo]
-  Q -- no --> P{"Continuar / Plan S / Plan L"}
+  Q{"¿Trivial?"} -- sí --> D[Directo]
+  Q -- no --> P{"Continuar / Plan S / Plan L"} --> OQ{"Continuar / Orquestar"}
+  OQ -- Orquestar --> LO[un líder por rama, en su sesión y worktree] --> O
   P -- Continuar --> W[worker en su worktree]
   P -- Plan S --> S[Plan corto]
   P -- Plan L --> G[grilling, spec y plan] --> WL[un líder por repo o workspace, con sus workers]

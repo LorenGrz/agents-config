@@ -27,8 +27,8 @@ AGENTS.md index say which. Where skills overlap, one default per task:
   starts subagents only when the work needs them. Plan L loads `mattpocock-skills:grilling` right after, then
   `superpowers:brainstorming`, `writing-plans`, and leads or `worker`/`reasoner` in the worktree of the
   task branch. A plan the user starts directly ends with "Plan S/L because …".
-- The Continuar/Orquestar question (several task branches, `AGENTS.md`) is one `AskUserQuestion`, asked
-  right after the lane question; `lane-guard.sh` keeps Continuar first. Picking Orquestar makes the
+- The Continuar/Orquestar question (always, ADR 0040) is asked right after the lane question, or as its
+  second question; `lane-guard.sh` keeps Continuar first. Picking Orquestar makes the
   `orquestar.sh` hook inject the procedure: leads are separate sessions (Orca `worker-start`, T3 Code
   `t3_thread_launch`), never subagents of the main session, and their worktrees get their CLAUDE.md
   imports approved first with `scripts/approve-claude-imports.sh`.
