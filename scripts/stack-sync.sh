@@ -11,6 +11,9 @@
 #      a Claude in that PR's worktree with a brief: apply each point as new commits, keep line endings, push; it
 #      never answers or resolves the review, nor edits the PR (ADR 0047). Once per review; its tab stays open.
 #      A review on a PR without a local worktree is notified once.
+#   6. a CI check failed on the PR head (and no conflict or review agent was opened for it in this run) -> open a
+#      Claude in that PR's worktree: read the failed logs, fix, run only what is related, push (ADR 0048). Once per
+#      (PR, head commit); its tab stays open.
 # Then, for every merged PR of mine with a linked worktree: remove the worktree and delete the branch, local and
 # remote, when the worktree is clean, its HEAD is the merged head and no open PR is stacked on it.
 # Never: rebase, force, amend; never touches a worktree with uncommitted changes to tracked files (untracked
@@ -243,6 +246,55 @@ EOF
   fi
 }
 
+# failed_checks <pr> <open-json>: names of the CI checks that failed on the PR head, comma separated
+failed_checks() {
+  jq -r --argjson n "$1" '.[] | select(.number == $n)
+    | [.statusCheckRollup[]? | select((.conclusion // .state // "") | test("^(FAILURE|ERROR|TIMED_OUT|STARTUP_FAILURE)$"))
+       | (.name // .context // "check")] | unique | join(", ")' <<<"$2" 2>/dev/null
+}
+
+# fix_ci <slug> <pr> <branch> <path> <head-oid> <checks>: a Claude in that PR's worktree, once per (PR, head)
+fix_ci() {
+  local slug="$1" pr="$2" branch="$3" path="$4" oid="$5" checks="$6" mark spec fail
+  mark="$state/ci-${slug//\//_}-$pr-${oid:0:12}"
+  [ -e "$mark" ] && return 0
+  [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug): CI en rojo ($checks) -> abriría un Claude en $path"; return 0; }
+  spec="$state/specs/${slug//\//_}-$pr-ci.md"
+  fail="$state/failed/${slug//\//_}-$pr-ci.md"
+  cat >"$spec" <<EOF
+# Arreglar el CI en rojo (stack-sync)
+
+Esto es un brief: ejecutalo sin la pregunta de carril ni la de Continuar/Orquestar.
+
+Estás en el worktree del PR #$pr de $slug (\`$path\`, rama \`$branch\`). No toques ningún otro worktree. Leé el
+\`AGENTS.md\`/\`CLAUDE.md\` del repo (y el de la carpeta de arriba, si hay) y usá sus skills.
+
+Fallaron estos checks del CI sobre la punta del PR: $checks.
+
+1. \`gh pr checks $pr --repo $slug\` y, por cada uno en rojo, \`gh run view <run-id> --repo $slug --log-failed\`.
+2. Si la falla no viene del código del PR (un servicio caído, un flaky, un secreto del CI), no cambies nada:
+   \`gh run rerun <run-id> --repo $slug --failed\` una vez y reportá.
+3. Si viene del código: el cambio más chico que la arregle, como commit nuevo (Conventional Commits en español, con
+   la clave del ticket si el PR la tiene; sin atribución). Cada archivo conserva sus fines de línea:
+   \`diff <(git diff --numstat HEAD) <(git diff --numstat --ignore-cr-at-eol HEAD)\` no muestra nada.
+4. Corré solo lo que falló, localmente (el mismo comando del CI sobre los archivos tocados, o los tests
+   relacionados), no la suite entera.
+5. \`git push origin HEAD:$branch\` (sin force). Nunca rebase, force, amend ni \`--no-verify\`. No edites el PR ni
+   toques Jira o Slack.
+
+Si no pudiste arreglarlo, escribí el motivo en una línea en \`$fail\`. Al terminar, avisá con
+\`notify-send "stack-sync: CI en #$pr" "<resultado en una línea>"\` y dejá acá la causa y el arreglo. Esta pestaña
+queda abierta.
+EOF
+  if "$orca" agent launch --agent claude --worktree "path:$path" --surface terminal \
+      --prompt "$(cat "$spec")" --json >/dev/null 2>&1; then
+    : >"$mark"
+    say "#$pr ($slug, $branch): CI en rojo ($checks) -> abrí un Claude en su worktree ($path)"
+  else
+    say "#$pr ($slug, $branch): CI en rojo, pero no pude abrir el agente en Orca; reintento en la próxima corrida"
+  fi
+}
+
 # clean_merged <slug> <open-json>: remove the worktree and the branch of my merged PRs
 clean_merged() {
   local slug="$1" open="$2" merged pr head oid path common blockers
@@ -288,7 +340,7 @@ clean_merged() {
 # PRs, bottom-up: trunk-based first, then those stacked on them (depth by base chain)
 for slug in "${!slug_of[@]}"; do
   json="$(tgh pr list --repo "$slug" --author @me --state open --limit 100 \
-    --json number,headRefName,baseRefName,mergeable,headRefOid,author,reviews 2>/dev/null)" || continue
+    --json number,headRefName,baseRefName,mergeable,headRefOid,author,reviews,statusCheckRollup 2>/dev/null)" || continue
   [ -n "$json" ] || continue
   rows="$(jq -r --arg t "$trunk" '
     (map({key: .headRefName, value: .baseRefName}) | from_entries) as $base
@@ -330,7 +382,11 @@ for slug in "${!slug_of[@]}"; do
     fi
     [ "$busy" -eq 1 ] && continue
     IFS=$'\t' read -r rid who <<<"$(last_review "$pr" "$json")"
-    [ -n "${rid:-}" ] && fix_review "$slug" "$pr" "$head" "$path" "$rid" "$who"
+    if [ -n "${rid:-}" ] && [ ! -e "$state/review-${slug//\//_}-$pr-$rid" ]; then
+      fix_review "$slug" "$pr" "$head" "$path" "$rid" "$who"; continue
+    fi
+    checks="$(failed_checks "$pr" "$json")"
+    [ -n "$checks" ] && fix_ci "$slug" "$pr" "$head" "$path" "$oid" "$checks"
   done <<<"$rows"
   clean_merged "$slug" "$json"
 done

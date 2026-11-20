@@ -49,7 +49,7 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 - **Always after the lane question** (ADR 0040), one more question with exactly two options, in this
   order: **Continuar** (the main session runs it) · **Orquestar** (one lead per task branch and repo, as a
   separate session in its worktree with that repo's skills and only the context it needs; several branches
-  run in parallel; each lead may start its own `worker`, `scout` and reviewer). It may go as the second
+  run in parallel; each lead may start its own `worker` and `scout`, never a reviewer). It may go as the second
   question of the same `AskUserQuestion`. With more than one task branch (several tickets, or back and
   front) Orquestar is the recommended one; with one, recommend by size, with one short line of why. Work
   that depends on a contract (the front of a ticket whose back defines it) starts when that contract is
@@ -63,18 +63,20 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   code. Work that spans repos (backend, frontend) gets one lead per repo: a session opened in that repo, in
   the one worktree of its task branch, so that repo's `AGENTS.md`, skills and restrictions apply. When the
   repos sit in a workspace folder that holds their skills, the lead opens in that folder and may send a
-  lead to each child repo. A lead implements with the repo's skills, may start `worker`, `scout` and reviewer agents
-  there, commits on the task branch and gets its diff reviewed before handing it back; it never pushes or
-  opens the PR. In a single repo the main session is the lead.
+  lead to each child repo. A lead implements with the repo's skills, may start `worker` and `scout` agents there and
+  commits on the task branch; it does not run lint, typecheck or the test suite, does not verify in a browser
+  and does not start a reviewer (ADR 0048): the parent reviews. It never pushes or opens the PR. In a single repo the main session is the lead.
 - **A reviewer checks the work before every PR is opened**, and before the merge that closes a Plan L when
-  there is no PR: a separate reviewer agent (the profile names its model) reviews the diff against the
-  original request with the repo's review skill and runs the checks, without editing. Whoever asked for
+  there is no PR: a separate reviewer agent (the profile names its model), started by the parent session
+  (one per returned lead, in parallel), gets only the diff and the ticket, reviews them with the repo's review
+  skill and runs the checks once, without editing. Nobody else reruns them. Whoever asked for
   the review fixes small findings, sends large ones to a worker and asks for one re-review; what is still
   open goes to the user. Another provider's model reviews only when the user asks for it. An agent that
   cannot start a reviewer says so before the PR instead of skipping the review.
 - **An agent started from a brief** (lead, worker, scout, reviewer) executes it without the lane
-  question. Only a lead may start agents of its own: `worker`, `scout` and its reviewer, and a workspace
-  lead also the leads of its child repos.
+  question. Only a lead may start agents of its own: `worker` and `scout`, and a workspace lead also the
+  leads of its child repos. Briefs are short: the ticket, the located cause, the files, the decisions taken and
+  the paths of skills the repo does not expose; never what the repo already gives the agent.
 - **Every plan (S or L) is shown in the terminal message, not only in the plan file, with a table:** who
   does what, whether it runs in parallel, files, and how it is verified. Parallel or visual work adds an
   ASCII diagram of the order.
