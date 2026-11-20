@@ -75,6 +75,10 @@ mkdir -p "$OH/organizations/acme/cx/skills/acme-jira"; printf -- '---\nname: acm
 check "org skill shipped in a product folder (<org>/<product>/skills) is found" 'otool mcp__claude_ai_Atlassian_Rovo__getJiraIssue "" "$W/acme-repo" | grep -q "acme-jira"'
 mkrepo "$W/acme-ws"; mkrepo "$W/acme-ws/shop"; git -C "$W/acme-ws/shop" remote add origin https://github.com/acme-inc/shop.git
 check "workspace repo without origin: org taken from its child repo" 'oprompt "traete los cambios" "$W/acme-ws" | grep -q "acme-github"'
+printf '%s\n' '{"bash":[{"id":"chk","re":"^npm run lint\\b","hint":"usá acme-checks"}]}' >"$OH/organizations/acme/intents.json"
+check "org intents.json: a manual command in an org repo gets the org hint" 'otool Bash "cd x && npm run lint" "$W/acme-repo" | grep -q "Tool (acme): usá acme-checks"'
+check "org intents.json: silent in a repo of another owner" '! otool Bash "npm run lint" "$W/other-repo" | grep -q "acme-checks"'
+check "org intents.json: unrelated command stays silent" '[ -z "$(otool Bash "ls -la" "$W/acme-repo")" ]'
 check "org with an unreadable org.json: falls back silently" 'echo "{" >"$OH/organizations/acme/org.json"; oprompt "traete los cambios" "$W/acme-repo" | grep -q "github-usage"'
 
 # --- detect-stack

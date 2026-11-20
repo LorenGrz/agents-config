@@ -83,6 +83,12 @@ van fuera del repo (por ejemplo, en `~/.cache`).
 | `products` | no | `orgs.sh validate`, `project-agents.sh` | Para una org con varias líneas de producto: `{"<product>": {"remote_patterns": [regex, ...]}}`. Cada producto tiene sus `skills/`, `commands/` y un `POLICIES.md` completo en `<product>/`; el `POLICIES.md` de la raíz se queda (el núcleo común al que apunta el índice global). `project-agents.sh` toma `--product <name>` o elige el que coincide con el `origin` del proyecto (en una carpeta workspace, con sus repos hijos); si no coincide exactamente uno, falla cerrado. Los destinos de `replaces`, las claves de `assets` y las filas de `index`/`critical` se refieren al producto instalado |
 | `index` / `critical` | no | `project-agents.sh` | Filas para la tabla de palabras clave del proyecto y para `.agents/critical.json`, mergeadas antes que las de los packs. Una fila puede llevar `"stacks": [...]` |
 
+**`intents.json`** (opcional, en la raíz de la org, no en `org.json`): recordatorios del `intent-router`.
+Cuando un agente corre a mano en un repo de la org un comando que un script de la org ya resuelve, el
+hook le sugiere el script, una vez por sesión y por `id`: `{"bash": [{"id": "...", "re": "<regex por
+comando>", "hint": "<qué usar>"}]}`. Cada `re` se prueba contra cada comando de la línea (partida por
+`&&`, `;` y `||`). Callado dentro de subagentes, como el resto del router (ADR 0051).
+
 Notas:
 
 - `pr_title_language` y `pr_body_language` van separados a propósito: una org puede pedir títulos

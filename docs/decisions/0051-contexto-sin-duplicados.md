@@ -21,6 +21,9 @@ repetidos o ajenos:
 - **Router (`intent-router.sh`):**
   - busca la skill de reemplazo también en `organizations/<org>/*/skills`;
   - en una carpeta sin `origin` toma la org del primer repo hijo.
+  - si la org trae `intents.json`, recuerda sus scripts cuando un agente corre a mano lo que ellos ya
+    resuelven (checks, worktrees, entorno, esperas), una vez por sesión. Un subagente no lo ve: lo que
+    tiene que usar va en su brief.
 - **Perfil y `CLAUDE.md`:** dejan solo lo propio (modelos, mecánica de Claude) y apuntan a `AGENTS.md` para lo
   demás.
 - **`claude-obsidian`:** apagado global; se prende por proyecto en su `.claude/settings.json` (`enabledPlugins`;
