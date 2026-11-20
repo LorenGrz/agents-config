@@ -3,13 +3,14 @@
 # For every open PR of mine in the repos found under the roots, bottom-up:
 #   1. its base branch's PR is merged   -> merge origin/<trunk>, push, retarget the PR to <trunk>
 #   2. its base branch got new commits  -> merge origin/<base>, push
-#   3. base is the trunk and the branch conflicts with it (checked locally with `git merge-tree`, so it does not
-#      wait for GitHub to recompute `mergeable` after a merge) -> merge origin/<trunk>, push
+#   3. base is the trunk and the branch is behind it (or GitHub says it conflicts) -> merge origin/<trunk>, push
+#      (ADR 0049: a PR never stays behind dev, with or without conflicts)
 #   4. a merge conflicts -> abort, and open a Claude in that PR's worktree through Orca with a brief: resolve,
 #      commit and push; only a real logic conflict runs the related tests, never the whole suite (ADR 0045). Once per (PR, base commit); its tab stays open.
 #   5. someone else left a review that asks for changes or comments (and no conflict agent is open for it) -> open
-#      a Claude in that PR's worktree with a brief: apply each point as new commits, keep line endings, push; it
-#      never answers or resolves the review, nor edits the PR (ADR 0047). Once per review; its tab stays open.
+#      a Claude in that PR's worktree with a brief: apply each point as new commits, keep line endings, bring the
+#      base before pushing, push, and answer each comment with what changed (ADR 0047, 0049). It never resolves
+#      threads nor edits the PR. Once per review; its tab stays open.
 #      A review on a PR without a local worktree is notified once.
 #   6. a CI check failed on the PR head (and no conflict or review agent was opened for it in this run) -> open a
 #      Claude in that PR's worktree: read the failed logs, fix, run only what is related, push (ADR 0048). Once per
@@ -198,9 +199,9 @@ last_review() {
     | last // empty | [.id, .author.login] | @tsv' <<<"$2" 2>/dev/null
 }
 
-# fix_review <slug> <pr> <branch> <path> <review-id> <reviewer>: a Claude in that PR's worktree, once per review
+# fix_review <slug> <pr> <branch> <path> <review-id> <reviewer> <base>: a Claude in that PR's worktree, once per review
 fix_review() {
-  local slug="$1" pr="$2" branch="$3" path="$4" rid="$5" who="$6" mark spec fail
+  local slug="$1" pr="$2" branch="$3" path="$4" rid="$5" who="$6" base="$7" mark spec fail
   mark="$state/review-${slug//\//_}-$pr-$rid"
   [ -e "$mark" ] && return 0
   [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug): review de $who -> abriría un Claude en $path"; return 0; }
@@ -228,14 +229,16 @@ $who dejó una review (\`$rid\`). Leela entera:
    si muestra un archivo, devolvele sus fines de línea originales.
 5. Rápido: **no corras la suite entera**. Solo lint de los archivos tocados y los tests relacionados
    (\`npx vitest related --run <archivos>\` en el front, \`npx jest --findRelatedTests <archivos>\` en el back).
-6. \`git push origin HEAD:$branch\` (sin force). Nunca rebase, force, amend ni \`--no-verify\`.
-7. No contestes ni resuelvas la review, no vuelvas a pedir review, no edites el PR y no toques Jira ni Slack:
-   eso lo hace Loren.
+6. Antes de pushear, \`git fetch origin && git merge --no-edit origin/$base\`. Si hay conflictos, resolvelos
+   conservando los dos lados y commiteá el merge.
+7. \`git push origin HEAD:$branch\` (sin force). Nunca rebase, force, amend ni \`--no-verify\`.
+8. Contestá cada comentario, en español y corto: qué cambiaste y en qué commit, o por qué no.
+   - En una línea del código: \`gh api repos/$slug/pulls/$pr/comments/<id>/replies -f body="…"\`.
+   - El cuerpo de la review: \`gh pr comment $pr --repo $slug --body "…"\`, punto por punto.
+9. No resuelvas los hilos, no edites el PR y no toques Jira ni Slack.
 
 Si no pudiste resolver algún punto o falló el push, escribí el motivo en una línea en \`$fail\`. Al terminar,
-avisá con \`notify-send "stack-sync: review en #$pr" "<resultado en una línea>"\` y dejá acá, punto por punto, qué
-pidió la review, qué cambiaste (con el commit) y qué quedó sin tocar, listo para que Loren conteste. Esta
-pestaña queda abierta.
+avisá con \`notify-send "stack-sync: review en #$pr" "<resultado en una línea>"\`. Esta pestaña queda abierta.
 EOF
   if "$orca" agent launch --agent claude --worktree "path:$path" --surface terminal \
       --prompt "$(cat "$spec")" --json >/dev/null 2>&1; then
@@ -253,9 +256,9 @@ failed_checks() {
        | (.name // .context // "check")] | unique | join(", ")' <<<"$2" 2>/dev/null
 }
 
-# fix_ci <slug> <pr> <branch> <path> <head-oid> <checks>: a Claude in that PR's worktree, once per (PR, head)
+# fix_ci <slug> <pr> <branch> <path> <head-oid> <checks> <base>: a Claude in that PR's worktree, once per (PR, head)
 fix_ci() {
-  local slug="$1" pr="$2" branch="$3" path="$4" oid="$5" checks="$6" mark spec fail
+  local slug="$1" pr="$2" branch="$3" path="$4" oid="$5" checks="$6" base="$7" mark spec fail
   mark="$state/ci-${slug//\//_}-$pr-${oid:0:12}"
   [ -e "$mark" ] && return 0
   [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug): CI en rojo ($checks) -> abriría un Claude en $path"; return 0; }
@@ -279,7 +282,8 @@ Fallaron estos checks del CI sobre la punta del PR: $checks.
    \`diff <(git diff --numstat HEAD) <(git diff --numstat --ignore-cr-at-eol HEAD)\` no muestra nada.
 4. Corré solo lo que falló, localmente (el mismo comando del CI sobre los archivos tocados, o los tests
    relacionados), no la suite entera.
-5. \`git push origin HEAD:$branch\` (sin force). Nunca rebase, force, amend ni \`--no-verify\`. No edites el PR ni
+5. Antes de pushear, \`git fetch origin && git merge --no-edit origin/$base\`; si hay conflictos, resolvelos.
+6. \`git push origin HEAD:$branch\` (sin force). Nunca rebase, force, amend ni \`--no-verify\`. No edites el PR ni
    toques Jira o Slack.
 
 Si no pudiste arreglarlo, escribí el motivo en una línea en \`$fail\`. Al terminar, avisá con
@@ -365,10 +369,10 @@ for slug in "${!slug_of[@]}"; do
       note "#$pr ($slug, $head): salteado, $path no está en la punta del PR (commits sin pushear o atrasado)"; continue
     fi
     if [ "$base" = "$trunk" ] || [ "$base" = main ] || [ "$base" = master ]; then
-      # GitHub's `mergeable` lags behind a fresh merge (UNKNOWN): the local merge-tree answers right away
-      if [ "$mergeable" = CONFLICTING ] ||
-         { ! git -C "$path" merge-base --is-ancestor "origin/$base" HEAD &&
-           ! git -C "$path" merge-tree --write-tree "origin/$base" HEAD >/dev/null 2>&1; }; then
+      # Atrás de la base: se trae siempre, choque o no (ADR 0049). Un choque lo resuelve el agente de merge_and_push.
+      if ! git -C "$path" merge-base --is-ancestor "origin/$base" HEAD; then
+        merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "atrás de $base"
+      elif [ "$mergeable" = CONFLICTING ]; then
         merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "choca con $base"
       fi
     else
@@ -383,10 +387,10 @@ for slug in "${!slug_of[@]}"; do
     [ "$busy" -eq 1 ] && continue
     IFS=$'\t' read -r rid who <<<"$(last_review "$pr" "$json")"
     if [ -n "${rid:-}" ] && [ ! -e "$state/review-${slug//\//_}-$pr-$rid" ]; then
-      fix_review "$slug" "$pr" "$head" "$path" "$rid" "$who"; continue
+      fix_review "$slug" "$pr" "$head" "$path" "$rid" "$who" "$base"; continue
     fi
     checks="$(failed_checks "$pr" "$json")"
-    [ -n "$checks" ] && fix_ci "$slug" "$pr" "$head" "$path" "$oid" "$checks"
+    [ -n "$checks" ] && fix_ci "$slug" "$pr" "$head" "$path" "$oid" "$checks" "$base"
   done <<<"$rows"
   clean_merged "$slug" "$json"
 done

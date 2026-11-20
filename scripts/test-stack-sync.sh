@@ -98,6 +98,8 @@ rowr() { printf '{"number":%s,"headRefName":"%s","baseRefName":"dev","mergeable"
 rowc() { printf '{"number":%s,"headRefName":"%s","baseRefName":"dev","mergeable":"MERGEABLE","headRefOid":"%s","author":{"login":"me"},"reviews":[],"statusCheckRollup":%s}' "$1" "$2" "$(oid "$2")" "$3"; }
 rev() { printf '{"id":"%s","author":{"login":"%s"},"state":"%s"}' "$1" "$2" "$3"; }
 rowp() { printf '{"number":%s,"headRefName":"%s","baseRefName":"dev","mergeable":"CONFLICTING","headRefOid":"%s"}' "$1" "$2" "$(oidp "$2")"; }
+ci18='[{"name":"Lint, tests y build","conclusion":"FAILURE"},{"name":"schema","conclusion":"SUCCESS"}]'
+write_open() {
 # five conflicts and also has a review: the conflict agent owns it. 17 has a review but no local worktree.
 five_rev="$(row 5 five dev CONFLICTING | sed "s/}\$/,\"author\":{\"login\":\"me\"},\"reviews\":[$(rev R5 ana CHANGES_REQUESTED)]}/")"
 printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
@@ -106,9 +108,11 @@ printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABL
   "$(rowr 15 fifteen "[$(rev R15a me COMMENTED),$(rev R15 ana CHANGES_REQUESTED)]" | sed 's/}$/,"statusCheckRollup":[{"name":"tests","conclusion":"FAILURE"}]}/')" \
   "$(rowr 16 sixteen "[$(rev R16 me COMMENTED)]")" \
   '{"number":17,"headRefName":"seventeen","baseRefName":"dev","mergeable":"MERGEABLE","headRefOid":"x","author":{"login":"me"},"reviews":[{"id":"R17","author":{"login":"ana"},"state":"COMMENTED"}]}' \
-  "$(rowc 18 eighteen '[{"name":"Lint, tests y build","conclusion":"FAILURE"},{"name":"schema","conclusion":"SUCCESS"}]')" \
+  "$(rowc 18 eighteen "$ci18")" \
   "$(rowc 19 nineteen '[{"name":"Lint, tests y build","conclusion":"SUCCESS"}]')" \
   >"$W/gh/open.json"
+}
+write_open
 echo '[{"number":1}]' >"$W/gh/merged-one.json"
 printf '[{"number":1,"headRefName":"one","headRefOid":"%s"},{"number":12,"headRefName":"twelve","headRefOid":"%s"},{"number":13,"headRefName":"thirteen","headRefOid":"%s"},{"number":14,"headRefName":"fourteen","headRefOid":"%s"}]\n' \
   "$(oid one)" "$(oid twelve)" "$(oid thirteen)" "$(oid fourteen)" >"$W/gh/merged-mine.json"
@@ -128,14 +132,14 @@ check "mergeable UNKNOWN but conflicting locally: eleven gets its Claude" 'grep 
 check "the brief tells the agent to push without force" 'grep -q "git push origin HEAD:five" "$W/state/specs/org_app-5.md" && ! grep -q -- "--force" "$W/state/specs/org_app-5.md"'
 check "dirty worktree is skipped and kept" '[ "$(cat "$W/root/app-six/six.txt")" = dirty ] && grep -q "#6.*cambios sin commitear" <<<"$out"'
 check "worktree not at the PR head is skipped" 'grep -q "#7.*no está en la punta" <<<"$out"'
-check "three (trunk-based, mergeable) is not touched" '! grep -q "#3 " <<<"$out"'
+check "three behind dev (no conflict): gets origin/dev and is pushed" 'anc three dev && pushed three && grep -q "#3 .*atrás de dev" <<<"$out"'
 check "merged twelve: worktree and local branch removed" '[ ! -d "$W/root/app-twelve" ] && ! git -C "$R" rev-parse -q --verify refs/heads/twelve >/dev/null'
 check "merged twelve: remote branch deleted" '! git -C "$R" ls-remote --exit-code --heads origin twelve >/dev/null'
 check "merged one keeps its worktree: two is stacked on it" '[ -d "$W/root/app-one" ] && grep -q "#1.*apilado encima" <<<"$out"'
 check "merged thirteen with only pnpm's untracked files: worktree and branch removed" '[ ! -d "$W/root/app-thirteen" ] && ! git -C "$R" rev-parse -q --verify refs/heads/thirteen >/dev/null'
 check "merged fourteen with another untracked file: kept, and the log names the file" '[ -f "$W/root/app-fourteen/notas.txt" ] && grep -q "#14.*lo frena: notas.txt" <<<"$out"'
 check "review by someone else: a Claude opened in fifteen's worktree" 'grep -q "worktree path:$W/root/app-fifteen" "$L" && grep -q "#15.*review de ana" <<<"$out"'
-check "the review brief keeps line endings and never answers the review" 'grep -q "ignore-cr-at-eol" "$W/state/specs/org_app-15-review.md" && grep -q "No contestes ni resuelvas la review" "$W/state/specs/org_app-15-review.md"'
+check "the review brief keeps line endings, brings dev before pushing and answers each comment" 'f="$W/state/specs/org_app-15-review.md"; grep -q "ignore-cr-at-eol" "$f" && grep -q "merge --no-edit origin/dev" "$f" && grep -q "comments/<id>/replies" "$f" && grep -q "No resuelvas los hilos" "$f"'
 check "only my own review: no agent for sixteen" '! grep -q "app-sixteen" "$L"'
 check "conflict and review on five: only the conflict agent" '[ "$(grep -c "worktree path:$W/root/app-five" "$L")" -eq 1 ] && [ ! -e "$W/state/specs/org_app-5-review.md" ]'
 check "review on a PR without a worktree is notified" 'grep -q "#17.*no hay worktree local" <<<"$out"'
@@ -144,6 +148,9 @@ check "the CI brief reads the failed logs and never forces" 'grep -q "log-failed
 check "green CI: no agent for nineteen" '! grep -q "app-nineteen" "$L"'
 check "review and red CI on fifteen: only the review agent in this run" '[ "$(grep -c "worktree path:$W/root/app-fifteen" "$L")" -eq 1 ] && [ ! -e "$W/state/specs/org_app-15-ci.md" ]'
 n_launch=$(grep -c "agent launch" "$L")
+# the first run pushed merges: the PRs' heads moved, and eighteen's new head has its CI still running
+ci18='[{"name":"Lint, tests y build","conclusion":null,"state":"PENDING"}]'
+write_open
 bash "$SYNC" >/dev/null 2>&1
 check "a second run opens the CI agent of fifteen, now that its review has one" '[ -e "$W/state/specs/org_app-15-ci.md" ]'
 check "a second run does not open the same conflicts, reviews or CI fixes again" '[ "$(grep -c "agent launch" "$L")" -eq "$((n_launch + 1))" ]'
