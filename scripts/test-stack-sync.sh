@@ -4,6 +4,7 @@
 # mergeable still UNKNOWN), untracked files ignored, a local commit not pushed is left alone, dirty worktree, worktree
 # not at the PR head, a conflict opens one Claude in its worktree once, merged PRs lose worktree and branch (not when
 # stacked; with pnpm's untracked files too; another untracked file keeps it and is notified once), --precheck (ETag: syncs only when something changed, always exits 1),
+# agents (ADR 0050): one per worktree at a time, at most 2 attempts per PR and day, Sonnet first and Opus second;
 # and reviews (ADR 0047): someone else's review opens one Claude in that worktree once, my own review does not, a PR
 # with a conflict agent gets no review agent, and a review on a PR without a worktree is notified once; and a red CI
 # (ADR 0048): a failed check on the PR head opens one Claude once, a green CI does not, and a review goes first.
@@ -151,11 +152,27 @@ n_launch=$(grep -c "agent launch" "$L")
 # the first run pushed merges: the PRs' heads moved, and eighteen's new head has its CI still running
 ci18='[{"name":"Lint, tests y build","conclusion":null,"state":"PENDING"}]'
 write_open
+check "an agent's worktree is marked busy while it works" '[ -e "$W/state/busy/org_app-15" ]'
+check "the brief tells the agent to remove its busy mark" 'grep -q "rm -f $W/state/busy/org_app-15" "$W/state/specs/org_app-15-review.md"'
+check "the first attempt runs on Sonnet" 'grep "worktree path:$W/root/app-fifteen" "$L" | head -1 | grep -q -- "--model claude-sonnet-5-5"'
+rm -f "$W/state/busy/"* # the agents of the first run ended
 bash "$SYNC" >/dev/null 2>&1
 check "a second run opens the CI agent of fifteen, now that its review has one" '[ -e "$W/state/specs/org_app-15-ci.md" ]'
 check "a second run does not open the same conflicts, reviews or CI fixes again" '[ "$(grep -c "agent launch" "$L")" -eq "$((n_launch + 1))" ]'
 check "a second run does not notify the blocked fourteen again" '[ "$(grep -c "#14" "$W/state/stack-sync.log")" -eq 1 ]'
 check "a second run does not notify the review on seventeen again" '[ "$(grep -c "#17" "$W/state/stack-sync.log")" -eq 1 ]'
+check "the second attempt on a PR runs on Opus at high effort" 'grep "worktree path:$W/root/app-fifteen" "$L" | tail -1 | grep -q -- "--model claude-opus-5-5 --effort high"'
+
+# third run: eighteen is red again, but its agent is still working; fifteen has a new review, but used its 2 attempts
+ci18='[{"name":"Lint, tests y build","conclusion":"FAILURE"}]'
+git -C "$W/root/app-eighteen" fetch -q; write_open
+sed -i 's/"id":"R15","author":{"login":"ana"}/"id":"R15b","author":{"login":"ana"}/' "$W/gh/open.json"
+rm -f "$W/state/busy/"*; : >"$W/state/busy/org_app-18"; n3=$(grep -c "agent launch" "$L")
+bash "$SYNC" >/dev/null 2>&1
+check "a worktree with a working agent is skipped: no merge, no second agent" '[ "$(grep -c "agent launch" "$L")" -eq "$n3" ] && grep -q "#18.*hay un agente trabajando" "$W/state/stack-sync.log"'
+check "after 2 attempts in a day, no third agent and Loren is told once" '! grep -q "org_app-15-.*R15b" "$W/state/stack-sync.log" && grep -q "#15.*2 intentos automáticos" "$W/state/stack-sync.log"'
+bash "$SYNC" >/dev/null 2>&1
+check "the out-of-attempts notice is not repeated" '[ "$(grep -c "#15.*2 intentos automáticos" "$W/state/stack-sync.log")" -eq 1 ]'
 echo 304 >"$W/gh/api-status"; calls=$(wc -l <"$W/gh/calls")
 check "--precheck right after a sync, nothing changed (304): exits 1 without syncing" '! bash "$SYNC" --precheck >/dev/null 2>&1 && [ "$(tail -n +$((calls + 1)) "$W/gh/calls" | grep -c "pr list")" -eq 0 ]'
 echo 200 >"$W/gh/api-status"; calls=$(wc -l <"$W/gh/calls")

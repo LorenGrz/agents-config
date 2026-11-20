@@ -68,8 +68,9 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   and does not start a reviewer (ADR 0048): the parent reviews. It never pushes or opens the PR. In a single repo the main session is the lead.
 - **A reviewer checks the work before every PR is opened**, and before the merge that closes a Plan L when
   there is no PR: a separate reviewer agent (the profile names its model), started by the parent session
-  (one per returned lead, in parallel), gets only the diff and the ticket, reviews them with the repo's review
-  skill and runs the checks once, without editing. Nobody else reruns them. Whoever asked for
+  (one per PR, in parallel; back and front of one PR go to the same reviewer), gets only the diffs and the ticket,
+  reviews them with the repo's review skill and runs the repo's CI commands once (`.github/workflows`, never a
+  default package manager), without editing. Nobody else reruns them. Whoever asked for
   the review fixes small findings, sends large ones to a worker and asks for one re-review; what is still
   open goes to the user. Another provider's model reviews only when the user asks for it. An agent that
   cannot start a reviewer says so before the PR instead of skipping the review.
