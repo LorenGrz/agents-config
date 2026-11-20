@@ -113,7 +113,29 @@ case "$event" in
   *) exit 0 ;;
 esac
 
-[ -n "$matches" ] || exit 0
+# Org tool hints: organizations/<org>/intents.json (local, private) maps Bash commands to the org's
+# own scripts, e.g. {"bash":[{"id":"checks","re":"^npm run lint","hint":"use <script> instead"}]}.
+# Once per session per id; checked only when some org ships the file.
+orgmsg=""
+if [ "$event" = PreToolUse ] && [ "$tool" = Bash ] && compgen -G "$HUB/organizations/*/intents.json" >/dev/null; then
+  [ -n "$org_known" ] || { org_known=1; org="$(resolve_org)"; }
+  OT="$HUB/organizations/$org/intents.json"
+  if [ -n "$org" ] && [ -f "$OT" ]; then
+    while IFS=$'\t' read -r id hint; do
+      [ -n "$id" ] || continue
+      [ ! -e "$seen_dir/org-$id" ] || continue
+      mkdir -p "$seen_dir" 2>/dev/null && : >"$seen_dir/org-$id" 2>/dev/null
+      orgmsg="${orgmsg:+$orgmsg
+}Tool ($org): $hint"
+    done < <(jq -r --arg c "$(jqr '.tool_input.command // empty')" '
+      ($c | gsub("\\s*(&&|;|\\|\\|)\\s*"; "\n") | split("\n") | map(sub("^\\s+"; ""))) as $segs
+      | .bash[]? | . as $h
+      | select(any($segs[]; . as $seg | try ($seg | test($h.re)) catch false))
+      | [$h.id, $h.hint] | @tsv' "$OT" 2>/dev/null | head -n 2)
+  fi
+fi
+
+[ -n "$matches" ] || [ -n "$orgmsg" ] || exit 0
 
 base=""
 msg=""
@@ -136,6 +158,8 @@ while IFS=$'\t' read -r skill label cmd; do
   fi
 done <<<"$matches"
 
+msg="${msg:+$msg${orgmsg:+
+}}$orgmsg"
 [ -n "$msg" ] || exit 0
 jq -n --arg c "$msg" --arg e "$event" '{hookSpecificOutput:{hookEventName:$e,additionalContext:$c}}'
 exit 0
