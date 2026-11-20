@@ -154,7 +154,8 @@ ci18='[{"name":"Lint, tests y build","conclusion":null,"state":"PENDING"}]'
 write_open
 check "an agent's worktree is marked busy while it works" '[ -e "$W/state/busy/org_app-15" ]'
 check "the brief tells the agent to remove its busy mark" 'grep -q "rm -f $W/state/busy/org_app-15" "$W/state/specs/org_app-15-review.md"'
-check "the first attempt runs on Sonnet" 'grep "worktree path:$W/root/app-fifteen" "$L" | head -1 | grep -q -- "--model claude-sonnet-5-5"'
+check "a conflict agent's first attempt runs on Sonnet" 'grep "worktree path:$W/root/app-five" "$L" | head -1 | grep -q -- "--model claude-sonnet-5-5"'
+check "a review agent runs on Opus from the first attempt" 'grep "worktree path:$W/root/app-fifteen" "$L" | head -1 | grep -q -- "--model claude-opus-5-5 --effort high"'
 rm -f "$W/state/busy/"* # the agents of the first run ended
 bash "$SYNC" >/dev/null 2>&1
 check "a second run opens the CI agent of fifteen, now that its review has one" '[ -e "$W/state/specs/org_app-15-ci.md" ]'

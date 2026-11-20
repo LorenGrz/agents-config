@@ -17,7 +17,7 @@
 #      (PR, head commit); its tab stays open.
 # Every agent (4-6) goes through launch_agent (ADR 0050): one agent per worktree at a time (a busy mark the agent
 # removes when it ends, stale after 60 min), at most 2 automatic attempts per PR and day (then Loren is notified
-# once), Sonnet on the first attempt and Opus on the second.
+# once); conflicts and red CI run on Sonnet first and Opus second, review fixes always on Opus.
 # Then, for every merged PR of mine with a linked worktree: remove the worktree and delete the branch, local and
 # remote, when the worktree is clean, its HEAD is the merged head and no open PR is stacked on it.
 # Never: rebase, force, amend; never touches a worktree with uncommitted changes to tracked files (untracked
@@ -155,9 +155,9 @@ busy_mark() { printf '%s/busy/%s-%s' "$state" "${1//\//_}" "$2"; }
 # is_busy <slug> <pr>: an agent was launched there less than $busy_minutes ago and has not finished
 is_busy() { local m; m="$(busy_mark "$1" "$2")"; [ -e "$m" ] && [ -n "$(find "$m" -mmin "-$busy_minutes" 2>/dev/null)" ]; }
 
-# launch_agent <slug> <pr> <path> <spec>: 0 launched, 1 Orca failed, 2 skipped (busy or out of attempts)
+# launch_agent <slug> <pr> <path> <spec> [kind]: 0 launched, 1 Orca failed, 2 skipped (busy or out of attempts)
 launch_agent() {
-  local slug="$1" pr="$2" path="$3" spec="$4" counter n model effort lock
+  local slug="$1" pr="$2" path="$3" spec="$4" kind="${5:-}" counter n model effort lock
   is_busy "$slug" "$pr" && { note "#$pr ($slug): ya hay un agente en $path; espera"; return 2; }
   counter="$state/attempts/${slug//\//_}-$pr-$(date +%F)"
   n="$(wc -l <"$counter" 2>/dev/null || echo 0)"
@@ -166,7 +166,8 @@ launch_agent() {
     return 2
   fi
   model="$model1"; effort=""
-  [ "$n" -ge 1 ] && { model="$model2"; effort="high"; }
+  # una review puede tocar lógica de fondo: va siempre en Opus
+  { [ "$n" -ge 1 ] || [ "$kind" = review ]; } && { model="$model2"; effort="high"; }
   lock="$(busy_mark "$slug" "$pr")"
   printf '\n\nAl terminar, salga bien o mal, borrá la marca de ocupado: `rm -f %s`.\n' "$lock" >>"$spec"
   if "$orca" agent launch --agent claude --worktree "path:$path" --surface terminal --model "$model" \
@@ -270,7 +271,7 @@ $who dejó una review (\`$rid\`). Leela entera:
 Si no pudiste resolver algún punto o falló el push, escribí el motivo en una línea en \`$fail\`. Al terminar,
 avisá con \`notify-send "stack-sync: review en #$pr" "<resultado en una línea>"\`. Esta pestaña queda abierta.
 EOF
-  launch_agent "$slug" "$pr" "$path" "$spec"
+  launch_agent "$slug" "$pr" "$path" "$spec" review
   case $? in
     0) : >"$mark"; say "#$pr ($slug, $branch): review de $who -> abrí un Claude en su worktree ($path)" ;;
     1) say "#$pr ($slug, $branch): review de $who, pero no pude abrir el agente en Orca; reintento en la próxima corrida" ;;
