@@ -207,7 +207,7 @@ Motivo: $why. Hay que traer \`$ref\` a esta rama y da conflictos.
      resolvé y seguí al paso 4 sin correr nada.
    - Conflicto real (los dos cambiaron la misma lógica): corré solo los tests relacionados con los archivos que
      chocaron (\`npx jest --findRelatedTests <archivos>\` en el back, \`npx vitest related --run <archivos>\` en el
-     front). Si el merge cambió el schema de Prisma, antes \`pnpm exec prisma generate\` (no toca la base).
+     front). Si el merge cambió el schema de Prisma, antes el \`prisma generate\` del CI del repo (hoy \`npx prisma generate\`; no toca la base).
 4. \`git commit --no-edit\` (commit del merge) y \`git push origin HEAD:$branch\` (sin force). No edites el PR: si
    su base cambia, stack-sync lo retargetea solo.
 5. Nunca rebase, force, amend ni \`--no-verify\`.
