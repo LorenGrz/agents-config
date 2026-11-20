@@ -7,6 +7,10 @@
 #      wait for GitHub to recompute `mergeable` after a merge) -> merge origin/<trunk>, push
 #   4. a merge conflicts -> abort, and open a Claude in that PR's worktree through Orca with a brief: resolve,
 #      commit and push; only a real logic conflict runs the related tests, never the whole suite (ADR 0045). Once per (PR, base commit); its tab stays open.
+#   5. someone else left a review that asks for changes or comments (and no conflict agent is open for it) -> open
+#      a Claude in that PR's worktree with a brief: apply each point as new commits, keep line endings, push; it
+#      never answers or resolves the review, nor edits the PR (ADR 0047). Once per review; its tab stays open.
+#      A review on a PR without a local worktree is notified once.
 # Then, for every merged PR of mine with a linked worktree: remove the worktree and delete the branch, local and
 # remote, when the worktree is clean, its HEAD is the merged head and no open PR is stacked on it.
 # Never: rebase, force, amend; never touches a worktree with uncommitted changes to tracked files (untracked
@@ -141,6 +145,7 @@ merge_and_push() {
 launch_resolver() {
   local slug="$1" pr="$2" branch="$3" path="$4" ref="$5" why="$6"
   local refsha mark spec fail
+  busy=1 # a conflict agent owns this worktree: no review agent on top of it in this run
   refsha="$(git -C "$path" rev-parse --short "$ref" 2>/dev/null)"
   mark="$state/launched-${slug//\//_}-$pr-$refsha"
   if [ -e "$mark" ]; then note "#$pr ($slug): conflicto con $ref ya tiene un agente; espera"; return 0; fi
@@ -180,6 +185,61 @@ EOF
     say "#$pr ($slug, $branch): conflicto con $ref -> abrí un Claude en su worktree ($path)"
   else
     say "#$pr ($slug, $branch): conflicto con $ref, pero no pude abrir el agente en Orca; reintento en la próxima corrida"
+  fi
+}
+
+# last_review <pr> <open-json>: id and author of the newest review by someone else that asks for changes or comments
+last_review() {
+  jq -r --argjson n "$1" '.[] | select(.number == $n) | .author.login as $me
+    | [.reviews[]? | select(.author.login != $me and (.state == "CHANGES_REQUESTED" or .state == "COMMENTED"))]
+    | last // empty | [.id, .author.login] | @tsv' <<<"$2" 2>/dev/null
+}
+
+# fix_review <slug> <pr> <branch> <path> <review-id> <reviewer>: a Claude in that PR's worktree, once per review
+fix_review() {
+  local slug="$1" pr="$2" branch="$3" path="$4" rid="$5" who="$6" mark spec fail
+  mark="$state/review-${slug//\//_}-$pr-$rid"
+  [ -e "$mark" ] && return 0
+  [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug): review de $who -> abriría un Claude en $path"; return 0; }
+  spec="$state/specs/${slug//\//_}-$pr-review.md"
+  fail="$state/failed/${slug//\//_}-$pr-review.md"
+  cat >"$spec" <<EOF
+# Corregir lo que pidió la review (stack-sync)
+
+Esto es un brief: ejecutalo sin la pregunta de carril ni la de Continuar/Orquestar.
+
+Estás en el worktree del PR #$pr de $slug (\`$path\`, rama \`$branch\`). No toques ningún otro worktree. Leé el
+\`AGENTS.md\`/\`CLAUDE.md\` del repo (y el de la carpeta de arriba, si hay) y usá sus skills: en un front, las de UI
+del repo y la librería de componentes primero.
+
+$who dejó una review (\`$rid\`). Leela entera:
+- \`gh pr view $pr --repo $slug --json reviews,comments\` (el cuerpo de cada review y los comentarios del PR);
+- \`gh api repos/$slug/pulls/$pr/comments --paginate\` (los comentarios en líneas del código).
+
+1. \`git fetch origin\`. Por cada punto pedido, el cambio más chico que lo resuelva, como commits nuevos en esta
+   rama (Conventional Commits en español, con la clave del ticket si el PR la tiene; sin atribución).
+2. Si un punto pide una decisión de producto o no está claro, no lo adivines: dejalo sin tocar y anotalo.
+3. Si un punto pide cambiar el título o la descripción del PR, no lo edites: dejá el texto nuevo acá.
+4. **Fines de línea**: cada archivo conserva los suyos (CRLF o LF). Antes de commitear,
+   \`diff <(git diff --numstat HEAD) <(git diff --numstat --ignore-cr-at-eol HEAD)\` no tiene que mostrar nada;
+   si muestra un archivo, devolvele sus fines de línea originales.
+5. Rápido: **no corras la suite entera**. Solo lint de los archivos tocados y los tests relacionados
+   (\`npx vitest related --run <archivos>\` en el front, \`npx jest --findRelatedTests <archivos>\` en el back).
+6. \`git push origin HEAD:$branch\` (sin force). Nunca rebase, force, amend ni \`--no-verify\`.
+7. No contestes ni resuelvas la review, no vuelvas a pedir review, no edites el PR y no toques Jira ni Slack:
+   eso lo hace Loren.
+
+Si no pudiste resolver algún punto o falló el push, escribí el motivo en una línea en \`$fail\`. Al terminar,
+avisá con \`notify-send "stack-sync: review en #$pr" "<resultado en una línea>"\` y dejá acá, punto por punto, qué
+pidió la review, qué cambiaste (con el commit) y qué quedó sin tocar, listo para que Loren conteste. Esta
+pestaña queda abierta.
+EOF
+  if "$orca" agent launch --agent claude --worktree "path:$path" --surface terminal \
+      --prompt "$(cat "$spec")" --json >/dev/null 2>&1; then
+    : >"$mark"
+    say "#$pr ($slug, $branch): review de $who -> abrí un Claude en su worktree ($path)"
+  else
+    say "#$pr ($slug, $branch): review de $who, pero no pude abrir el agente en Orca; reintento en la próxima corrida"
   fi
 }
 
@@ -228,7 +288,7 @@ clean_merged() {
 # PRs, bottom-up: trunk-based first, then those stacked on them (depth by base chain)
 for slug in "${!slug_of[@]}"; do
   json="$(tgh pr list --repo "$slug" --author @me --state open --limit 100 \
-    --json number,headRefName,baseRefName,mergeable,headRefOid 2>/dev/null)" || continue
+    --json number,headRefName,baseRefName,mergeable,headRefOid,author,reviews 2>/dev/null)" || continue
   [ -n "$json" ] || continue
   rows="$(jq -r --arg t "$trunk" '
     (map({key: .headRefName, value: .baseRefName}) | from_entries) as $base
@@ -238,7 +298,12 @@ for slug in "${!slug_of[@]}"; do
   while IFS=$'\t' read -r pr head base mergeable oid; do
     [ -n "$pr" ] || continue
     path="${wt["$slug|$head"]:-}"
-    [ -n "$path" ] || continue # no local worktree for this branch: nothing to do here
+    if [ -z "$path" ]; then # no local worktree for this branch: only a new review is worth a notice
+      IFS=$'\t' read -r rid who <<<"$(last_review "$pr" "$json")"
+      [ -n "${rid:-}" ] && blocked "$slug" "$pr" "#$pr ($slug, $head): review de $who, pero no hay worktree local para corregirla"
+      continue
+    fi
+    busy=0
     git -C "$path" fetch -q origin 2>/dev/null || { note "#$pr ($slug): fetch falló"; continue; }
     # -uno: un archivo sin trackear (el pnpm-lock.yaml que deja pnpm) no frena el merge; uno trackeado sí
     if [ -n "$(git -C "$path" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
@@ -254,15 +319,18 @@ for slug in "${!slug_of[@]}"; do
            ! git -C "$path" merge-tree --write-tree "origin/$base" HEAD >/dev/null 2>&1; }; then
         merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "choca con $base"
       fi
-      continue
+    else
+      merged="$(tgh pr list --repo "$slug" --head "$base" --state merged --json number --limit 1 2>/dev/null | jq -r '.[0].number // empty')"
+      if [ -n "$merged" ]; then
+        merge_and_push "$slug" "$pr" "$head" "$path" "origin/$trunk" "el PR de abajo (#$merged, $base) se mergeó" "$trunk"
+      elif git -C "$path" rev-parse -q --verify "origin/$base" >/dev/null &&
+           ! git -C "$path" merge-base --is-ancestor "origin/$base" HEAD; then
+        merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "la rama de abajo ($base) tiene cambios nuevos"
+      fi
     fi
-    merged="$(tgh pr list --repo "$slug" --head "$base" --state merged --json number --limit 1 2>/dev/null | jq -r '.[0].number // empty')"
-    if [ -n "$merged" ]; then
-      merge_and_push "$slug" "$pr" "$head" "$path" "origin/$trunk" "el PR de abajo (#$merged, $base) se mergeó" "$trunk"
-    elif git -C "$path" rev-parse -q --verify "origin/$base" >/dev/null &&
-         ! git -C "$path" merge-base --is-ancestor "origin/$base" HEAD; then
-      merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "la rama de abajo ($base) tiene cambios nuevos"
-    fi
+    [ "$busy" -eq 1 ] && continue
+    IFS=$'\t' read -r rid who <<<"$(last_review "$pr" "$json")"
+    [ -n "${rid:-}" ] && fix_review "$slug" "$pr" "$head" "$path" "$rid" "$who"
   done <<<"$rows"
   clean_merged "$slug" "$json"
 done
