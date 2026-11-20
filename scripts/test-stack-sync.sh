@@ -5,7 +5,8 @@
 # not at the PR head, a conflict opens one Claude in its worktree once, merged PRs lose worktree and branch (not when
 # stacked; with pnpm's untracked files too; another untracked file keeps it and is notified once), --precheck (ETag: syncs only when something changed, always exits 1),
 # and reviews (ADR 0047): someone else's review opens one Claude in that worktree once, my own review does not, a PR
-# with a conflict agent gets no review agent, and a review on a PR without a worktree is notified once.
+# with a conflict agent gets no review agent, and a review on a PR without a worktree is notified once; and a red CI
+# (ADR 0048): a failed check on the PR head opens one Claude once, a green CI does not, and a review goes first.
 set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SYNC="$HUB/scripts/stack-sync.sh"
@@ -69,6 +70,8 @@ branch thirteen dev       # PR 13: merged, only pnpm's untracked files -> remove
 branch fourteen dev       # PR 14: merged, another untracked file -> kept, notified once
 branch fifteen dev        # PR 15: up to date, someone else asked for changes -> review agent
 branch sixteen dev        # PR 16: up to date, only my own review -> nothing
+branch eighteen dev       # PR 18: up to date, a CI check failed -> CI agent
+branch nineteen dev       # PR 19: up to date, CI green -> nothing
 git -C "$R" fetch -q
 c "$W/root/app-three" shared.txt from-three; git -C "$W/root/app-three" push -q origin three
 c "$W/root/app-eight" shared.txt from-eight; git -C "$W/root/app-eight" push -q origin eight
@@ -91,16 +94,20 @@ row() { printf '{"number":%s,"headRefName":"%s","baseRefName":"%s","mergeable":"
 oidp() { git -C "$W/root/app-$1" rev-parse HEAD~1; }
 # rowr <n> <branch> <reviews-json>: an up-to-date PR to dev, authored by me, with reviews
 rowr() { printf '{"number":%s,"headRefName":"%s","baseRefName":"dev","mergeable":"MERGEABLE","headRefOid":"%s","author":{"login":"me"},"reviews":%s}' "$1" "$2" "$(oid "$2")" "$3"; }
+# rowc <n> <branch> <checks-json>: an up-to-date PR to dev with CI checks and no reviews
+rowc() { printf '{"number":%s,"headRefName":"%s","baseRefName":"dev","mergeable":"MERGEABLE","headRefOid":"%s","author":{"login":"me"},"reviews":[],"statusCheckRollup":%s}' "$1" "$2" "$(oid "$2")" "$3"; }
 rev() { printf '{"id":"%s","author":{"login":"%s"},"state":"%s"}' "$1" "$2" "$3"; }
 rowp() { printf '{"number":%s,"headRefName":"%s","baseRefName":"dev","mergeable":"CONFLICTING","headRefOid":"%s"}' "$1" "$2" "$(oidp "$2")"; }
 # five conflicts and also has a review: the conflict agent owns it. 17 has a review but no local worktree.
 five_rev="$(row 5 five dev CONFLICTING | sed "s/}\$/,\"author\":{\"login\":\"me\"},\"reviews\":[$(rev R5 ana CHANGES_REQUESTED)]}/")"
-printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
+printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
   "$five_rev" "$(row 6 six dev MERGEABLE)" "$(row 7 seven dev MERGEABLE)" "$(row 8 eight three MERGEABLE)" \
   "$(rowp 10 ten)" "$(row 11 eleven dev UNKNOWN)" \
-  "$(rowr 15 fifteen "[$(rev R15a me COMMENTED),$(rev R15 ana CHANGES_REQUESTED)]")" \
+  "$(rowr 15 fifteen "[$(rev R15a me COMMENTED),$(rev R15 ana CHANGES_REQUESTED)]" | sed 's/}$/,"statusCheckRollup":[{"name":"tests","conclusion":"FAILURE"}]}/')" \
   "$(rowr 16 sixteen "[$(rev R16 me COMMENTED)]")" \
   '{"number":17,"headRefName":"seventeen","baseRefName":"dev","mergeable":"MERGEABLE","headRefOid":"x","author":{"login":"me"},"reviews":[{"id":"R17","author":{"login":"ana"},"state":"COMMENTED"}]}' \
+  "$(rowc 18 eighteen '[{"name":"Lint, tests y build","conclusion":"FAILURE"},{"name":"schema","conclusion":"SUCCESS"}]')" \
+  "$(rowc 19 nineteen '[{"name":"Lint, tests y build","conclusion":"SUCCESS"}]')" \
   >"$W/gh/open.json"
 echo '[{"number":1}]' >"$W/gh/merged-one.json"
 printf '[{"number":1,"headRefName":"one","headRefOid":"%s"},{"number":12,"headRefName":"twelve","headRefOid":"%s"},{"number":13,"headRefName":"thirteen","headRefOid":"%s"},{"number":14,"headRefName":"fourteen","headRefOid":"%s"}]\n' \
@@ -132,9 +139,14 @@ check "the review brief keeps line endings and never answers the review" 'grep -
 check "only my own review: no agent for sixteen" '! grep -q "app-sixteen" "$L"'
 check "conflict and review on five: only the conflict agent" '[ "$(grep -c "worktree path:$W/root/app-five" "$L")" -eq 1 ] && [ ! -e "$W/state/specs/org_app-5-review.md" ]'
 check "review on a PR without a worktree is notified" 'grep -q "#17.*no hay worktree local" <<<"$out"'
+check "red CI: a Claude opened in eighteen's worktree, naming the failed check" 'grep -q "worktree path:$W/root/app-eighteen" "$L" && grep -q "#18.*CI en rojo (Lint, tests y build)" <<<"$out"'
+check "the CI brief reads the failed logs and never forces" 'grep -q "log-failed" "$W/state/specs/org_app-18-ci.md" && ! grep -q -- "--force" "$W/state/specs/org_app-18-ci.md"'
+check "green CI: no agent for nineteen" '! grep -q "app-nineteen" "$L"'
+check "review and red CI on fifteen: only the review agent in this run" '[ "$(grep -c "worktree path:$W/root/app-fifteen" "$L")" -eq 1 ] && [ ! -e "$W/state/specs/org_app-15-ci.md" ]'
 n_launch=$(grep -c "agent launch" "$L")
 bash "$SYNC" >/dev/null 2>&1
-check "a second run does not open the same conflicts again" '[ "$(grep -c "agent launch" "$L")" -eq "$n_launch" ]'
+check "a second run opens the CI agent of fifteen, now that its review has one" '[ -e "$W/state/specs/org_app-15-ci.md" ]'
+check "a second run does not open the same conflicts, reviews or CI fixes again" '[ "$(grep -c "agent launch" "$L")" -eq "$((n_launch + 1))" ]'
 check "a second run does not notify the blocked fourteen again" '[ "$(grep -c "#14" "$W/state/stack-sync.log")" -eq 1 ]'
 check "a second run does not notify the review on seventeen again" '[ "$(grep -c "#17" "$W/state/stack-sync.log")" -eq 1 ]'
 echo 304 >"$W/gh/api-status"; calls=$(wc -l <"$W/gh/calls")
