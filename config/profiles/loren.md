@@ -30,20 +30,14 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 
 ## Model routing
 
-- Main session: Opus at high effort (ADR 0024). Opus designs plans (Plan S/L, plan mode), executes Plan S itself (subagents only when the work needs them) and delegates Plan L to leads or workers; never pass `model: fable` to a subagent. Fable is only the advisor (`advisorModel: "fable"` in `~/.claude/settings.json`). A reasoner is Opus at high effort consulting that advisor: the main session is one, and so is every lead.
-- `worker` = Sonnet: code, docs, tests; every non-trivial repo change, in the background (ADR 0029); in Plan S, only when the work needs it. The `reasoner` subagent = Opus: decisions only. `scout` = Haiku: light read-only lookups.
+- Main session: Opus at high effort (ADR 0024); it designs the plans. Never pass `model: fable` to a subagent. Fable is only the advisor (`advisorModel: "fable"` in `~/.claude/settings.json`). A reasoner is Opus at high effort consulting that advisor: the main session is one, and so is every lead.
+- `worker` = Sonnet. The `reasoner` subagent = Opus. `scout` = Haiku. Roles: `AGENTS.md` and `CLAUDE.md` "Agent Routing".
 - Leads are always Opus. Automatic `stack-sync` agents (ADR 0050): conflicts and red CI start on Sonnet and go to Opus on the second attempt; review fixes always run on Opus.
-- Lead (Plan L across repos) = a reasoner session, not the `reasoner` subagent: one per repo, in that repo's own session and with that repo's skills, or in the workspace folder when the skills live there; a workspace lead may send a lead to each child repo. Leads start `worker` (Sonnet) and `scout` (Haiku); never a reviewer: the parent session starts it (ADR 0048).
+- A lead (`AGENTS.md` "Workflow lanes") is a reasoner session, not the `reasoner` subagent.
 - Gemini (`agy`): manual and optional, only when Loren asks for it, for bulk writing, wide reading or a review.
-- `reviewer` = the `reviewer` subagent (Opus at high effort, no edit tools), never the session that wrote the code:
-  reviews the diff before every PR and before a Plan L merge. Optional, only when Loren asks: Gemini 4 Argon
+- `reviewer` = the `reviewer` subagent (Opus at high effort, no edit tools). Another model only when Loren asks: Gemini 4 Argon
   (`gemini-4-argon`, thought level high; `gemini-4-argon-high` in `agy`) through Antigravity, or Codex
   (`codex-review`). A day of Argon reviews used almost the whole weekly Gemini quota.
-- Checks run once, by the reviewer (since 2026-11-20, ADR 0048): leads and workers write the code and its tests
-  but do not run lint, typecheck, the test suite or a browser check, and their briefs say so. When a lead returns,
-  the parent session starts one `reviewer` per PR (back and front of one PR together) with only the diffs and the
-  ticket; it installs and runs the same commands as the repo's CI (`.github/workflows`), once, and nobody reruns them. Failures go back to the lead. Working alone in Plan S, the main
-  session runs them once at the end. Reason: per-step checks and duplicated runs cost Loren too many tokens.
 
 ## Local tool paths
 
