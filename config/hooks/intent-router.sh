@@ -45,10 +45,16 @@ resolve_base() {
 }
 
 # Organization of the repo at $cwd (same detection as resolve_base); prints its name or nothing.
+# A workspace folder (not a repo, or a repo without origin) takes the origin of its first child repo.
 resolve_org() {
-  local root remote
-  root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" || return 0
-  remote="$(git -C "$root" remote get-url origin 2>/dev/null || true)"
+  local root remote="" child
+  root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" &&
+    remote="$(git -C "$root" remote get-url origin 2>/dev/null || true)"
+  if [ -z "$remote" ]; then
+    child="$(find "$cwd" -mindepth 2 -maxdepth 2 -name .git -printf '%h\n' 2>/dev/null | sort | head -n 1)"
+    [ -n "$child" ] || return 0
+    remote="$(git -C "$child" remote get-url origin 2>/dev/null || true)"
+  fi
   [ -n "$remote" ] && [ -x "$HUB/scripts/orgs.sh" ] || return 0
   bash "$HUB/scripts/orgs.sh" detect "$remote" 2>/dev/null | head -n 1
 }
@@ -62,7 +68,9 @@ org_skill() {
   rep="$(jq -r --arg s "$1" '.replaces[$s] // empty | select(type == "string")' "$HUB/organizations/$org/org.json" 2>/dev/null)"
   case "$rep" in
     ""|/*|*[!A-Za-z0-9_-]*) echo "$1" ;;
-    *) if [ -f "$HUB/organizations/$org/skills/$rep/SKILL.md" ]; then echo "$rep"; else echo "$1"; fi ;;
+    # Skills sit in skills/ or in a product folder (<org>/<product>/skills).
+    *) if compgen -G "$HUB/organizations/$org/skills/$rep/SKILL.md" >/dev/null ||
+          compgen -G "$HUB/organizations/$org/*/skills/$rep/SKILL.md" >/dev/null; then echo "$rep"; else echo "$1"; fi ;;
   esac
 }
 

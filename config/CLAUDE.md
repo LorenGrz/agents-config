@@ -27,8 +27,7 @@ AGENTS.md index say which. Where skills overlap, one default per task:
   starts subagents only when the work needs them. Plan L loads `mattpocock-skills:grilling` right after, then
   `superpowers:brainstorming`, `writing-plans`, and leads or `worker`/`reasoner` in the worktree of the
   task branch. A plan the user starts directly ends with "Plan S/L because …".
-- The Continuar/Orquestar question (always, ADR 0040) is asked right after the lane question, or as its
-  second question; `lane-guard.sh` keeps Continuar first. Picking Orquestar makes the
+- `lane-guard.sh` keeps Continuar first in the Continuar/Orquestar question too. Picking Orquestar makes the
   `orquestar.sh` hook inject the procedure: leads are separate sessions (Orca `worker-start`, T3 Code
   `t3_thread_launch`), never subagents of the main session, and their worktrees get their CLAUDE.md
   imports approved first with `scripts/approve-claude-imports.sh`.
@@ -45,7 +44,7 @@ Pick the agent by role; each role's model is in your profile ("Model routing").
 - **Decide** (`reasoner`, or plan mode): architecture, unknown-cause bugs, plan review, hard-to-reverse
   calls. Never bulk writing. A decision costly to get wrong never goes to `worker` or `scout`.
 - **Implement** (`worker`): code, docs, tests, given the exact files, the decided change and an acceptance
-  command; default for every non-trivial repo change (ADR 0029), except Plan S, where it is used when needed. Whoever started
+  command (when to use it: `AGENTS.md`). Whoever started
   it (the main session or a lead) reviews its diff and reported checks, then commits.
 - **Review** (`reviewer`): load `review-handoff` for the brief, the transport and the findings loop. It
   runs in any lane.

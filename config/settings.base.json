@@ -232,7 +232,7 @@
     "mattpocock-skills@mattpocock": true,
     "claudex-loop@claudex-loop": true,
     "codex@openai-codex": true,
-    "claude-obsidian@agricidaniel-claude-obsidian": true,
+    "claude-obsidian@agricidaniel-claude-obsidian": false,
     "andrej-karpathy-skills@karpathy-skills": true,
     "ponytail@ponytail": true,
     "modern-web-guidance@googlechrome": true

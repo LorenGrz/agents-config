@@ -71,6 +71,10 @@ check "org repo: Bash git push hints the org skill" 'otool Bash "git push origin
 check "org repo: replacement the org does not ship falls back to the hub skill" 'otool mcp__claude_ai_Atlassian_Rovo__getJiraIssue "" "$W/acme-repo" | grep -q "jira-usage"'
 check "repo of another owner: still github-usage" 'out="$(oprompt "traete los cambios" "$W/other-repo")"; grep -q "github-usage" <<<"$out" && ! grep -q "acme-github" <<<"$out"'
 check "repo without a remote: still github-usage" 'oprompt "traete los cambios" "$W/plain" | grep -q "github-usage"'
+mkdir -p "$OH/organizations/acme/cx/skills/acme-jira"; printf -- '---\nname: acme-jira\n---\n' >"$OH/organizations/acme/cx/skills/acme-jira/SKILL.md"
+check "org skill shipped in a product folder (<org>/<product>/skills) is found" 'otool mcp__claude_ai_Atlassian_Rovo__getJiraIssue "" "$W/acme-repo" | grep -q "acme-jira"'
+mkrepo "$W/acme-ws"; mkrepo "$W/acme-ws/shop"; git -C "$W/acme-ws/shop" remote add origin https://github.com/acme-inc/shop.git
+check "workspace repo without origin: org taken from its child repo" 'oprompt "traete los cambios" "$W/acme-ws" | grep -q "acme-github"'
 check "org with an unreadable org.json: falls back silently" 'echo "{" >"$OH/organizations/acme/org.json"; oprompt "traete los cambios" "$W/acme-repo" | grep -q "github-usage"'
 
 # --- detect-stack
@@ -97,8 +101,10 @@ mkdir -p "$W/ss/multi/front" "$W/ss/multi/back"; git -C "$W/ss/multi/front" init
 check "folder with 2 repos names them and offers workspace mode" 'out="$(start "$W/ss/multi")"; grep -q "holds 2 git repos (back, front)" <<<"$out" && grep -q "workspace mode" <<<"$out" && grep -q "unrelated projects" <<<"$out"'
 mkdir -p "$W/fakehome/a" "$W/fakehome/b"; git -C "$W/fakehome/a" init -q; git -C "$W/fakehome/b" init -q
 check "HOME itself never gets the workspace offer" '! HOME="$W/fakehome" start "$W/fakehome" | grep -q "workspace mode"'
-check "SessionStart routing text points to CLAUDE.md and stays short" 'out="$(start "$W/ss/ready")"; grep -q "Agent routing" <<<"$out" && grep -q "scout" <<<"$out" && [ "${#out}" -lt 520 ]'
-check "SessionStart names the one question Continuar / Plan S / Plan L (ADR 0022)" 'start "$W/ss/ready" | grep -q "Continuar / Plan S / Plan L"'
+check "SessionStart does not repeat the routing rule (ADR 0051)" '! start "$W/ss/ready" | grep -q "Agent routing"'
+check "configured repo with nothing to say -> SessionStart prints nothing" '[ -z "$(start "$W/ss/ready")" ]'
+mkrepo "$W/ss/ws/child"
+check "repo inside a workspace folder -> no setup or map nudges" '[ -z "$(start "$W/ss/ws/child")" ]'
 
 # --- task notifications
 check "task notifications are not read as phrases" '[ -z "$(prompt "<task-notification>traete los cambios</task-notification>" "$W/plain")" ]'

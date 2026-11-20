@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# SessionStart: re-state the agent-routing rule (prose in CLAUDE.md loses to the harness
-# default "don't spawn subagents unless asked") and, for large repos, nudge to create or
-# refresh the codebase map (.agents/CONTEXT.md). Guidance only; always exits 0, fast.
+# SessionStart: for large repos, nudge to create or refresh the codebase map (.agents/CONTEXT.md),
+# and point at project setup. The routing rule is not repeated here: it lives in AGENTS.md and
+# CLAUDE.md (ADR 0051). Guidance only; always exits 0, fast.
 set -uo pipefail
 
 min_files="${AGENTS_MAP_MIN_FILES:-200}"
@@ -12,10 +12,15 @@ input="$(cat 2>/dev/null || true)"
 cwd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)"
 [ -n "$cwd" ] && [ -d "$cwd" ] || cwd="$PWD"
 
-# Short on purpose: the full rule lives in AGENTS.md "Workflow lanes" and CLAUDE.md "Workflow lanes" / "Agent Routing".
-msg='Agent routing (full rule: CLAUDE.md "Workflow lanes" and "Agent Routing"): trivial (one line, typo) -> direct; any other task -> ask Continuar / Plan S / Plan L, then always Continuar / Orquestar, in those orders; Plan S: no interview; Plan L: `mattpocock-skills:grilling` first. Repo work -> background `worker` or a lead; `scout` for lookups; `reasoner` only from a plan. Reviewer before every PR and Plan L merge (`review-handoff`). Started from a brief: no lane question, execute it. Do not assume: ask.'
+msg=''
 
-if git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+# A repo inside a workspace folder (its parent has AGENTS.md, e.g. an org product folder) gets its map
+# and setup from that workspace: no CONTEXT.md or project-init nudges there.
+in_ws=0
+top="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || true)"
+[ -n "$top" ] && [ -f "$(dirname "$top")/AGENTS.md" ] && in_ws=1
+
+if [ "$in_ws" -eq 0 ] && git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   n="$(git -C "$cwd" ls-files 2>/dev/null | wc -l | tr -d ' ')"
   if [ "${n:-0}" -ge "$min_files" ] 2>/dev/null; then
     root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || true)"
@@ -44,7 +49,9 @@ fi
 # Project setup state (guidance only; nothing is written without the user's OK).
 HUB="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../.." 2>/dev/null && pwd || true)"
 root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || true)"
-if [ -n "$root" ]; then
+if [ "$in_ws" -eq 1 ]; then
+  :
+elif [ -n "$root" ]; then
   if [ ! -f "$root/AGENTS.md" ]; then
     msg="$msg"$'\n'"This repo has no AGENTS.md (not set up with project-init): ask the user whether to run the \`project-init\` skill first (adopt mode if the repo already has code) before other work."
   elif [ ! -f "$root/.agents/project.json" ] && [ ! -d "$root/.claude/skills" ] && [ -x "$HUB/scripts/detect-stack.sh" ]; then
@@ -69,5 +76,7 @@ else
   msg="$msg"$'\n'"$notice"
 fi
 
+msg="${msg#$'\n'}"
+[ -n "$msg" ] || exit 0
 jq -n --arg c "$msg" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$c}}'
 exit 0
