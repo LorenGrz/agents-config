@@ -15,6 +15,9 @@
 #   6. a CI check failed on the PR head (and no conflict or review agent was opened for it in this run) -> open a
 #      Claude in that PR's worktree: read the failed logs, fix, run only what is related, push (ADR 0048). Once per
 #      (PR, head commit); its tab stays open.
+# Every agent (4-6) goes through launch_agent (ADR 0050): one agent per worktree at a time (a busy mark the agent
+# removes when it ends, stale after 60 min), at most 2 automatic attempts per PR and day (then Loren is notified
+# once), Sonnet on the first attempt and Opus on the second.
 # Then, for every merged PR of mine with a linked worktree: remove the worktree and delete the branch, local and
 # remote, when the worktree is clean, its HEAD is the merged head and no open PR is stacked on it.
 # Never: rebase, force, amend; never touches a worktree with uncommitted changes to tracked files (untracked
@@ -45,6 +48,8 @@ owner="${env_owner:-${STACK_SYNC_OWNER:-}}"
 trunk="${env_trunk:-${STACK_SYNC_TRUNK:-dev}}"
 orca="${env_orca:-${STACK_SYNC_ORCA:-orca}}"
 state="${STACK_SYNC_STATE:-$HOME/.local/state/stack-sync}"
+model1="${STACK_SYNC_MODEL1:-claude-sonnet-5-5}" model2="${STACK_SYNC_MODEL2:-claude-opus-5-5}"
+max_attempts="${STACK_SYNC_MAX_ATTEMPTS:-2}" busy_minutes="${STACK_SYNC_BUSY_MINUTES:-60}"
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) dry=1 ;;
@@ -59,7 +64,7 @@ done
 # the precheck always says «nothing for the automation's agent» (1); a plain run says 0
 done_code=0; [ "$precheck" -eq 1 ] && done_code=1
 [ -n "$owner" ] && [ -n "$roots" ] || exit "$done_code"
-mkdir -p "$state/failed" "$state/specs" "$state/blocked"
+mkdir -p "$state/failed" "$state/specs" "$state/blocked" "$state/busy" "$state/attempts"
 log="$state/stack-sync.log"
 exec 9>"$state/lock"
 flock -n 9 || exit "$done_code" # another run is still going
@@ -145,6 +150,33 @@ merge_and_push() {
   launch_resolver "$slug" "$pr" "$branch" "$path" "$ref" "$why"
 }
 
+# busy_mark <slug> <pr>: the file that says an agent is working in that PR's worktree
+busy_mark() { printf '%s/busy/%s-%s' "$state" "${1//\//_}" "$2"; }
+# is_busy <slug> <pr>: an agent was launched there less than $busy_minutes ago and has not finished
+is_busy() { local m; m="$(busy_mark "$1" "$2")"; [ -e "$m" ] && [ -n "$(find "$m" -mmin "-$busy_minutes" 2>/dev/null)" ]; }
+
+# launch_agent <slug> <pr> <path> <spec>: 0 launched, 1 Orca failed, 2 skipped (busy or out of attempts)
+launch_agent() {
+  local slug="$1" pr="$2" path="$3" spec="$4" counter n model effort lock
+  is_busy "$slug" "$pr" && { note "#$pr ($slug): ya hay un agente en $path; espera"; return 2; }
+  counter="$state/attempts/${slug//\//_}-$pr-$(date +%F)"
+  n="$(wc -l <"$counter" 2>/dev/null || echo 0)"
+  if [ "$n" -ge "$max_attempts" ]; then
+    blocked "$slug" "$pr" "#$pr ($slug): ya hubo $n intentos automáticos hoy; lo que falta queda para vos"
+    return 2
+  fi
+  model="$model1"; effort=""
+  [ "$n" -ge 1 ] && { model="$model2"; effort="high"; }
+  lock="$(busy_mark "$slug" "$pr")"
+  printf '\n\nAl terminar, salga bien o mal, borrá la marca de ocupado: `rm -f %s`.\n' "$lock" >>"$spec"
+  if "$orca" agent launch --agent claude --worktree "path:$path" --surface terminal --model "$model" \
+      ${effort:+--effort "$effort"} --prompt "$(cat "$spec")" --json >/dev/null 2>&1; then
+    : >"$lock"; echo "$model" >>"$counter"
+    return 0
+  fi
+  return 1
+}
+
 # launch_resolver: a Claude in that PR's worktree, through Orca, once per (PR, base commit)
 launch_resolver() {
   local slug="$1" pr="$2" branch="$3" path="$4" ref="$5" why="$6"
@@ -183,13 +215,11 @@ Si abortaste, fallaron los checks o el push, escribí el motivo en una línea en
 \`notify-send "stack-sync: PR #$pr" "<resultado en una línea>"\` y dejá acá qué conflictos había, cómo los
 resolviste y, si corriste tests, su salida. Esta pestaña queda abierta para que Loren lo lea.
 EOF
-  if "$orca" agent launch --agent claude --worktree "path:$path" --surface terminal \
-      --prompt "$(cat "$spec")" --json >/dev/null 2>&1; then
-    : >"$mark"
-    say "#$pr ($slug, $branch): conflicto con $ref -> abrí un Claude en su worktree ($path)"
-  else
-    say "#$pr ($slug, $branch): conflicto con $ref, pero no pude abrir el agente en Orca; reintento en la próxima corrida"
-  fi
+  launch_agent "$slug" "$pr" "$path" "$spec"
+  case $? in
+    0) : >"$mark"; say "#$pr ($slug, $branch): conflicto con $ref -> abrí un Claude en su worktree ($path)" ;;
+    1) say "#$pr ($slug, $branch): conflicto con $ref, pero no pude abrir el agente en Orca; reintento en la próxima corrida" ;;
+  esac
 }
 
 # last_review <pr> <open-json>: id and author of the newest review by someone else that asks for changes or comments
@@ -240,13 +270,11 @@ $who dejó una review (\`$rid\`). Leela entera:
 Si no pudiste resolver algún punto o falló el push, escribí el motivo en una línea en \`$fail\`. Al terminar,
 avisá con \`notify-send "stack-sync: review en #$pr" "<resultado en una línea>"\`. Esta pestaña queda abierta.
 EOF
-  if "$orca" agent launch --agent claude --worktree "path:$path" --surface terminal \
-      --prompt "$(cat "$spec")" --json >/dev/null 2>&1; then
-    : >"$mark"
-    say "#$pr ($slug, $branch): review de $who -> abrí un Claude en su worktree ($path)"
-  else
-    say "#$pr ($slug, $branch): review de $who, pero no pude abrir el agente en Orca; reintento en la próxima corrida"
-  fi
+  launch_agent "$slug" "$pr" "$path" "$spec"
+  case $? in
+    0) : >"$mark"; say "#$pr ($slug, $branch): review de $who -> abrí un Claude en su worktree ($path)" ;;
+    1) say "#$pr ($slug, $branch): review de $who, pero no pude abrir el agente en Orca; reintento en la próxima corrida" ;;
+  esac
 }
 
 # failed_checks <pr> <open-json>: names of the CI checks that failed on the PR head, comma separated
@@ -290,13 +318,11 @@ Si no pudiste arreglarlo, escribí el motivo en una línea en \`$fail\`. Al term
 \`notify-send "stack-sync: CI en #$pr" "<resultado en una línea>"\` y dejá acá la causa y el arreglo. Esta pestaña
 queda abierta.
 EOF
-  if "$orca" agent launch --agent claude --worktree "path:$path" --surface terminal \
-      --prompt "$(cat "$spec")" --json >/dev/null 2>&1; then
-    : >"$mark"
-    say "#$pr ($slug, $branch): CI en rojo ($checks) -> abrí un Claude en su worktree ($path)"
-  else
-    say "#$pr ($slug, $branch): CI en rojo, pero no pude abrir el agente en Orca; reintento en la próxima corrida"
-  fi
+  launch_agent "$slug" "$pr" "$path" "$spec"
+  case $? in
+    0) : >"$mark"; say "#$pr ($slug, $branch): CI en rojo ($checks) -> abrí un Claude en su worktree ($path)" ;;
+    1) say "#$pr ($slug, $branch): CI en rojo, pero no pude abrir el agente en Orca; reintento en la próxima corrida" ;;
+  esac
 }
 
 # clean_merged <slug> <open-json>: remove the worktree and the branch of my merged PRs
@@ -359,6 +385,8 @@ for slug in "${!slug_of[@]}"; do
       [ -n "${rid:-}" ] && blocked "$slug" "$pr" "#$pr ($slug, $head): review de $who, pero no hay worktree local para corregirla"
       continue
     fi
+    # an agent is working there: no merges and no other agent until it ends
+    is_busy "$slug" "$pr" && { note "#$pr ($slug, $head): salteado, hay un agente trabajando en $path"; continue; }
     busy=0
     git -C "$path" fetch -q origin 2>/dev/null || { note "#$pr ($slug): fetch falló"; continue; }
     # -uno: un archivo sin trackear (el pnpm-lock.yaml que deja pnpm) no frena el merge; uno trackeado sí
