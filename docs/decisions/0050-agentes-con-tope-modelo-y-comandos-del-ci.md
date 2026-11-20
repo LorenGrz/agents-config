@@ -13,7 +13,8 @@ el CI no ve.
 - stack-sync abre un agente por worktree a la vez: una marca de ocupado que el agente borra al terminar y que vence
   a los 60 minutos. Mientras está, el PR se saltea entero.
 - Como mucho 2 intentos automáticos por PR y por día. Después se avisa una vez y queda para Loren.
-- Primer intento con Sonnet, segundo con Opus en high. Los líderes: Sonnet en Plan S o Continuar, Opus en Plan L.
+- Conflictos y CI en rojo: primer intento con Sonnet, segundo con Opus en high. Reviews: siempre Opus en high. Los
+  líderes, siempre Opus (corregido el mismo día: Loren pidió Sonnet solo para los conflictos).
 - Un reviewer por PR (back y front de un mismo PR, uno solo).
 - Instalar y correr los checks siempre con los comandos del CI del repo (`.github/workflows`), nunca con un gestor
   de paquetes fijo.

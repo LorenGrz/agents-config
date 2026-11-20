@@ -32,7 +32,7 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 
 - Main session: Opus at high effort (ADR 0024). Opus designs plans (Plan S/L, plan mode), executes Plan S itself (subagents only when the work needs them) and delegates Plan L to leads or workers; never pass `model: fable` to a subagent. Fable is only the advisor (`advisorModel: "fable"` in `~/.claude/settings.json`). A reasoner is Opus at high effort consulting that advisor: the main session is one, and so is every lead.
 - `worker` = Sonnet: code, docs, tests; every non-trivial repo change, in the background (ADR 0029); in Plan S, only when the work needs it. The `reasoner` subagent = Opus: decisions only. `scout` = Haiku: light read-only lookups.
-- Lead model by size (ADR 0050): Sonnet for Plan S or Continuar, Opus for Plan L. Automatic `stack-sync` agents: Sonnet first, Opus on the second attempt.
+- Leads are always Opus. Automatic `stack-sync` agents (ADR 0050): conflicts and red CI start on Sonnet and go to Opus on the second attempt; review fixes always run on Opus.
 - Lead (Plan L across repos) = a reasoner session, not the `reasoner` subagent: one per repo, in that repo's own session and with that repo's skills, or in the workspace folder when the skills live there; a workspace lead may send a lead to each child repo. Leads start `worker` (Sonnet) and `scout` (Haiku); never a reviewer: the parent session starts it (ADR 0048).
 - Gemini (`agy`): manual and optional, only when Loren asks for it, for bulk writing, wide reading or a review.
 - `reviewer` = the `reviewer` subagent (Opus at high effort, no edit tools), never the session that wrote the code:
