@@ -3,7 +3,9 @@
 # orca. Covers: base merged (merge trunk, push, retarget), base with new commits, trunk conflict (also with GitHub's
 # mergeable still UNKNOWN), untracked files ignored, a local commit not pushed is left alone, dirty worktree, worktree
 # not at the PR head, a conflict opens one Claude in its worktree once, merged PRs lose worktree and branch (not when
-# stacked; with pnpm's untracked files too; another untracked file keeps it and is notified once), and --precheck (ETag: syncs only when something changed, always exits 1).
+# stacked; with pnpm's untracked files too; another untracked file keeps it and is notified once), --precheck (ETag: syncs only when something changed, always exits 1),
+# and reviews (ADR 0047): someone else's review opens one Claude in that worktree once, my own review does not, a PR
+# with a conflict agent gets no review agent, and a review on a PR without a worktree is notified once.
 set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SYNC="$HUB/scripts/stack-sync.sh"
@@ -65,6 +67,8 @@ branch eleven dev         # PR 11: conflicts with dev, but GitHub still says UNK
 branch twelve dev         # PR 12: merged, clean worktree at its head -> removed
 branch thirteen dev       # PR 13: merged, only pnpm's untracked files -> removed with --force
 branch fourteen dev       # PR 14: merged, another untracked file -> kept, notified once
+branch fifteen dev        # PR 15: up to date, someone else asked for changes -> review agent
+branch sixteen dev        # PR 16: up to date, only my own review -> nothing
 git -C "$R" fetch -q
 c "$W/root/app-three" shared.txt from-three; git -C "$W/root/app-three" push -q origin three
 c "$W/root/app-eight" shared.txt from-eight; git -C "$W/root/app-eight" push -q origin eight
@@ -85,10 +89,19 @@ oid() { git -C "$W/root/app-$1" rev-parse "origin/$1"; }
 row() { printf '{"number":%s,"headRefName":"%s","baseRefName":"%s","mergeable":"%s","headRefOid":"%s"}' "$1" "$2" "$3" "$4" "$(oid "$2")"; }
 # ten: the PR head is the parent of the local commit
 oidp() { git -C "$W/root/app-$1" rev-parse HEAD~1; }
+# rowr <n> <branch> <reviews-json>: an up-to-date PR to dev, authored by me, with reviews
+rowr() { printf '{"number":%s,"headRefName":"%s","baseRefName":"dev","mergeable":"MERGEABLE","headRefOid":"%s","author":{"login":"me"},"reviews":%s}' "$1" "$2" "$(oid "$2")" "$3"; }
+rev() { printf '{"id":"%s","author":{"login":"%s"},"state":"%s"}' "$1" "$2" "$3"; }
 rowp() { printf '{"number":%s,"headRefName":"%s","baseRefName":"dev","mergeable":"CONFLICTING","headRefOid":"%s"}' "$1" "$2" "$(oidp "$2")"; }
-printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
-  "$(row 5 five dev CONFLICTING)" "$(row 6 six dev MERGEABLE)" "$(row 7 seven dev MERGEABLE)" "$(row 8 eight three MERGEABLE)" \
-  "$(rowp 10 ten)" "$(row 11 eleven dev UNKNOWN)" >"$W/gh/open.json"
+# five conflicts and also has a review: the conflict agent owns it. 17 has a review but no local worktree.
+five_rev="$(row 5 five dev CONFLICTING | sed "s/}\$/,\"author\":{\"login\":\"me\"},\"reviews\":[$(rev R5 ana CHANGES_REQUESTED)]}/")"
+printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
+  "$five_rev" "$(row 6 six dev MERGEABLE)" "$(row 7 seven dev MERGEABLE)" "$(row 8 eight three MERGEABLE)" \
+  "$(rowp 10 ten)" "$(row 11 eleven dev UNKNOWN)" \
+  "$(rowr 15 fifteen "[$(rev R15a me COMMENTED),$(rev R15 ana CHANGES_REQUESTED)]")" \
+  "$(rowr 16 sixteen "[$(rev R16 me COMMENTED)]")" \
+  '{"number":17,"headRefName":"seventeen","baseRefName":"dev","mergeable":"MERGEABLE","headRefOid":"x","author":{"login":"me"},"reviews":[{"id":"R17","author":{"login":"ana"},"state":"COMMENTED"}]}' \
+  >"$W/gh/open.json"
 echo '[{"number":1}]' >"$W/gh/merged-one.json"
 printf '[{"number":1,"headRefName":"one","headRefOid":"%s"},{"number":12,"headRefName":"twelve","headRefOid":"%s"},{"number":13,"headRefName":"thirteen","headRefOid":"%s"},{"number":14,"headRefName":"fourteen","headRefOid":"%s"}]\n' \
   "$(oid one)" "$(oid twelve)" "$(oid thirteen)" "$(oid fourteen)" >"$W/gh/merged-mine.json"
@@ -114,10 +127,16 @@ check "merged twelve: remote branch deleted" '! git -C "$R" ls-remote --exit-cod
 check "merged one keeps its worktree: two is stacked on it" '[ -d "$W/root/app-one" ] && grep -q "#1.*apilado encima" <<<"$out"'
 check "merged thirteen with only pnpm's untracked files: worktree and branch removed" '[ ! -d "$W/root/app-thirteen" ] && ! git -C "$R" rev-parse -q --verify refs/heads/thirteen >/dev/null'
 check "merged fourteen with another untracked file: kept, and the log names the file" '[ -f "$W/root/app-fourteen/notas.txt" ] && grep -q "#14.*lo frena: notas.txt" <<<"$out"'
+check "review by someone else: a Claude opened in fifteen's worktree" 'grep -q "worktree path:$W/root/app-fifteen" "$L" && grep -q "#15.*review de ana" <<<"$out"'
+check "the review brief keeps line endings and never answers the review" 'grep -q "ignore-cr-at-eol" "$W/state/specs/org_app-15-review.md" && grep -q "No contestes ni resuelvas la review" "$W/state/specs/org_app-15-review.md"'
+check "only my own review: no agent for sixteen" '! grep -q "app-sixteen" "$L"'
+check "conflict and review on five: only the conflict agent" '[ "$(grep -c "worktree path:$W/root/app-five" "$L")" -eq 1 ] && [ ! -e "$W/state/specs/org_app-5-review.md" ]'
+check "review on a PR without a worktree is notified" 'grep -q "#17.*no hay worktree local" <<<"$out"'
 n_launch=$(grep -c "agent launch" "$L")
 bash "$SYNC" >/dev/null 2>&1
 check "a second run does not open the same conflicts again" '[ "$(grep -c "agent launch" "$L")" -eq "$n_launch" ]'
 check "a second run does not notify the blocked fourteen again" '[ "$(grep -c "#14" "$W/state/stack-sync.log")" -eq 1 ]'
+check "a second run does not notify the review on seventeen again" '[ "$(grep -c "#17" "$W/state/stack-sync.log")" -eq 1 ]'
 echo 304 >"$W/gh/api-status"; calls=$(wc -l <"$W/gh/calls")
 check "--precheck right after a sync, nothing changed (304): exits 1 without syncing" '! bash "$SYNC" --precheck >/dev/null 2>&1 && [ "$(tail -n +$((calls + 1)) "$W/gh/calls" | grep -c "pr list")" -eq 0 ]'
 echo 200 >"$W/gh/api-status"; calls=$(wc -l <"$W/gh/calls")
