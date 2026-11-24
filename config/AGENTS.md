@@ -42,7 +42,7 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 - **Trivial change** (one line or a typo): do it directly. No question, no plan.
 - **Every other task** (any non-trivial repo change, one file included; unknown-cause bugs too): before
   editing, ask one question with exactly three options, always in this order: **Continuar** (direct, no
-  plan) · **Plan S** (short plan: files, change, check; no interview, no spec or tickets, subagents only when
+  plan) · **Plan S** (short plan: files, change, check; no interview, no `to-spec` or `to-tickets`, subagents only when
   the work needs them) · **Plan L** (interview, spec and tickets in `.scratch/`, then one worker per
   ticket). Option descriptions stay minimal: «directo», «plan corto», «plan complejo». Mark the recommended one with "(Recomendado)" and one
   short line of why, without moving it: Continuar stays first.
@@ -117,6 +117,11 @@ Jira) is separate: those skills never write to it.
   the bottom under `## Comments`.
 - `wayfinder` keeps its map in `.scratch/<effort>/map.md`, with child tickets in `issues/` as above.
 - Full format: `issue-tracker-local.md` of `setup-matt-pocock-skills` in the plugin.
+
+### Triage labels
+
+The canonical roles are the label strings themselves (`needs-triage`, `needs-info`, `ready-for-agent`,
+`ready-for-human`, `wontfix`), written in the ticket's `Status:` line.
 
 ## Organizations (work repos)
 

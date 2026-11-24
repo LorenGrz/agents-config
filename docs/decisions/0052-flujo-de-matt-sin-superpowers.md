@@ -1,18 +1,22 @@
 # 0052 — Flujo de Matt Pocock sin superpowers: worker en Opus con TDD y revisión en dos ejes
 
-Estado: aceptado (2026-11-24). Reemplaza el uso de superpowers de 0022, 0025 y 0034 (spec y plan en
-`docs/superpowers/`); ajusta el reviewer de 0048 y 0050 y el `worker` en Sonnet de 0003.
+Estado: aceptado (2026-11-24). Reemplaza el Plan L con `brainstorming` y `writing-plans` de 0022, la spec y el
+plan en `docs/superpowers/` de 0034 y los atajos de superpowers de 0017; ajusta el reviewer único por PR de 0048 y
+0050 y el `worker` en Sonnet de 0003 y 0036.
 
 ## Contexto
 
-- Había dos procesos de diseño cargados a la vez: superpowers (`brainstorming`, `writing-plans`,
-  `subagent-driven-development`) y las skills de Matt Pocock (`grilling`, ya obligatorio en el Plan L por 0025).
-  Las dos pisaban las mismas decisiones.
-- La spec y el plan se commiteaban en `docs/superpowers/` y se borraban en el merge: dos commits de ruido por
-  tarea.
-- Un solo reviewer mezclaba dos preguntas distintas: si el código sigue las reglas del repo y si hace lo que pidió
-  el ticket. Un eje tapaba al otro.
-- El worker en Sonnet corría lint, typecheck y la suite, que el reviewer volvía a correr.
+Loren pidió (plan del 2026-11-24):
+
+- **Sin superpowers:** el Plan S sigue con ponytail y el Plan L pasa a las skills de Matt Pocock (`grilling` ya era
+  obligatorio en el Plan L por 0025).
+- **Spec y tickets solo locales,** en `.scratch/<tema>/`, nunca versionados. Hasta ahora la spec y el plan se
+  commiteaban en `docs/superpowers/` y se borraban en el merge (0034).
+- **Worker en Opus:** escribe el test, el código y las docs, corre solo los tests que creó y le devuelve el
+  trabajo al orquestador.
+- **Revisión al estilo de `code-review` de Matt:** dos revisores en paralelo, Standards y Spec, en vez de un
+  reviewer por PR (0048, 0050). Ese skill los separa porque un código puede seguir todas las reglas e implementar
+  otra cosa, o al revés, y un informe único deja que un eje tape al otro.
 
 ## Decisión
 
@@ -40,7 +44,7 @@ Estado: aceptado (2026-11-24). Reemplaza el uso de superpowers de 0022, 0025 y 0
 ## Consecuencias
 
 - Una revisión cuesta dos agentes Opus en vez de uno; Spec no corre checks, así que el costo extra es de lectura.
-- El worker en Opus cuesta más por tarea y ahorra la vuelta del reviewer cuando un test falla.
+- El worker en Opus cuesta más por tarea que en Sonnet.
 - La spec no queda en el repo: si la máquina se pierde a mitad de una tarea, se pierde la spec. El ADR y el PR
   guardan lo que dura.
 - `install.sh` mergea `extraKnownMarketplaces` por unión: en una máquina ya instalada, el marketplace de
