@@ -41,7 +41,7 @@ una pregunta con tres opciones, siempre en este orden (`lane-guard.sh` lo impone
 | Plan L | entrevista de `mattpocock-skills:grilling`, spec y tickets con `to-spec` y `to-tickets` en `.scratch/` (local, sin versionar), un `worker` por ticket desbloqueado, un líder por repo o workspace cuando el trabajo cruza repos |
 
 - **Orquestador**: la sesión principal. Planifica, escribe los briefs e integra; en Plan L no escribe código.
-- **Líder**: una sesión en cada repo que toca el trabajo, con las skills y restricciones de ese repo, o en la carpeta del workspace cuando las skills viven ahí (ese líder puede mandar un líder a cada repo hijo). Implementa, puede lanzar `worker`, `scout` y su reviewer, commitea en la rama de la tarea y hace revisar su diff. En un solo repo es el orquestador.
+- **Líder**: una sesión en cada repo que toca el trabajo, con las skills y restricciones de ese repo, o en la carpeta del workspace cuando las skills viven ahí (ese líder puede mandar un líder a cada repo hijo). Implementa, puede lanzar `worker` y `scout`, y commitea en la rama de la tarea; no lanza reviewer: la revisión la lanza el padre, en dos ejes (Standards y Spec). En un solo repo es el orquestador.
 - **`worker`** (Opus): implementa algo ya decidido, en segundo plano: test primero (`mattpocock-skills:tdd`), después código y docs; corre solo sus tests y no commitea. Default para todo cambio no trivial. **`scout`**: solo lectura.
 - **`reasoner`**: decisiones caras de errar (arquitectura, bugs sin causa conocida, cambios difíciles de revertir).
 - **Reviewer**: dos agentes aparte (el subagente `reviewer`), en paralelo y sin editar, antes de cada PR y del merge que

@@ -2,6 +2,7 @@
 
 Estado: aceptado (2026-11-18). Ajusta 0033 en el reparto del Plan L. Ajustado por 0037: el líder también lanza a su
 reviewer.
+Ajustado por [0052](0052-flujo-de-matt-sin-superpowers.md): `worker` = Opus, y los workers por ticket del Plan L van cada uno en su worktree.
 
 ## Contexto
 

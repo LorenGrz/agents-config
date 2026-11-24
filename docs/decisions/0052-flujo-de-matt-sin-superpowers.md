@@ -26,8 +26,8 @@ Loren pidió (plan del 2026-11-24):
   desbloqueado, en paralelo, cada uno en su worktree; el líder commitea y mergea) → revisión en dos ejes.
   `to-spec`, `to-tickets`, `implement-spec` y `wayfinder` solo los invoca el usuario: la sesión lee su `SKILL.md`
   del plugin y lo sigue. El Plan S sigue con ponytail.
-- **Spec y tickets locales.** El tracker de esas skills es markdown en `.scratch/<tema>/` (`spec.md` e
-  `issues/NN-<slug>.md`), descripto en el bloque «Issue tracker» de `config/AGENTS.md`. Nunca se versiona:
+- **Spec y tickets locales.** El tracker de esas skills es markdown en `.scratch/<tema>/` (`spec.md`, solo de
+  `to-spec`; `plan.md`, la copia del plan de plan-mode; e `issues/NN-<slug>.md`), descripto en el bloque «Issue tracker» de `config/AGENTS.md`. Nunca se versiona:
   `install.sh` agrega `.scratch/` al ignore global de git (`core.excludesFile` o `~/.config/git/ignore`), sin tocar
   los `.gitignore` de los repos. Lo que tiene que durar va a un ADR antes del merge.
 - **Worker en Opus:** test primero con `mattpocock-skills:tdd`, después código y docs; corre solo los tests que

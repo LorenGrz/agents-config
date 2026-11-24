@@ -1,6 +1,7 @@
 # 0048 — El reviewer lo lanza el padre, el líder no testea, y stack-sync arregla el CI en rojo
 
 Estado: aceptado (2026-11-20). Ajusta 0039, 0040 y 0047, y los checks del perfil del 2026-11-19.
+Ajustado por [0052](0052-flujo-de-matt-sin-superpowers.md): el padre lanza dos reviewer por PR (Standards y Spec) en vez de uno.
 
 ## Contexto
 

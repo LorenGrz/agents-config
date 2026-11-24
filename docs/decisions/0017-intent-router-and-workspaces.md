@@ -1,6 +1,7 @@
 # 0017 — Router de intenciones, plugins por proyecto y workspaces
 
 Estado: aceptado (2026-11-08).
+Reemplazado en parte por [0052](0052-flujo-de-matt-sin-superpowers.md): los atajos de superpowers pasan a `mattpocock-skills` (`grilling`, `diagnosing-bugs`, `tdd`).
 
 ## Contexto
 
