@@ -9,8 +9,8 @@
 # with a conflict agent gets no review agent, and a review on a PR without a worktree is notified once; PR comments
 # (ADR 0058): someone else's comment opens one Claude once, my own or a bot's (*[bot] or a known login like
 # github-actions) does not, a review by a *[bot] login still does, and with a review and a comment the newest one is
-# taken, either way; a conflict agent only stages and leaves a mark, and the script commits and pushes it (ADR 0059),
-# also from --precheck with nothing new on GitHub; and a red CI
+# taken, either way; agents commit and push only through stack-sync-git.sh, which needs a live busy mark of that
+# worktree and refuses any other flag, branch or force (ADR 0060); and a red CI
 # (ADR 0048): a failed check on the PR head opens one Claude once, a green CI does not, and a review goes first;
 # a clean worktree only behind its PR head is fast-forwarded, and a PR below merged into a branch other than dev
 # retargets the PR above to that branch.
@@ -157,7 +157,10 @@ L="$W/gh/orca"
 check "trunk conflict on five: merge aborted, a Claude opened in its worktree" 'grep -q "agent launch --agent claude --worktree path:$W/root/app-five" "$L" && [ -z "$(git -C "$W/root/app-five" status --porcelain)" ]'
 check "conflict with the base on eight: its Claude points at its worktree" 'grep -q "worktree path:$W/root/app-eight" "$L"'
 check "mergeable UNKNOWN but conflicting locally: eleven gets its Claude" 'grep -q "worktree path:$W/root/app-eleven" "$L"'
-check "the conflict brief stages and leaves the resolved mark, without commit, push or force (ADR 0059)" 'f="$W/state/specs/org_app-5.md"; grep -q "touch $W/state/resolved-org_app-5" "$f" && grep -q "No commitees ni pushees" "$f" && ! grep -qE "git (commit|push) " "$f" && ! grep -q -- "--force" "$f"'
+SG="$HUB/scripts/stack-sync-git.sh"
+check "the conflict brief commits and pushes through stack-sync-git.sh, without force (ADR 0060)" 'f="$W/state/specs/org_app-5.md"; grep -q "$SG commit --no-edit" "$f" && grep -q "$SG push" "$f" && ! grep -q -- "--force" "$f"'
+check "no brief runs git commit or git push directly" '! grep -qE "git (commit|push) (-|origin)" "$W/state/specs/"*.md'
+check "the review and CI briefs commit with stack-sync-git.sh -m" 'grep -q "$SG commit -m" "$W/state/specs/org_app-15-review.md" && grep -q "$SG commit -m" "$W/state/specs/org_app-18-ci.md"'
 check "dirty worktree is skipped and kept" '[ "$(cat "$W/root/app-six/six.txt")" = dirty ] && grep -q "#6.*cambios sin commitear" <<<"$out"'
 check "worktree not at the PR head is skipped" 'grep -q "#7.*no está en la punta" <<<"$out"'
 check "twenty, clean and one commit behind: fast-forwarded to the PR head" '[ "$(git -C "$W/root/app-twenty" rev-parse HEAD)" = "$(oid twenty)" ] && grep -q "#20 .*atrasado -> fast-forward" <<<"$out"'
@@ -189,6 +192,7 @@ n_launch=$(grep -c "agent launch" "$L")
 ci18='[{"name":"Lint, tests y build","conclusion":null,"state":"PENDING"}]'
 write_open
 check "an agent's worktree is marked busy while it works" '[ -e "$W/state/busy/org_app-15" ]'
+check "the busy mark holds the worktree and its PR branch" '[ "$(cat "$W/state/busy/org_app-15")" = "$(printf "%s\t%s" "$W/root/app-fifteen" fifteen)" ]'
 check "the brief tells the agent to remove its busy mark" 'grep -q "rm -f $W/state/busy/org_app-15" "$W/state/specs/org_app-15-review.md"'
 check "a conflict agent's first attempt runs on Sonnet" 'grep "worktree path:$W/root/app-five" "$L" | head -1 | grep -q -- "--model claude-sonnet-5-5"'
 check "a review agent runs on Opus from the first attempt" 'grep "worktree path:$W/root/app-fifteen" "$L" | head -1 | grep -q -- "--model claude-opus-5-5 --effort high"'
@@ -215,21 +219,25 @@ echo 304 >"$W/gh/api-status"; calls=$(wc -l <"$W/gh/calls")
 check "--precheck right after a sync, nothing changed (304): exits 1 without syncing" '! bash "$SYNC" --precheck >/dev/null 2>&1 && [ "$(tail -n +$((calls + 1)) "$W/gh/calls" | grep -c "pr list")" -eq 0 ]'
 echo 200 >"$W/gh/api-status"; calls=$(wc -l <"$W/gh/calls")
 check "--precheck when a PR changed (200): syncs and still exits 1" '! bash "$SYNC" --precheck >/dev/null 2>&1 && tail -n +$((calls + 1)) "$W/gh/calls" | grep -q "pr list"'
-# ADR 0059: the conflict agent of five resolves and stages its merge and leaves the mark; nothing changed on GitHub
-# (304), but the precheck syncs because of the mark, and the script commits the merge and pushes it
-git -C "$W/root/app-five" merge -q --no-edit origin/dev >/dev/null 2>&1; echo resolved >"$W/root/app-five/five.txt"
-git -C "$W/root/app-five" add five.txt; : >"$W/state/resolved-org_app-5"
-: >"$W/state/resolved-org_app-19" # a mark with no merge in progress: nothing to commit
-echo 304 >"$W/gh/api-status"; rm -f "$W/state/busy/"*
-bash "$SYNC" --precheck >/dev/null 2>&1
-check "--precheck with a resolved mark syncs even when nothing changed on GitHub" 'grep -q "#5 .*commiteado y pusheado" "$W/state/stack-sync.log"'
-check "a resolved conflict: the script commits the merge (two parents) and pushes it" 'pushed five && [ "$(git -C "$W/root/app-five" rev-list --parents -n1 HEAD | wc -w)" -eq 3 ] && anc five dev'
-check "the resolved mark goes after the push" '[ ! -e "$W/state/resolved-org_app-5" ]'
-check "a resolved mark without a merge in progress commits nothing, is told and removed" 'grep -q "#19 .*no hay un merge listo" "$W/state/stack-sync.log" && [ ! -e "$W/state/resolved-org_app-19" ] && pushed nineteen'
-touch -d '2 hours ago' "$W/state/resolved-org_app-99"; calls=$(wc -l <"$W/gh/calls")
-check "--precheck ignores an old resolved mark (its PR is gone): 304 and no sync" '! bash "$SYNC" --precheck >/dev/null 2>&1 && [ "$(tail -n +$((calls + 1)) "$W/gh/calls" | grep -c "pr list")" -eq 0 ]'
-touch -d '2 days ago' "$W/state/resolved-org_app-99"; bash "$SYNC" >/dev/null 2>&1
-check "a resolved mark nobody took in a day is dropped" '[ ! -e "$W/state/resolved-org_app-99" ]'
+# ADR 0060: stack-sync-git.sh, the agents' only commit and push
+sg() { (cd "$W/root/app-$1" && shift && bash "$SG" "$@") >/dev/null 2>&1; }
+echo n1 >"$W/root/app-nineteen/n.txt"; git -C "$W/root/app-nineteen" add n.txt
+rm -f "$W/state/busy/"*
+check "without a busy mark of that worktree, stack-sync-git refuses" '! sg nineteen commit -m "x" && [ -n "$(git -C "$W/root/app-nineteen" diff --cached)" ]'
+printf '%s\t%s\n' "$W/root/app-nineteen" nineteen >"$W/state/busy/org_app-19"
+touch -d '2 hours ago' "$W/state/busy/org_app-19"
+check "with a stale busy mark, it refuses" '! sg nineteen commit -m "x"'
+touch "$W/state/busy/org_app-19"
+check "it refuses --amend, --no-verify and any other flag" '! sg nineteen commit --amend -m x && ! sg nineteen commit -m x --no-verify && ! sg nineteen commit -a -m x && ! sg nineteen commit'
+check "it refuses --no-edit outside a merge" '! sg nineteen commit --no-edit'
+check "it refuses push with any argument (force, another branch)" '! sg nineteen push --force && ! sg nineteen push origin HEAD:dev'
+check "with a live busy mark: commit -m and push to the PR branch" 'sg nineteen commit -m "fix: n" && sg nineteen push && pushed nineteen && [ "$(git -C "$W/root/app-nineteen" log -1 --format=%s)" = "fix: n" ]'
+check "every use goes to the stack-sync log" 'grep -q "stack-sync-git: commit en $W/root/app-nineteen (nineteen): ok" "$W/state/stack-sync.log" && grep -q "stack-sync-git: push en $W/root/app-nineteen (nineteen): ok" "$W/state/stack-sync.log"'
+printf '%s\t%s\n' "$W/root/app-five" five >"$W/state/busy/org_app-5"
+git -C "$W/root/app-five" merge -q --no-edit origin/dev >/dev/null 2>&1; echo resolved >"$W/root/app-five/five.txt"; git -C "$W/root/app-five" add five.txt
+check "a resolved conflict: commit --no-edit makes the merge commit and push sends it" 'sg five commit --no-edit && sg five push && pushed five && [ "$(git -C "$W/root/app-five" rev-list --parents -n1 HEAD | wc -w)" -eq 3 ]'
+check "a busy mark of another worktree does not open this one" 'echo x >"$W/root/app-three/x.txt"; git -C "$W/root/app-three" add x.txt; ! sg three commit -m x'
+rm -f "$W/state/busy/"*
 echo 200 >"$W/gh/api-status"
 check "never force-pushes or rebases" '! grep -qE -- "git -C [^ ]+ (rebase|push[^#]*--force)" "$SYNC"'
 check "dry-run changes nothing" 'before=$(git -C "$W/root/app-four" rev-parse HEAD); bash "$SYNC" --dry-run >/dev/null 2>&1; [ "$(git -C "$W/root/app-four" rev-parse HEAD)" = "$before" ]'

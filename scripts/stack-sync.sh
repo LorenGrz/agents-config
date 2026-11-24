@@ -7,9 +7,8 @@
 #   3. base is the trunk and the branch is behind it (or GitHub says it conflicts) -> merge origin/<trunk>, push
 #      (ADR 0049: a PR never stays behind dev, with or without conflicts)
 #   4. a merge conflicts -> abort, and open a Claude in that PR's worktree through Orca with a brief: resolve,
-#      stage and leave a «resolved» mark; only a real logic conflict runs the related tests, never the whole suite
-#      (ADR 0045). Once per (PR, base commit); its tab stays open. The next run commits that merge and pushes it
-#      (ADR 0059): the repos' settings ask before `git commit` and `git push`, and this script runs outside Claude.
+#      commit and push; only a real logic conflict runs the related tests, never the whole suite (ADR 0045). Once
+#      per (PR, base commit); its tab stays open.
 #   5. someone else left a review that asks for changes or comments, or a plain PR comment (not me, not a bot; the
 #      newest of them by date), and no conflict agent is open for it -> open a Claude in that PR's
 #      worktree with a brief: apply each point as new commits, keep line endings, bring the base before pushing,
@@ -20,8 +19,10 @@
 #      Claude in that PR's worktree: read the failed logs, fix, run only what is related, push (ADR 0048). Once per
 #      (PR, head commit); its tab stays open.
 # Every agent (4-6) goes through launch_agent (ADR 0050): one agent per worktree at a time (a busy mark the agent
-# removes when it ends, stale after 60 min), at most 2 automatic attempts per PR and day (then Loren is notified
-# once); conflicts and red CI run on Sonnet first and Opus second, review fixes always on Opus.
+# removes when it ends, stale after 60 min; it holds the worktree and its PR branch), at most 2 automatic attempts per PR and day (then Loren is notified
+# once); conflicts and red CI run on Sonnet first and Opus second, review fixes always on Opus. Agents commit and
+# push only through stack-sync-git.sh (ADR 0060): a work repo's `ask` rules on `git commit`/`git push` would stop
+# them, and that command only works in a worktree with a live busy mark, to its PR branch, without force.
 # Then, for every merged PR of mine with a linked worktree: remove the worktree and delete the branch, local and
 # remote, when the worktree is clean, its HEAD is the merged head and no open PR is stacked on it.
 # A clean worktree that is only behind the PR head is fast-forwarded first.
@@ -53,6 +54,11 @@ owner="${env_owner:-${STACK_SYNC_OWNER:-}}"
 trunk="${env_trunk:-${STACK_SYNC_TRUNK:-dev}}"
 orca="${env_orca:-${STACK_SYNC_ORCA:-orca}}"
 state="${STACK_SYNC_STATE:-$HOME/.local/state/stack-sync}"
+# the agents' only commit and push (ADR 0060), named by absolute path in every brief
+sgit="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/stack-sync-git.sh"
+SGIT_NOTE="Commit y push, **solo con \`$sgit\`**: el repo pide confirmación para \`git commit\` y \`git push\`, y esa
+pregunta frena esta pestaña sin nadie que la conteste. Ese comando solo commitea con \`-m\` (o \`--no-edit\` en un
+merge) y solo pushea a la rama de este PR. Si lo rechaza, no busques otra vía: escribilo en el reporte."
 model1="${STACK_SYNC_MODEL1:-claude-sonnet-5-5}" model2="${STACK_SYNC_MODEL2:-claude-opus-5-5}"
 max_attempts="${STACK_SYNC_MAX_ATTEMPTS:-2}" busy_minutes="${STACK_SYNC_BUSY_MINUTES:-60}"
 while [ $# -gt 0 ]; do
@@ -119,9 +125,6 @@ last="$state/last-full-sync"
 if [ "$precheck" -eq 1 ]; then
   changed=0
   [ -e "$last" ] && [ -n "$(find "$last" -mmin -30 2>/dev/null)" ] || changed=1
-  # a conflict an agent left resolved is local, GitHub does not see it: push it now, not in 30 min (ADR 0059)
-  # (only a recent mark: one whose PR closed or lost its worktree would force a sync every 2 min)
-  [ -n "$(find "$state" -maxdepth 1 -name 'resolved-*' -mmin "-$busy_minutes" 2>/dev/null)" ] && changed=1
   for slug in "${!slug_of[@]}"; do
     etag_file="$state/etag-${slug//\//_}"
     etag="$(cat "$etag_file" 2>/dev/null)"
@@ -158,36 +161,6 @@ merge_and_push() {
   launch_resolver "$slug" "$pr" "$branch" "$path" "$ref" "$why"
 }
 
-# resolved_mark <slug> <pr>: the file a conflict agent leaves when its merge is resolved and staged (ADR 0059)
-resolved_mark() { printf '%s/resolved-%s-%s' "$state" "${1//\//_}" "$2"; }
-
-# finish_resolved <slug> <pr> <branch> <path>: commit and push the merge a conflict agent left resolved. Only with
-# a merge in progress and no unmerged path; otherwise it touches nothing and says so. The mark goes either way, so
-# a failure is told once and the worktree waits for Loren (dirty or with a commit not pushed: later runs skip it).
-# 0 when it acted (the PR is done for this run: its head on GitHub is still the old one), 1 to go on as usual.
-finish_resolved() {
-  local slug="$1" pr="$2" branch="$3" path="$4" mark
-  mark="$(resolved_mark "$slug" "$pr")"
-  [ -e "$mark" ] || return 1
-  if ! git -C "$path" rev-parse -q --verify MERGE_HEAD >/dev/null ||
-     [ -n "$(git -C "$path" diff --name-only --diff-filter=U 2>/dev/null)" ]; then
-    say "#$pr ($slug, $branch): el agente marcó el conflicto como resuelto, pero no hay un merge listo en $path; no commiteo"
-    [ "$dry" -eq 1 ] || rm -f "$mark"; return 1
-  fi
-  [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug, $branch): conflicto resuelto -> commitearía el merge y pushearía"; return 0; }
-  rm -f "$mark"
-  local err
-  if ! err="$(git -C "$path" commit -q --no-edit 2>&1)"; then
-    say "#$pr ($slug, $branch): el commit del merge resuelto falló; queda en $path sin commitear: $(tail -n 3 <<<"$err" | tr '\n' ' ')"
-    return 0
-  fi
-  if git -C "$path" push -q origin "HEAD:$branch" 2>/dev/null; then
-    say "#$pr ($slug, $branch): conflicto resuelto por el agente -> commiteado y pusheado"
-  else
-    say "#$pr ($slug, $branch): commiteé el merge resuelto pero el push falló; queda local en $path"
-  fi
-}
-
 # busy_mark <slug> <pr>: the file that says an agent is working in that PR's worktree
 busy_mark() { printf '%s/busy/%s-%s' "$state" "${1//\//_}" "$2"; }
 # is_busy <slug> <pr>: an agent was launched there less than $busy_minutes ago and has not finished
@@ -195,7 +168,7 @@ is_busy() { local m; m="$(busy_mark "$1" "$2")"; [ -e "$m" ] && [ -n "$(find "$m
 
 # launch_agent <slug> <pr> <path> <spec> [kind]: 0 launched, 1 Orca failed, 2 skipped (busy or out of attempts)
 launch_agent() {
-  local slug="$1" pr="$2" path="$3" spec="$4" kind="${5:-}" counter n model effort lock
+  local slug="$1" pr="$2" path="$3" spec="$4" kind="${5:-}" counter n model effort lock branch
   is_busy "$slug" "$pr" && { note "#$pr ($slug): ya hay un agente en $path; espera"; return 2; }
   counter="$state/attempts/${slug//\//_}-$pr-$(date +%F)"
   n="$(wc -l <"$counter" 2>/dev/null || echo 0)"
@@ -208,18 +181,22 @@ launch_agent() {
   { [ "$n" -ge 1 ] || [ "$kind" = review ]; } && { model="$model2"; effort="high"; }
   lock="$(busy_mark "$slug" "$pr")"
   printf '\n\nAl terminar, salga bien o mal, borrá la marca de ocupado: `rm -f %s`.\n' "$lock" >>"$spec"
+  # the mark goes before the launch: stack-sync-git.sh reads the worktree and the PR branch from it (ADR 0060)
+  branch="$(git -C "$path" symbolic-ref --short HEAD 2>/dev/null)"
+  printf '%s\t%s\n' "$path" "$branch" >"$lock"
   if "$orca" agent launch --agent claude --worktree "path:$path" --surface terminal --model "$model" \
       ${effort:+--effort "$effort"} --prompt "$(cat "$spec")" --json >/dev/null 2>&1; then
-    : >"$lock"; echo "$model" >>"$counter"
+    echo "$model" >>"$counter"
     return 0
   fi
+  rm -f "$lock"
   return 1
 }
 
 # launch_resolver: a Claude in that PR's worktree, through Orca, once per (PR, base commit)
 launch_resolver() {
   local slug="$1" pr="$2" branch="$3" path="$4" ref="$5" why="$6"
-  local refsha mark spec fail resolved
+  local refsha mark spec fail
   busy=1 # a conflict agent owns this worktree: no review agent on top of it in this run
   refsha="$(git -C "$path" rev-parse --short "$ref" 2>/dev/null)"
   mark="$state/launched-${slug//\//_}-$pr-$refsha"
@@ -227,7 +204,6 @@ launch_resolver() {
   [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug): conflicto con $ref -> abriría un Claude en $path"; return 0; }
   spec="$state/specs/${slug//\//_}-$pr.md"
   fail="$state/failed/${slug//\//_}-$pr.md"
-  resolved="$(resolved_mark "$slug" "$pr")"
   cat >"$spec" <<EOF
 # Resolver conflictos de merge (stack-sync)
 
@@ -247,13 +223,13 @@ Motivo: $why. Hay que traer \`$ref\` a esta rama y da conflictos.
    - Conflicto real (los dos cambiaron la misma lógica): corré solo los tests relacionados con los archivos que
      chocaron (\`npx jest --findRelatedTests <archivos>\` en el back, \`npx vitest related --run <archivos>\` en el
      front). Si el merge cambió el schema de Prisma, antes el \`prisma generate\` del CI del repo (hoy \`npx prisma generate\`; no toca la base).
-4. \`git add\` de los archivos resueltos, confirmá que no queda ninguno sin resolver (\`git diff --name-only
-   --diff-filter=U\` vacío) y dejá la marca: \`touch $resolved\`. **No commitees ni pushees**: el repo pide
-   confirmación para los dos, y stack-sync commitea el merge y lo pushea en su corrida siguiente. No edites el PR:
-   si su base cambia, stack-sync lo retargetea solo.
+4. \`git add\` de los archivos resueltos, \`$sgit commit --no-edit\` (commit del merge) y \`$sgit push\` (a
+   \`$branch\`, sin force). No edites el PR: si su base cambia, stack-sync lo retargetea solo.
 5. Nunca rebase, force, amend ni \`--no-verify\`.
 
-Si abortaste o fallaron los checks, no dejes la marca y escribí el motivo en una línea en \`$fail\`. Al terminar, avisá con
+$SGIT_NOTE
+
+Si abortaste, fallaron los checks o el push, escribí el motivo en una línea en \`$fail\`. Al terminar, avisá con
 \`notify-send "stack-sync: PR #$pr" "<resultado en una línea>"\` y dejá acá qué conflictos había, cómo los
 resolviste y, si corriste tests, su salida. Esta pestaña queda abierta para que Loren lo lea.
 EOF
@@ -299,7 +275,8 @@ $who dejó una review o un comentario en el PR (\`$rid\`). Leelo entero:
 - \`gh api repos/$slug/pulls/$pr/comments --paginate\` (los comentarios en líneas del código).
 
 1. \`git fetch origin\`. Por cada punto pedido, el cambio más chico que lo resuelva, como commits nuevos en esta
-   rama (Conventional Commits en español, con la clave del ticket si el PR la tiene; sin atribución).
+   rama: \`git add\` y \`$sgit commit -m "<mensaje>"\` (Conventional Commits en español, con la clave del ticket si
+   el PR la tiene; sin atribución).
 2. Si un punto pide una decisión de producto o no está claro, no lo adivines: dejalo sin tocar y anotalo.
 3. Si un punto pide cambiar el título o la descripción del PR, no lo edites: dejá el texto nuevo acá.
 4. **Fines de línea**: cada archivo conserva los suyos (CRLF o LF). Antes de commitear,
@@ -308,13 +285,15 @@ $who dejó una review o un comentario en el PR (\`$rid\`). Leelo entero:
 5. Rápido: **no corras la suite entera**. Solo lint de los archivos tocados y los tests relacionados
    (\`npx vitest related --run <archivos>\` en el front, \`npx jest --findRelatedTests <archivos>\` en el back).
 6. Antes de pushear, \`git fetch origin && git merge --no-edit origin/$base\`. Si hay conflictos, resolvelos
-   conservando los dos lados y commiteá el merge.
-7. \`git push origin HEAD:$branch\` (sin force). Nunca rebase, force, amend ni \`--no-verify\`.
+   conservando los dos lados, \`git add\` y \`$sgit commit --no-edit\`.
+7. \`$sgit push\` (a \`$branch\`, sin force). Nunca rebase, force, amend ni \`--no-verify\`.
 8. Contestá cada comentario, en español y corto: qué cambiaste y en qué commit, o por qué no.
    - En una línea del código: \`gh api repos/$slug/pulls/$pr/comments/<id>/replies -f body="…"\`.
    - El cuerpo de la review o un comentario suelto del PR: \`gh pr comment $pr --repo $slug --body "…"\`, punto por
      punto.
 9. No resuelvas los hilos, no edites el PR y no toques Jira ni Slack.
+
+$SGIT_NOTE
 
 Si no pudiste resolver algún punto o falló el push, escribí el motivo en una línea en \`$fail\`. Al terminar,
 avisá con \`notify-send "stack-sync: review en #$pr" "<resultado en una línea>"\`. Esta pestaña queda abierta.
@@ -354,14 +333,18 @@ Fallaron estos checks del CI sobre la punta del PR: $checks.
 1. \`gh pr checks $pr --repo $slug\` y, por cada uno en rojo, \`gh run view <run-id> --repo $slug --log-failed\`.
 2. Si la falla no viene del código del PR (un servicio caído, un flaky, un secreto del CI), no cambies nada:
    \`gh run rerun <run-id> --repo $slug --failed\` una vez y reportá.
-3. Si viene del código: el cambio más chico que la arregle, como commit nuevo (Conventional Commits en español, con
-   la clave del ticket si el PR la tiene; sin atribución). Cada archivo conserva sus fines de línea:
+3. Si viene del código: el cambio más chico que la arregle, como commit nuevo: \`git add\` y
+   \`$sgit commit -m "<mensaje>"\` (Conventional Commits en español, con la clave del ticket si el PR la tiene; sin
+   atribución). Cada archivo conserva sus fines de línea:
    \`diff <(git diff --numstat HEAD) <(git diff --numstat --ignore-cr-at-eol HEAD)\` no muestra nada.
 4. Corré solo lo que falló, localmente (el mismo comando del CI sobre los archivos tocados, o los tests
    relacionados), no la suite entera.
-5. Antes de pushear, \`git fetch origin && git merge --no-edit origin/$base\`; si hay conflictos, resolvelos.
-6. \`git push origin HEAD:$branch\` (sin force). Nunca rebase, force, amend ni \`--no-verify\`. No edites el PR ni
+5. Antes de pushear, \`git fetch origin && git merge --no-edit origin/$base\`; si hay conflictos, resolvelos,
+   \`git add\` y \`$sgit commit --no-edit\`.
+6. \`$sgit push\` (a \`$branch\`, sin force). Nunca rebase, force, amend ni \`--no-verify\`. No edites el PR ni
    toques Jira o Slack.
+
+$SGIT_NOTE
 
 Si no pudiste arreglarlo, escribí el motivo en una línea en \`$fail\`. Al terminar, avisá con
 \`notify-send "stack-sync: CI en #$pr" "<resultado en una línea>"\` y dejá acá la causa y el arreglo. Esta pestaña
@@ -438,7 +421,6 @@ for slug in "${!slug_of[@]}"; do
     is_busy "$slug" "$pr" && { note "#$pr ($slug, $head): salteado, hay un agente trabajando en $path"; continue; }
     busy=0
     git -C "$path" fetch -q origin 2>/dev/null || { note "#$pr ($slug): fetch falló"; continue; }
-    finish_resolved "$slug" "$pr" "$head" "$path" && continue
     # -uno: un archivo sin trackear (el pnpm-lock.yaml que deja pnpm) no frena el merge; uno trackeado sí
     if [ -n "$(git -C "$path" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
       note "#$pr ($slug, $head): salteado, $path tiene cambios sin commitear"; continue
@@ -482,8 +464,6 @@ for slug in "${!slug_of[@]}"; do
   done <<<"$rows"
   clean_merged "$slug" "$json"
 done
-# a resolved mark nobody took in a day (its PR closed, or it lost its worktree) is dropped
-[ "$dry" -eq 1 ] || find "$state" -maxdepth 1 -name 'resolved-*' -mmin +1440 -delete 2>/dev/null
 
 [ "${#skips[@]}" -gt 0 ] && { [ -t 1 ] || [ "$dry" -eq 1 ]; } && printf '%s\n' "${skips[@]}"
 if [ "${#summary[@]}" -gt 0 ]; then

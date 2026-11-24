@@ -1,6 +1,6 @@
 # 0044 — stack-sync corre entero en la automatización de Orca, y el agente pushea
 
-Estado: aceptado (2026-11-19). Ajustado por 0045 (precheck por cambios, un Claude por worktree, limpieza de lo mergeado) y por 0059 (el agente de conflictos ya no commitea ni pushea: lo hace el script). Reemplaza 0042 y la parte de 0043 que dejaba el push y los merges en el timer;
+Estado: aceptado (2026-11-19). Ajustado por 0045 (precheck por cambios, un Claude por worktree, limpieza de lo mergeado) y por 0060 (los agentes commitean y pushean con `stack-sync-git.sh`). Reemplaza 0042 y la parte de 0043 que dejaba el push y los merges en el timer;
 lo demás de 0043 (la cola, un brief por conflicto) sigue.
 
 ## Contexto
