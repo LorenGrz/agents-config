@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # stack-sync: keeps Loren's PR branches up to date, each one in its own worktree (ADR 0032, 0041, 0043-0045).
 # For every open PR of mine in the repos found under the roots, bottom-up:
-#   1. its base branch's PR is merged   -> merge origin/<trunk>, push, retarget the PR to <trunk>
+#   1. its base branch's PR is merged   -> merge origin/<the base that PR merged into, usually trunk>, push,
+#      retarget the PR to that base
 #   2. its base branch got new commits  -> merge origin/<base>, push
 #   3. base is the trunk and the branch is behind it (or GitHub says it conflicts) -> merge origin/<trunk>, push
 #      (ADR 0049: a PR never stays behind dev, with or without conflicts)
@@ -20,8 +21,9 @@
 # once); conflicts and red CI run on Sonnet first and Opus second, review fixes always on Opus.
 # Then, for every merged PR of mine with a linked worktree: remove the worktree and delete the branch, local and
 # remote, when the worktree is clean, its HEAD is the merged head and no open PR is stacked on it.
+# A clean worktree that is only behind the PR head is fast-forwarded first.
 # Never: rebase, force, amend; never touches a worktree with uncommitted changes to tracked files (untracked
-# ones, like a pnpm-lock.yaml, don't count) or one whose HEAD is not the PR head: it skips it and says so.
+# ones, like a pnpm-lock.yaml, don't count) or one with commits not pushed: it skips it and says so.
 # A merged worktree whose only untracked files are pnpm's (pnpm-lock.yaml, pnpm-workspace.yaml) is removed with
 # --force; with any other untracked file it stays, and that is notified once, naming the file.
 #
@@ -394,8 +396,14 @@ for slug in "${!slug_of[@]}"; do
     if [ -n "$(git -C "$path" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
       note "#$pr ($slug, $head): salteado, $path tiene cambios sin commitear"; continue
     fi
+    # Limpio y solo atrasado (el remoto tiene commits que el worktree no): fast-forward y sigue. Antes se salteaba
+    # en cada pasada y el PR quedaba trabado. Con commits sin pushear no se toca.
+    if [ "$(git -C "$path" rev-parse HEAD)" != "$oid" ] && git -C "$path" merge-base --is-ancestor HEAD "$oid" 2>/dev/null; then
+      [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug, $head): atrasado -> fast-forward a la punta del PR"; continue; }
+      git -C "$path" merge -q --ff-only "$oid" 2>/dev/null && say "#$pr ($slug, $head): atrasado -> fast-forward a la punta del PR"
+    fi
     if [ "$(git -C "$path" rev-parse HEAD)" != "$oid" ]; then
-      note "#$pr ($slug, $head): salteado, $path no está en la punta del PR (commits sin pushear o atrasado)"; continue
+      note "#$pr ($slug, $head): salteado, $path no está en la punta del PR (commits sin pushear)"; continue
     fi
     if [ "$base" = "$trunk" ] || [ "$base" = main ] || [ "$base" = master ]; then
       # Atrás de la base: se trae siempre, choque o no (ADR 0049). Un choque lo resuelve el agente de merge_and_push.
@@ -405,9 +413,13 @@ for slug in "${!slug_of[@]}"; do
         merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "choca con $base"
       fi
     else
-      merged="$(tgh pr list --repo "$slug" --head "$base" --state merged --json number --limit 1 2>/dev/null | jq -r '.[0].number // empty')"
+      # El PR de abajo se mergea a su propia base, que no siempre es el trunk (alguien puede mergearlo sobre la
+      # rama de más abajo): se trae y se retargetea a esa base, no al trunk.
+      IFS=$'\t' read -r merged mbase <<<"$(tgh pr list --repo "$slug" --head "$base" --state merged --json number,baseRefName --limit 1 2>/dev/null |
+        jq -r '.[0] // empty | "\(.number)\t\(.baseRefName // "")"')"
+      mbase="${mbase:-$trunk}"
       if [ -n "$merged" ]; then
-        merge_and_push "$slug" "$pr" "$head" "$path" "origin/$trunk" "el PR de abajo (#$merged, $base) se mergeó" "$trunk"
+        merge_and_push "$slug" "$pr" "$head" "$path" "origin/$mbase" "el PR de abajo (#$merged, $base) se mergeó a $mbase" "$mbase"
       elif git -C "$path" rev-parse -q --verify "origin/$base" >/dev/null &&
            ! git -C "$path" merge-base --is-ancestor "origin/$base" HEAD; then
         merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "la rama de abajo ($base) tiene cambios nuevos"

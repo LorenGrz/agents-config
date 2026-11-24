@@ -7,7 +7,9 @@
 # agents (ADR 0050): one per worktree at a time, at most 2 attempts per PR and day, Sonnet first and Opus second;
 # and reviews (ADR 0047): someone else's review opens one Claude in that worktree once, my own review does not, a PR
 # with a conflict agent gets no review agent, and a review on a PR without a worktree is notified once; and a red CI
-# (ADR 0048): a failed check on the PR head opens one Claude once, a green CI does not, and a review goes first.
+# (ADR 0048): a failed check on the PR head opens one Claude once, a green CI does not, and a review goes first;
+# a clean worktree only behind its PR head is fast-forwarded, and a PR below merged into a branch other than dev
+# retargets the PR above to that branch.
 set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SYNC="$HUB/scripts/stack-sync.sh"
@@ -73,6 +75,9 @@ branch fifteen dev        # PR 15: up to date, someone else asked for changes ->
 branch sixteen dev        # PR 16: up to date, only my own review -> nothing
 branch eighteen dev       # PR 18: up to date, a CI check failed -> CI agent
 branch nineteen dev       # PR 19: up to date, CI green -> nothing
+branch twenty dev         # PR 20: clean worktree one commit behind its PR head -> fast-forward
+branch nine dev           # PR 9: merged into three, not into dev
+branch twentyone nine     # PR 21 stacked on nine -> gets origin/three, retargeted to three
 git -C "$R" fetch -q
 c "$W/root/app-three" shared.txt from-three; git -C "$W/root/app-three" push -q origin three
 c "$W/root/app-eight" shared.txt from-eight; git -C "$W/root/app-eight" push -q origin eight
@@ -87,6 +92,7 @@ echo lock >"$W/root/app-thirteen/pnpm-lock.yaml"; echo ws >"$W/root/app-thirteen
 echo notes >"$W/root/app-fourteen/notas.txt"
 c "$W/root/app-seven" local.txt not-pushed
 c "$W/root/app-ten" ten-merge.txt not-pushed
+c "$W/root/app-twenty" twenty-2.txt pushed; git -C "$W/root/app-twenty" push -q origin twenty; git -C "$W/root/app-twenty" reset -q --hard HEAD~1
 git -C "$R" fetch -q
 
 oid() { git -C "$W/root/app-$1" rev-parse "origin/$1"; }
@@ -103,7 +109,7 @@ ci18='[{"name":"Lint, tests y build","conclusion":"FAILURE"},{"name":"schema","c
 write_open() {
 # five conflicts and also has a review: the conflict agent owns it. 17 has a review but no local worktree.
 five_rev="$(row 5 five dev CONFLICTING | sed "s/}\$/,\"author\":{\"login\":\"me\"},\"reviews\":[$(rev R5 ana CHANGES_REQUESTED)]}/")"
-printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
+printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
   "$five_rev" "$(row 6 six dev MERGEABLE)" "$(row 7 seven dev MERGEABLE)" "$(row 8 eight three MERGEABLE)" \
   "$(rowp 10 ten)" "$(row 11 eleven dev UNKNOWN)" \
   "$(rowr 15 fifteen "[$(rev R15a me COMMENTED),$(rev R15 ana CHANGES_REQUESTED)]" | sed 's/}$/,"statusCheckRollup":[{"name":"tests","conclusion":"FAILURE"}]}/')" \
@@ -111,10 +117,12 @@ printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABL
   '{"number":17,"headRefName":"seventeen","baseRefName":"dev","mergeable":"MERGEABLE","headRefOid":"x","author":{"login":"me"},"reviews":[{"id":"R17","author":{"login":"ana"},"state":"COMMENTED"}]}' \
   "$(rowc 18 eighteen "$ci18")" \
   "$(rowc 19 nineteen '[{"name":"Lint, tests y build","conclusion":"SUCCESS"}]')" \
+  "$(row 20 twenty dev MERGEABLE)" "$(row 21 twentyone nine MERGEABLE)" \
   >"$W/gh/open.json"
 }
 write_open
 echo '[{"number":1}]' >"$W/gh/merged-one.json"
+echo '[{"number":9,"baseRefName":"three"}]' >"$W/gh/merged-nine.json"
 printf '[{"number":1,"headRefName":"one","headRefOid":"%s"},{"number":12,"headRefName":"twelve","headRefOid":"%s"},{"number":13,"headRefName":"thirteen","headRefOid":"%s"},{"number":14,"headRefName":"fourteen","headRefOid":"%s"}]\n' \
   "$(oid one)" "$(oid twelve)" "$(oid thirteen)" "$(oid fourteen)" >"$W/gh/merged-mine.json"
 
@@ -133,6 +141,8 @@ check "mergeable UNKNOWN but conflicting locally: eleven gets its Claude" 'grep 
 check "the brief tells the agent to push without force" 'grep -q "git push origin HEAD:five" "$W/state/specs/org_app-5.md" && ! grep -q -- "--force" "$W/state/specs/org_app-5.md"'
 check "dirty worktree is skipped and kept" '[ "$(cat "$W/root/app-six/six.txt")" = dirty ] && grep -q "#6.*cambios sin commitear" <<<"$out"'
 check "worktree not at the PR head is skipped" 'grep -q "#7.*no está en la punta" <<<"$out"'
+check "twenty, clean and one commit behind: fast-forwarded to the PR head" '[ "$(git -C "$W/root/app-twenty" rev-parse HEAD)" = "$(oid twenty)" ] && grep -q "#20 .*atrasado -> fast-forward" <<<"$out"'
+check "PR below merged into three, not dev: twentyone gets origin/three and is retargeted to three" 'anc twentyone three && pushed twentyone && grep -q "pr edit 21 --repo org/app --base three" "$W/gh/calls" && ! grep -q "pr edit 21 --repo org/app --base dev" "$W/gh/calls"'
 check "three behind dev (no conflict): gets origin/dev and is pushed" 'anc three dev && pushed three && grep -q "#3 .*atrás de dev" <<<"$out"'
 check "merged twelve: worktree and local branch removed" '[ ! -d "$W/root/app-twelve" ] && ! git -C "$R" rev-parse -q --verify refs/heads/twelve >/dev/null'
 check "merged twelve: remote branch deleted" '! git -C "$R" ls-remote --exit-code --heads origin twelve >/dev/null'
