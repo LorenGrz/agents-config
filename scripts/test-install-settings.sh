@@ -22,6 +22,11 @@ GI="$W/home/.config/git/ignore"
 check "a fresh HOME gets .scratch/ in git's global ignore (ADR 0052)" '[ "$(grep -cxF ".scratch/" "$GI")" -eq 1 ]'
 printf 'node_modules/' >"$GI"; run >/dev/null; run >/dev/null
 check ".scratch/ is added once, on its own line, after a last line with no newline" '[ "$(grep -cxF ".scratch/" "$GI")" -eq 1 ] && grep -qxF "node_modules/" "$GI"'
+DOT="$W/dotfiles"; mkdir -p "$DOT/git" && git -C "$DOT" init -q && printf 'a/\n' >"$DOT/git/ignore" && rm "$GI" && ln -s "$DOT/git/ignore" "$GI"
+dry="$(run --dry-run)"
+check "--dry-run names the symlink's real target and the repo it lands in" 'grep -qF "$GI -> $DOT/git/ignore" <<<"$dry" && grep -qF "note:    the change lands in $DOT" <<<"$dry" && ! grep -qxF ".scratch/" "$DOT/git/ignore"'
+run >/dev/null
+check "a symlinked ignore is written through, the link kept" '[ -L "$GI" ] && [ "$(grep -cxF ".scratch/" "$DOT/git/ignore")" -eq 1 ]'
 
 # Simulate Orca: a foreign entry on an event the base uses, one on an event it does not, a custom theme;
 # plus a stale entry of our own (a hook the base no longer has).

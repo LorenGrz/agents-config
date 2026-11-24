@@ -433,16 +433,28 @@ echo
 echo "== global git ignore =="
 GIT_IGNORE="$(git config --global --path core.excludesFile 2>/dev/null || true)"
 [ -n "$GIT_IGNORE" ] || GIT_IGNORE="${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore"
-if [ -f "$GIT_IGNORE" ] && grep -qxF '.scratch/' "$GIT_IGNORE"; then
-  echo "ok:      $GIT_IGNORE already ignores .scratch/"
+# A symlinked ignore file (dotfiles repo) is written through: show where the line really lands.
+GIT_IGNORE_REAL="$GIT_IGNORE"; GIT_IGNORE_SHOWN="$GIT_IGNORE"
+if [ -L "$GIT_IGNORE" ]; then
+  GIT_IGNORE_REAL="$(readlink -f "$GIT_IGNORE")"; GIT_IGNORE_SHOWN="$GIT_IGNORE -> $GIT_IGNORE_REAL"
+fi
+if [ -f "$GIT_IGNORE_REAL" ] && grep -qxF '.scratch/' "$GIT_IGNORE_REAL"; then
+  echo "ok:      $GIT_IGNORE_SHOWN already ignores .scratch/"
 else
-  echo "append:  .scratch/ -> $GIT_IGNORE"
+  echo "append:  .scratch/ -> $GIT_IGNORE_SHOWN"
+  if [ -L "$GIT_IGNORE" ]; then
+    case "$GIT_IGNORE_REAL" in
+      "$HOME/.config/"*) ;;
+      *) repo="$(git -C "$(dirname "$GIT_IGNORE_REAL")" rev-parse --show-toplevel 2>/dev/null || true)"
+         echo "note:    the change lands in ${repo:-$(dirname "$GIT_IGNORE_REAL")}, outside ~/.config: commit it there" ;;
+    esac
+  fi
   if [ "$DRY_RUN" -eq 1 ]; then
-    echo "  [dry-run] append '.scratch/' to '$GIT_IGNORE'"
+    echo "  [dry-run] append '.scratch/' to '$GIT_IGNORE_REAL'"
   else
-    mkdir -p "$(dirname "$GIT_IGNORE")"
-    if [ -s "$GIT_IGNORE" ] && [ -n "$(tail -c1 "$GIT_IGNORE")" ]; then printf '\n' >>"$GIT_IGNORE"; fi
-    printf '.scratch/\n' >>"$GIT_IGNORE"
+    mkdir -p "$(dirname "$GIT_IGNORE_REAL")"
+    if [ -s "$GIT_IGNORE_REAL" ] && [ -n "$(tail -c1 "$GIT_IGNORE_REAL")" ]; then printf '\n' >>"$GIT_IGNORE_REAL"; fi
+    printf '.scratch/\n' >>"$GIT_IGNORE_REAL"
   fi
 fi
 
