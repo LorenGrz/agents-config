@@ -1,1 +1,1 @@
-2. Specs and plans are not required in this project (decision `sdd: off`). Use superpowers `brainstorming` only when the design is unclear; any plan you do write goes in `docs/superpowers/plans/` while the work runs and is deleted in the PR that finishes it.
+2. Specs and plans are not required in this project (decision `sdd: off`). Use a `grilling` interview only when the design is unclear; any spec you do write goes in `.scratch/<slug>/spec.md` (gitignored, never committed).

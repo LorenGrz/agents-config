@@ -36,5 +36,5 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 
-# Superpowers
-.superpowers/
+# Local spec and tickets (mattpocock-skills)
+.scratch/

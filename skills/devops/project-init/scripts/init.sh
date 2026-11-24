@@ -210,7 +210,7 @@ substitute() { sed "${SUBS[@]}"; }
 # already owns it, so the normal "exists -> skip" rule applies.
 # Generators (create-next-app, vite, nest) write their own .gitignore, so a
 # plain skip-if-exists left the baseline entries (*.key, *secret*.json,
-# .superpowers/, .env.* ...) missing. Append every template line that isn't
+# .scratch/, .env.* ...) missing. Append every template line that isn't
 # already present verbatim, under one header. Idempotent: a second run finds
 # every line present and adds nothing.
 merge_gitignore() {
@@ -526,8 +526,8 @@ apply_sdd() {
   local v dest="$DIR/AGENTS.md" heading tmp
   v="$(jq -r '[.decisions[]? | select(.key == "sdd") | .value][0] // empty' "$MANIFEST")"
   case "$v" in
-    light) heading='## How we work (specs for big work, with superpowers)' ;;
-    off) heading='## How we work (issue-driven, with superpowers)' ;;
+    light) heading='## How we work (specs for big work, with mattpocock-skills)' ;;
+    off) heading='## How we work (issue-driven, with mattpocock-skills)' ;;
     *) return 0 ;;
   esac
   # only patch the template's own step 2 (a second run or a hand-edited file is left alone)
@@ -535,7 +535,7 @@ apply_sdd() {
   tmp="$(mktemp)"
   S="$(cat "$SKILL_DIR/references/sdd/$v.md")" H="$heading" awk '
     /^2\. Non-trivial `feat`\/`refactor` work/ { print ENVIRON["S"]; next }
-    /^## How we work \(spec-driven, with superpowers\)$/ { print ENVIRON["H"]; next }
+    /^## How we work \(spec-driven, with mattpocock-skills\)$/ { print ENVIRON["H"]; next }
     { print }' "$dest" > "$tmp" && cat "$tmp" > "$dest"; rm -f "$tmp"
   echo "AGENTS.md: workflow adjusted for sdd=$v"
 }

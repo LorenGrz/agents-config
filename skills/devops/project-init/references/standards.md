@@ -23,7 +23,7 @@ Node stacks use pnpm defaults inside `init.sh`. Other stacks ship `templates/<st
 2. `docs/plans/HANDOFF.md`: current state + how to resume mid-flight work.
 3. `docs/architecture.md`: overview/modules/data model/flows/env/deploy skeleton.
 4. `docs/decisions/`: ADRs for trade-offs, starting at `0001-record-architecture-decisions.md`, new ones copied from `0000-template.md`.
-5. `docs/superpowers/specs|plans/`: spec and plan of the work in progress, deleted in the merge that finishes it; what must outlive them goes to an ADR.
+5. `.scratch/<slug>/`: spec and tickets of the work in progress, local and gitignored, never committed; what must outlive them goes to an ADR.
 6. `docs/prompts.md`: every AI prompt the app sends, verbatim, with its history; deleted if the app calls no model.
 
 `AGENTS.md`'s "Documentation rules" section says when each gets written and keeps `AGENTS.md` itself capped at ~150 lines. The PR template checklist and a non-blocking `docs-check` step in CI (`scripts/docs-check.sh`, warns via `::warning::` when a PR touches deps/env/docker/workflows/top-level folders without touching docs) nudge docs to stay current; neither blocks a merge.

@@ -1,6 +1,6 @@
 ---
 name: project-init
-description: Use this skill when starting a new project or repo, or when adopting an existing one that this skill didn't generate. For new repos, scaffolds a repository that works with any AI agent (Codex, Cursor, Claude) and humans - a single AGENTS.md source of truth (no CLAUDE.md unless --claude-shim), .claude/ with the superpowers plugin and project hooks, a spec-driven workflow, branch flow feat|fix|refactor/<issue>-<slug> to dev with squash merge, a GitHub Project v2 per repo, and real enforcement via ESLint, a git pre-push hook, and CI. For existing repos, scripts/adopt.sh documents their current git workflow (branch/merge/CI reality, docs-only, no new hooks/CI/enforcement) and fills in the same AGENTS.md/.agents/CONTEXT.md/docs/decisions documentation layer. For a plain folder that groups several repos of one product (e.g. frontend + backend), workspace mode (scripts/workspace.sh) creates the workspace-level AGENTS.md.
+description: Use this skill when starting a new project or repo, or when adopting an existing one that this skill didn't generate. For new repos, scaffolds a repository that works with any AI agent (Codex, Cursor, Claude) and humans - a single AGENTS.md source of truth (no CLAUDE.md unless --claude-shim), .claude/ with Matt Pocock's skills plugin (mattpocock-skills) and project hooks, a spec-driven workflow, branch flow feat|fix|refactor/<issue>-<slug> to dev with squash merge, a GitHub Project v2 per repo, and real enforcement via ESLint, a git pre-push hook, and CI. For existing repos, scripts/adopt.sh documents their current git workflow (branch/merge/CI reality, docs-only, no new hooks/CI/enforcement) and fills in the same AGENTS.md/.agents/CONTEXT.md/docs/decisions documentation layer. For a plain folder that groups several repos of one product (e.g. frontend + backend), workspace mode (scripts/workspace.sh) creates the workspace-level AGENTS.md.
 ---
 
 # Project Init
@@ -41,7 +41,7 @@ Pick the mode first:
 
 3. **Local git setup** (do this, do not delegate it):
    - `git init -b main` if the directory is not already a repo.
-   - Confirm `.gitignore` covers the minimum list in the `github-usage` skill (`references/gitignore-gate.md`) plus `.superpowers/`. `init.sh` merges any missing baseline lines into the generator's `.gitignore`; only fix it if something is still missing.
+   - Confirm `.gitignore` covers the minimum list in the `github-usage` skill (`references/gitignore-gate.md`) plus `.scratch/`. `init.sh` merges any missing baseline lines into the generator's `.gitignore`; only fix it if something is still missing.
    - `git config core.hooksPath .githooks`
    - `git add -A && git commit -m "chore: initial project setup"`
    - `bash scripts/verify-ci.sh --dir <path>` - clones the committed HEAD and runs CI's steps (install --frozen-lockfile, format:check, lint, typecheck, test, build). Fix anything red before step 4.
@@ -62,7 +62,7 @@ Pick the mode first:
 
 ### Daily workflow (what the generated AGENTS.md documents)
 
-Everything starts as an issue in the Project. Non-trivial `feat`/`refactor` work goes through superpowers `brainstorming` -> a spec in `docs/superpowers/specs/` -> `writing-plans` -> a plan in `docs/superpowers/plans/`; both are deleted in the PR that finishes the work, and what must outlive them goes to an ADR. `fix` work goes through `systematic-debugging` and only gets a spec if behavior changes. Then `scripts/gh-flow.sh start <type> <slug> --issue N`, implement with `subagent-driven-development` + `test-driven-development`, `verification-before-completion`, `scripts/gh-flow.sh pr`, wait for CI, `scripts/gh-flow.sh merge`. Base branch is always `dev`; `main` only moves via `scripts/gh-flow.sh release`. Agents without superpowers follow the same steps manually.
+Everything starts as an issue in the Project. Non-trivial `feat`/`refactor` work goes through a `grilling` interview -> `to-spec` (`.scratch/<slug>/spec.md`) -> `to-tickets` (`.scratch/<slug>/issues/NN-<slug>.md`); `.scratch/` is gitignored and never committed, and what must outlive it goes to an ADR before the PR that finishes the work. `fix` work goes through `diagnosing-bugs` and only gets a spec if behavior changes. Then `scripts/gh-flow.sh start <type> <slug> --issue N`, implement ticket by ticket test first with `tdd` (`implement-spec` for parallel tickets), review with `code-review` (Standards and Spec), `scripts/gh-flow.sh pr`, wait for CI, `scripts/gh-flow.sh merge`. Base branch is always `dev`; `main` only moves via `scripts/gh-flow.sh release`. Agents without these skills follow the same steps manually.
 
 Once a project exists, its generated `AGENTS.md` is the source of truth, not this skill. If the code and the doc disagree, fix the doc.
 

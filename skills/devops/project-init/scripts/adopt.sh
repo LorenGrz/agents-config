@@ -387,8 +387,8 @@ doc_map_entries() {
   elif [ -d docs/adr ] && find docs/adr -maxdepth 1 -iname '*.md' 2>/dev/null | grep -q .; then
     printf '%d. `docs/adr/` - ADRs: why a non-trivial trade-off was decided the way it was.\n' "$n"; n=$((n+1))
   fi
-  if [ -d docs/superpowers/specs ] || [ -d docs/superpowers/plans ]; then
-    printf '%d. `docs/superpowers/specs/` and `docs/superpowers/plans/` - spec and plan of the work in progress, deleted in the merge that finishes it.\n' "$n"; n=$((n+1))
+  if [ -d .scratch ]; then
+    printf '%d. `.scratch/<slug>/` - spec and tickets of the work in progress; local and gitignored, never committed.\n' "$n"; n=$((n+1))
   fi
 }
 

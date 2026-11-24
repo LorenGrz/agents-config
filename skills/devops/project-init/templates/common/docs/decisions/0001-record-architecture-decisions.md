@@ -16,7 +16,7 @@ A new agent session or a human picking this project back up needs to know *why* 
 
 Record every decision with a real trade-off as an Architecture Decision Record (ADR) under `docs/decisions/`, one file per decision, numbered sequentially starting at `0001` (this file). Start a new ADR from `docs/decisions/0000-template.md`.
 
-A spec (`docs/superpowers/specs/`) and a plan (`docs/superpowers/plans/`) describe *what* to build and *how*, and exist only while that work runs: both are deleted in the merge that finishes it. An ADR records *why* one approach was chosen over its alternatives and outlives the plan; whatever a plan decided that must last goes into an ADR before that merge.
+A spec and its tickets (`.scratch/<slug>/`, gitignored, never committed) describe *what* to build and *how*, and exist only while that work runs. An ADR records *why* one approach was chosen over its alternatives and outlives the spec; whatever the spec decided that must last goes into an ADR before the merge that finishes the work.
 
 Routine implementation choices need no ADR. Write one for architecture, a library or service choice that's expensive to reverse, a data model shape, a security trade-off, or anything a future session might second-guess or redo.
 

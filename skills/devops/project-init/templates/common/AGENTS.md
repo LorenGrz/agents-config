@@ -11,7 +11,7 @@ A new session should understand this project from these files alone, in this ord
 3. `docs/plans/HANDOFF.md` - current state and how to resume, read first if work is mid-flight.
 4. `docs/architecture.md` - overview, modules, data model, key flows, external services, env, deploy.
 5. `docs/decisions/` - ADRs: why a non-trivial trade-off was decided the way it was.
-6. `docs/superpowers/specs/` and `docs/superpowers/plans/` - spec and plan of the work in progress, deleted in the merge that finishes it.
+6. `.scratch/<slug>/` - spec (`spec.md`) and tickets (`issues/NN-<slug>.md`) of the work in progress; local and gitignored, never committed.
 7. `docs/prompts.md` - every AI prompt the app sends (verbatim, where it lives, history and lessons). Only if the app calls an AI model.
 
 Read `.agents/CONTEXT.md` before exploring the code: it holds the current state.
@@ -50,15 +50,15 @@ Non-negotiable for every agent and model working in this repo (source: agents-co
 | `{{CMD_FORMAT}}` | Auto-format |
 | `{{CMD_FORMAT_CHECK}}` | Check formatting without writing |
 
-## How we work (spec-driven, with superpowers)
+## How we work (spec-driven, with mattpocock-skills)
 
 1. Everything starts as an issue in the Project: `scripts/gh-flow.sh issue <feat|fix|refactor|chore> "<title>"`.
-2. Non-trivial `feat`/`refactor` work: superpowers `brainstorming` -> write a spec in `docs/superpowers/specs/` -> superpowers `writing-plans` -> write a plan in `docs/superpowers/plans/`.
-3. `fix` work: superpowers `systematic-debugging`; only write a spec if the fix changes behavior.
-4. `scripts/gh-flow.sh start <feat|fix|refactor> <slug> --issue N` (or create a worktree with superpowers `using-git-worktrees` for parallel work).
-5. Execute with superpowers `subagent-driven-development` + `test-driven-development`.
-6. Superpowers `verification-before-completion` -> `scripts/gh-flow.sh pr` (the PR that finishes the work deletes its spec and plan; what must outlive them goes to an ADR) -> wait for CI to go green -> `scripts/gh-flow.sh merge`. The issue closes and the Project moves it to Done automatically.
-7. Agents without superpowers installed: follow the same seven steps manually.
+2. Non-trivial `feat`/`refactor` work: `grilling` interview -> `to-spec` writes `.scratch/<slug>/spec.md` -> `to-tickets` splits it into `.scratch/<slug>/issues/NN-<slug>.md`.
+3. `fix` work: `diagnosing-bugs`; only write a spec if the fix changes behavior.
+4. `scripts/gh-flow.sh start <feat|fix|refactor> <slug> --issue N` (or one worktree per ticket for parallel work).
+5. Execute ticket by ticket, test first with `tdd` (`implement-spec` runs the unblocked tickets in parallel).
+6. `code-review` (Standards and Spec) -> `scripts/gh-flow.sh pr` (what must outlive the spec goes to an ADR first) -> wait for CI to go green -> `scripts/gh-flow.sh merge`. The issue closes and the Project moves it to Done automatically.
+7. Agents without mattpocock-skills installed: follow the same seven steps manually.
 
 ### Branch and PR rules
 
@@ -101,12 +101,11 @@ Mechanical rules live in {{ENFORCEMENT_FILES}} - this section is what no linter 
 
 ## Documentation rules
 
-- Spec and plan live in `docs/superpowers/specs/` and `docs/superpowers/plans/` only while the work runs: copy the approved plan (a Claude plan-mode plan lives in `~/.claude/plans`) into `docs/superpowers/plans/YYYY-MM-DD-<slug>.md` before implementing, and delete both in the PR that finishes the work. What must outlive them goes to an ADR.
+- Spec and tickets live in `.scratch/<slug>/` (gitignored, never committed) only while the work runs: it is the issue tracker of mattpocock-skills (`spec.md`, `issues/NN-<slug>.md` with `Status:` and `Blocked by:` lines; the team's issues stay in the Project). Copy an approved plan (a Claude plan-mode plan lives in `~/.claude/plans`) into `.scratch/<slug>/spec.md` before implementing. What must outlive them goes to an ADR before the PR that finishes the work.
 - If the app sends prompts to an AI model, every prompt lives in `docs/prompts.md`: a verbatim copy, the file/function that owns it (the code stays the source of truth), and a short history of what was tried and why it changed. Update it in the same PR as any prompt change.
 - Any decision with a real trade-off (architecture, a hard-to-reverse library/service choice, data model, security trade-off) gets a new ADR in `docs/decisions/` - copy `docs/decisions/0000-template.md`.
 - When work pauses mid-flight, update `docs/plans/HANDOFF.md` before stopping, not after.
 - A PR that changes architecture, env vars, commands, or deploy updates `AGENTS.md`, `.agents/CONTEXT.md`, and `docs/architecture.md` in the same PR.
-- `docs/superpowers/` is committed; `.superpowers/sdd/` (the working ledger) stays gitignored.
 - Keep this file short (~150 lines max) - details belong in `docs/`.
 
 ## Definition of done
