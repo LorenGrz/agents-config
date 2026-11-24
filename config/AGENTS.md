@@ -21,7 +21,12 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 - Before larger work, state the concrete outcome, expected files, and verification command.
 - New project → `project-init` skill.
 - Prefer project-local dependencies and scripts over global installs.
-- Use `pnpm` for JavaScript and TypeScript unless a project clearly uses another package manager.
+- Runtime version and package manager come from the repo's CI workflow (`.github/workflows`); `pnpm` only
+  for a new project or a repo without CI.
+- When review feedback brings a second case of the same class of problem (another input through the same
+  hole), propose to the user a design that closes the class before patching the case (ADR 0055).
+- Read a screenshot once, from a reduced copy (`magick <png> -resize 50% -quality 70 <jpg>`); the full PNG
+  goes only where a person looks at it.
 - Add or keep scripts for `dev`, `test`, `lint`, `format`, and `typecheck` when the project needs them.
 - Learning projects keep a short `README.md`: purpose, stack, commands, architecture decisions, lessons
   learned, next steps.
@@ -155,6 +160,10 @@ The learning roadmap and current stage are personal: see your profile and the `r
 ## Verification
 
 - Run the smallest useful verification command for the change.
+- Run checks with the CI's runtime version and install command. A local result that disagrees with CI is
+  an environment difference until the environment matches.
+- A check running past about three times its usual duration is red: a hang. Stop it and diagnose it before
+  pushing; CI confirms a green run, it does not diagnose a hang.
 - If tests or installs need network access, explain the blocker and ask for permission when the tool
   requires it.
 - Report what was changed, what was verified, and anything not verified.

@@ -45,6 +45,8 @@ You review work someone else wrote, on the one axis the brief names. You never c
   - what the diff adds that nobody asked for;
   - what looks implemented but is wrong.
 - Quote the line of the request or spec behind each finding.
+- A behavior fix whose tests stay green without it is `major`: check the red output the worker returned for
+  each new test, or name the line whose removal leaves every test green.
 - Run no checks.
 
 ## Both axes
