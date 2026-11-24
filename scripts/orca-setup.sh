@@ -6,7 +6,7 @@
 #
 # 1. Tema: enlaza los hooks de Omarchy (theme-set y font-set), orca-omarchy-settings y las plantillas, genera el
 #    plugin local.omarchy-theme con el tema actual y lo instala en Orca.
-# 2. Skills de Orca: las de la versión instalada.
+# 2. Skills de Orca: viven en skills/meta del repo (ADR 0057); este paso solo lo recuerda.
 # 3. stack-sync (ADR 0045): crea la automatización si no está, con este repo como workspace. Sus repos y su owner
 #    salen de ~/.config/stack-sync/config, que no se commitea: sin ese archivo, stack-sync no hace nada.
 # 4. Preferencias: scripts/orca-settings.py apply. Con Orca abierto se saltea y lo dice.
@@ -49,7 +49,9 @@ else
 fi
 
 echo "2. Skills de Orca"
-"$ORCA" skills update >/dev/null 2>&1 || "$ORCA" skills install >/dev/null 2>&1 || echo "  no pude actualizarlas: orca skills update"
+# No se corre `orca skills install|update`: escribe en ~/.agents/skills, que es skills/ de este repo, y no
+# puede pisar las de ~/.claude/skills. Las de Orca son stubs en skills/meta (ADR 0057); sync.sh las enlaza.
+echo "  en skills/meta del repo (ADR 0057): se actualizan a mano cuando Orca cambia sus stubs"
 
 echo "3. Automatización stack-sync"
 if "$ORCA" automations list 2>/dev/null | grep -q ' stack-sync '; then
