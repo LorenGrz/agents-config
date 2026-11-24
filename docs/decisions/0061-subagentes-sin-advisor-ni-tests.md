@@ -1,6 +1,6 @@
-# 0061 — Los subagentes no consultan al advisor y nadie más que el orquestador testea
+# 0061 — Los subagentes no consultan al advisor y los tests los corre solo el reviewer
 
-Estado: aceptado (2026-11-24). Ajusta 0048 (qué corre cada agente) y 0052 (el `worker` ya no arranca con TDD).
+Estado: aceptado (2026-11-24). Ajusta 0048 (qué corre cada agente) y 0052 (el `worker` escribe el test primero pero no lo corre).
 
 ## Contexto
 
@@ -13,12 +13,14 @@ podían correr un test puntual. Las dos cosas hacían lento cada subagente; Lore
 - `worker`, `scout`, `reviewer` y `reasoner` no llaman al advisor: lo dice su definición. La doc no documenta cómo
   quitarle la herramienta a un subagente (es una server tool; `tools:` y `disallowedTools` no la nombran), así que
   queda como instrucción. Los líderes, que son sesiones aparte, siguen consultándolo.
-- El `worker` no escribe ni corre tests: implementa el código y las docs y devuelve los archivos.
-- El líder tampoco escribe ni corre tests (antes, uno puntual).
-- Los checks del CI los corre una vez el reviewer Standards; en Plan S sin reviewer, la sesión principal.
+- El `worker` y el líder escriben los tests (test primero) pero no corren nada: ni sus tests, ni lint, ni
+  typecheck, ni build.
+- Los tests y los checks los corre una vez el reviewer Standards, con los comandos del CI; trabajando sola en
+  Plan S, la sesión principal al final.
 
 ## Consecuencias
 
-- Los cambios de comportamiento llegan sin un test nuevo que los cubra; la revisión Spec ya no pide la salida en
-  rojo de cada test nuevo. Si hace falta un test, lo pide la sesión principal explícitamente.
+- Ya no hay salida en rojo de cada test nuevo: un test que pasa sin el cambio no se detecta antes de la
+  revisión. La revisión Spec marca como `major` un cambio de comportamiento sin test escrito.
+- Un test que falla aparece recién en la revisión Standards, y el arreglo vuelve al líder o a un `worker`.
 - Si un subagente igual llama al advisor, la vía siguiente es cambiar su modelo o pedir el campo a Claude Code.
