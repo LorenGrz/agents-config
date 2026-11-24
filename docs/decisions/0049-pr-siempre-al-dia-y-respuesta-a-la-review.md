@@ -14,6 +14,11 @@ solo traía `dev` si había conflicto. Y la review quedó sin respuesta: el revi
 - stack-sync trae la base a todo PR que esté atrás, con conflicto o sin él. Un conflicto abre el agente de siempre.
 - Los agentes de review y de CI traen la base antes de pushear.
 - El agente de review contesta cada comentario con qué cambió y en qué commit, o por qué no. No resuelve los hilos.
+- Ajuste del 2026-11-24:
+  - Un worktree limpio que solo está atrás de la punta de su PR se adelanta con fast-forward y sigue. Antes se
+    salteaba en cada pasada: el #513 de CX quedó trabado así.
+  - Si el PR de abajo se mergeó a una rama que no es `dev` (el #512 de CX se mergeó sobre su base apilada), el PR
+    de arriba trae esa rama y se retargetea a ella, no a `dev`.
 
 ## Consecuencias
 
