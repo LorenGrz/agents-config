@@ -39,7 +39,8 @@ You review work someone else wrote, on the one axis the brief names. You never c
 
 ## Spec axis
 
-- Compare the diff with the ticket or spec (the original request counts as the spec when there is none):
+- Compare the diff with the ticket or spec: `spec.md`, or `plan.md` when there is no spec (the original
+  request counts as the spec when there is neither):
   - what was asked and is missing or partial;
   - what the diff adds that nobody asked for;
   - what looks implemented but is wrong.

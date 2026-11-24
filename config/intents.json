@@ -147,7 +147,7 @@
         {
           "label": "test first",
           "re": "\\btdd\\b|test[- ]first|escrib[ií] (el )?test primero|red[- ]green",
-          "cmd": "write the failing test, make it pass, refactor; write tests with unit-test-generator, run them with execute-test-suite"
+          "cmd": "write the failing test, make it pass, refactor; write tests with unit-test-generator, run only the tests you wrote"
         }
       ]
     },

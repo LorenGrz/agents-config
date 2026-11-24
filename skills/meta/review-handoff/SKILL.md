@@ -25,8 +25,9 @@ code. The two reports stay apart: code can follow every rule and build the wrong
    otherwise. Another provider's model (Gemini through `agy`, Codex) reviews only when the user asks for it.
    Review skill (Standards): the organization's review skill when the repo matches an org and one is
    installed, otherwise `~/.agents/skills/quality/code-review-safety/SKILL.md`.
-   Spec source (Spec): the ticket text, `.scratch/<topic>/spec.md` and its `issues/`, or the plan; the
-   original request when there is nothing else.
+   Spec source (Spec): the ticket text, `.scratch/<topic>/spec.md` and its `issues/`, or, without a
+   spec, `.scratch/<topic>/plan.md`; the original request when there is nothing else. `.scratch/` does not
+   travel to worktrees: pass the absolute path in the main checkout.
 2. Commit the work first: the review covers a committed range in a clean worktree. Record
    `git -C <worktree> status --porcelain` and `git -C <worktree> rev-parse HEAD`.
 3. Write two briefs, the same except for the axis lines:
@@ -39,8 +40,8 @@ code. The two reports stay apart: code can follow every rule and build the wrong
    Work only there (cd into it, or git -C); never in the checkout you were started in.
    Range: <base>..<branch>
    Standards only — Review skill to follow: <path>. Checks to run, once: <the repo's CI commands>
-   Spec only — Ticket or spec: <path or verbatim text>
-   Permissions: read and run checks only. Never edit, commit or push.
+   Spec only — Ticket or spec: <absolute path in the main checkout's .scratch/, or verbatim text>
+   Permissions: Standards — read and run the checks above only; Spec — read only. Never edit, commit or push.
    You were started from a brief: no lane question, no subagents.
    Return: findings, each with severity blocker|major|minor, path:line, what and why;
    Standards also returns the real output of every check; say "No findings" explicitly when there are none.

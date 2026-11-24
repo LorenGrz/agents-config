@@ -31,8 +31,8 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   - `AGENTS.md`: the map new sessions read instead of the code.
   - `.agents/CONTEXT.md`: current state.
   - `.scratch/<topic>/` (local, ignored by git globally, never committed): the spec and tickets being
-    executed ("Issue tracker" below). Copy an approved plan-mode plan into `.scratch/<topic>/spec.md`
-    before implementing; before the merge that finishes the work, move what must outlive it to an ADR.
+    executed ("Issue tracker" below). Copy an approved plan-mode plan into `.scratch/<topic>/plan.md`
+    before implementing (`spec.md` is only `to-spec`'s); before the merge that finishes the work, move what must outlive it to an ADR.
   - `docs/decisions/NNNN-<slug>.md`: ADRs for decisions with trade-offs.
   - `docs/prompts.md`: every AI prompt the app sends to a model (verbatim copy, where it lives in code,
     short history of what was tried and why it changed), updated in the same PR as any prompt change.
@@ -61,12 +61,13 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   next steps do not re-ask what was answered.
 - **Plan L then follows Matt Pocock's skills** (ADR 0052): `to-spec` writes `.scratch/<topic>/spec.md`,
   `to-tickets` splits it into `.scratch/<topic>/issues/NN-<slug>.md`, and execution follows `implement-spec`:
-  one `worker` per unblocked ticket, in parallel, each in its own worktree from the task branch; the lead
-  commits each worker's diff and merges it into the task branch, then starts the tickets it unblocks. Then
-  the two-axis review below, from the parent; no draft PR. `to-spec`, `to-tickets`, `implement-spec` and
-  `wayfinder` are user-invoked only: read their `SKILL.md` from the plugin
-  (`~/.claude/plugins/cache/mattpocock/mattpocock-skills/*/skills/engineering/<name>/SKILL.md`) and follow
-  it, with the exceptions in this section.
+  one `worker` per unblocked ticket, in parallel, each in its own worktree from the task branch. `.scratch/`
+  does not travel to worktrees: each worker's brief carries the absolute path of the main checkout's
+  `.scratch/<topic>/`. The lead commits each worker's diff and merges it into the task branch, then starts
+  the tickets it unblocks. Then the two-axis review below, from the parent; the PR follows the repo's or
+  org's policy (in CX, the draft opens at the start). `to-spec`, `to-tickets`, `implement-spec` and
+  `wayfinder` are user-invoked only: read their `SKILL.md` from the plugin and follow it, with the
+  exceptions in this section.
 - **Plan L splits the work by repo:** the main session plans, writes the briefs, integrates, and writes no
   code. Work that spans repos (backend, frontend) gets one lead per repo: a session opened in that repo, in
   the one worktree of its task branch, so that repo's `AGENTS.md`, skills and restrictions apply. When the
@@ -108,11 +109,12 @@ Matt Pocock's skills (`to-spec`, `to-tickets`, `implement-spec`, `wayfinder`, `c
 markdown in `.scratch/`, ignored by git globally and never committed. The team's tracker (GitHub issues,
 Jira) is separate: those skills never write to it.
 
-- One directory per topic: `.scratch/<topic>/`. The spec is `spec.md`; tickets are one file each,
-  `issues/NN-<slug>.md`, numbered from `01`.
-- Near the top of each ticket: a `Status:` line (`ready-for-agent`, `ready-for-human`, `needs-info`,
-  `claimed`, `resolved`) and a `Blocked by: NN, NN` line. A ticket is unblocked when every ticket it
-  lists is `resolved`.
+- One directory per topic: `.scratch/<topic>/`. The spec is `spec.md` (written only by `to-spec`; an
+  approved plan-mode plan goes to `plan.md`); tickets are one file each, `issues/NN-<slug>.md`, numbered
+  from `01`.
+- Near the top of each ticket: a `Status:` line (`needs-triage`, `needs-info`, `ready-for-agent`,
+  `ready-for-human`, `wontfix`; `claimed` and `resolved` while it is worked) and a `Blocked by: NN, NN`
+  line. A ticket is unblocked when every ticket it lists is `resolved`.
 - "Publish to the issue tracker" means create the file; "fetch the ticket" means read it. Comments go at
   the bottom under `## Comments`.
 - `wayfinder` keeps its map in `.scratch/<effort>/map.md`, with child tickets in `issues/` as above.
