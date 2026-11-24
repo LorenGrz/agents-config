@@ -387,9 +387,7 @@ doc_map_entries() {
   elif [ -d docs/adr ] && find docs/adr -maxdepth 1 -iname '*.md' 2>/dev/null | grep -q .; then
     printf '%d. `docs/adr/` - ADRs: why a non-trivial trade-off was decided the way it was.\n' "$n"; n=$((n+1))
   fi
-  if [ -d .scratch ]; then
-    printf '%d. `.scratch/<slug>/` - spec and tickets of the work in progress; local and gitignored, never committed.\n' "$n"; n=$((n+1))
-  fi
+  printf '%d. `.scratch/<slug>/` - spec and tickets of the work in progress; local and gitignored, never committed.\n' "$n"; n=$((n+1))
 }
 
 DOC_RULES='## Documentation rules

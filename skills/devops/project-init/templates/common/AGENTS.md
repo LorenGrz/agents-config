@@ -60,6 +60,8 @@ Non-negotiable for every agent and model working in this repo (source: agents-co
 6. `code-review` (Standards and Spec) -> `scripts/gh-flow.sh pr` (what must outlive the spec goes to an ADR first) -> wait for CI to go green -> `scripts/gh-flow.sh merge`. The issue closes and the Project moves it to Done automatically.
 7. Agents without mattpocock-skills installed: follow the same seven steps manually.
 
+`to-spec`, `to-tickets` and `implement-spec` are invoked by the user (`/to-spec`, ...); an agent reads their `SKILL.md` and follows it instead. Their issue tracker is `.scratch/` (local, gitignored), not the Project.
+
 ### Branch and PR rules
 
 - Base branch is `dev`. Never commit or push directly to `dev` or `main`.
@@ -101,7 +103,7 @@ Mechanical rules live in {{ENFORCEMENT_FILES}} - this section is what no linter 
 
 ## Documentation rules
 
-- Spec and tickets live in `.scratch/<slug>/` (gitignored, never committed) only while the work runs: it is the issue tracker of mattpocock-skills (`spec.md`, `issues/NN-<slug>.md` with `Status:` and `Blocked by:` lines; the team's issues stay in the Project). Copy an approved plan (a Claude plan-mode plan lives in `~/.claude/plans`) into `.scratch/<slug>/spec.md` before implementing. What must outlive them goes to an ADR before the PR that finishes the work.
+- Spec and tickets live in `.scratch/<slug>/` (gitignored, never committed) only while the work runs: it is the issue tracker of mattpocock-skills (`spec.md`, `issues/NN-<slug>.md` with `Status:` and `Blocked by:` lines; the team's issues stay in the Project). Copy an approved plan (a Claude plan-mode plan lives in `~/.claude/plans`) into `.scratch/<slug>/plan.md` before implementing (`spec.md` is only `to-spec`'s). What must outlive them goes to an ADR before the PR that finishes the work.
 - If the app sends prompts to an AI model, every prompt lives in `docs/prompts.md`: a verbatim copy, the file/function that owns it (the code stays the source of truth), and a short history of what was tried and why it changed. Update it in the same PR as any prompt change.
 - Any decision with a real trade-off (architecture, a hard-to-reverse library/service choice, data model, security trade-off) gets a new ADR in `docs/decisions/` - copy `docs/decisions/0000-template.md`.
 - When work pauses mid-flight, update `docs/plans/HANDOFF.md` before stopping, not after.
