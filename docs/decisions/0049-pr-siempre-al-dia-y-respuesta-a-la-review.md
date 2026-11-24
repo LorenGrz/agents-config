@@ -19,12 +19,13 @@ solo traía `dev` si había conflicto. Y la review quedó sin respuesta: el revi
     salteaba en cada pasada: el #513 de CX quedó trabado así.
   - Si el PR de abajo se mergeó a una rama que no es `dev` (el #512 de CX se mergeó sobre su base apilada), el PR
     de arriba trae esa rama y se retargetea a ella, no a `dev`.
-- Ajuste del 2026-11-24 (tarde): stack-sync trae `dev` solo cuando el PR choca con `dev` o cuando ya está listo
-  (no borrador). Un borrador atrasado sin choque queda como está. Traerlo en cada pasada llenaba los PR de merges
+- Ajuste del 2026-11-24 (tarde): stack-sync trae `dev` solo cuando el PR choca con `dev` o cuando es el próximo a
+  mergearse: mi PR listo (no borrador) de número más bajo en ese repo. Con el #401 y el #402 abiertos, el #402 no
+  recibe `dev` hasta que se mergea el #401. Los demás PR atrasados sin choque quedan como están. Traerlo en cada pasada llenaba los PR de merges
   (el #521 de CX llegó a 106 commits) y volvía a correr el CI cada vez. Los agentes de review y de CI siguen trayendo
   `dev` antes de pushear, y la regla de traer la base antes de abrir un PR o pushear a uno no cambia.
 
 ## Consecuencias
 
-- Cada merge a `dev` genera un merge y un push en cada PR listo; un borrador lo recibe solo si choca.
+- Cada merge a `dev` genera un merge y un push solo en el próximo PR a mergearse de cada repo; los demás lo reciben si chocan.
 - El revisor ve la respuesta en el PR sin preguntar.

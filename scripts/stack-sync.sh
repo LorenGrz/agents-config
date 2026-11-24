@@ -5,8 +5,8 @@
 #      retarget the PR to that base
 #   2. its base branch got new commits  -> merge origin/<base>, push
 #   3. base is the trunk and the branch conflicts with it (GitHub says so, or the local merge does), or it is behind
-#      and the PR is ready (not a draft) -> merge origin/<trunk>, push. A draft behind dev without a conflict is left
-#      alone: dev comes in only near the merge (ADR 0049, adjusted 2026-11-24).
+#      and it is the next to merge (my oldest ready PR of that repo: lowest number, not a draft) -> merge
+#      origin/<trunk>, push. Any other PR behind dev without a conflict is left alone (ADR 0049, adjusted 2026-11-24).
 #   4. a merge conflicts -> abort, and open a Claude in that PR's worktree through Orca with a brief: resolve,
 #      commit and push; only a real logic conflict runs the related tests, never the whole suite (ADR 0045). Once
 #      per (PR, base commit); its tab stays open.
@@ -405,6 +405,9 @@ for slug in "${!slug_of[@]}"; do
   json="$(tgh pr list --repo "$slug" --author @me --state open --limit 100 \
     --json number,headRefName,baseRefName,mergeable,headRefOid,isDraft,author,reviews,comments,statusCheckRollup 2>/dev/null)" || continue
   [ -n "$json" ] || continue
+  # El próximo a mergearse: mi PR listo (no borrador) más viejo contra el trunk. Solo ese recibe dev sin choque.
+  next="$(jq -r --arg t "$trunk" '[.[] | select((.baseRefName == $t or .baseRefName == "main" or .baseRefName == "master")
+    and (.isDraft // false) == false) | .number] | min // empty' <<<"$json")"
   rows="$(jq -r --arg t "$trunk" '
     (map({key: .headRefName, value: .baseRefName}) | from_entries) as $base
     | def depth($b; $n): if ($base[$b] // null) == null or $n > 20 then $n else depth($base[$b]; $n + 1) end;
@@ -436,18 +439,18 @@ for slug in "${!slug_of[@]}"; do
       note "#$pr ($slug, $head): salteado, $path no está en la punta del PR (commits sin pushear)"; continue
     fi
     if [ "$base" = "$trunk" ] || [ "$base" = main ] || [ "$base" = master ]; then
-      # La base se trae solo si choca o si el PR está listo (no borrador): traerla en cada pasada llenaba el PR de
-      # merges y volvía a correr el CI sin necesidad (ADR 0049, ajuste del 2026-11-24). El choque se detecta por
+      # La base se trae solo si choca o si el PR es el próximo a mergearse: traerla en cada pasada llenaba los PR
+      # de merges y volvía a correr el CI sin necesidad (ADR 0049, ajuste del 2026-11-24). El choque se detecta por
       # GitHub o, si todavía dice UNKNOWN, con un merge de prueba sin tocar el worktree. Un choque lo resuelve el
       # agente de merge_and_push.
       if ! git -C "$path" merge-base --is-ancestor "origin/$base" HEAD; then
-        if [ "$draft" != true ]; then
-          merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "atrás de $base"
+        if [ "$draft" != true ] && [ "$pr" = "$next" ]; then
+          merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "atrás de $base (es el próximo a mergearse)"
         elif [ "$mergeable" = CONFLICTING ] ||
              ! git -C "$path" merge-tree --write-tree HEAD "origin/$base" >/dev/null 2>&1; then
           merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "choca con $base"
         else
-          note "#$pr ($slug, $head): borrador atrás de $base sin choque, no se trae"
+          note "#$pr ($slug, $head): atrás de $base sin choque y no es el próximo a mergearse (#${next:-ninguno}), no se trae"
         fi
       elif [ "$mergeable" = CONFLICTING ]; then
         merge_and_push "$slug" "$pr" "$head" "$path" "origin/$base" "choca con $base"
