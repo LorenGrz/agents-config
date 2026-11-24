@@ -85,7 +85,7 @@ branch twentysix dev      # PR 26: up to date, only a review by copilot[bot] -> 
 branch eighteen dev       # PR 18: up to date, a CI check failed -> CI agent
 branch nineteen dev       # PR 19: up to date, CI green -> nothing
 branch twenty dev         # PR 20: clean worktree one commit behind its PR head -> fast-forward
-branch twentyseven dev    # PR 27: draft behind dev, no conflict -> dev not brought
+branch twentyseven dev    # PR 27: draft behind dev, no conflict -> dev not brought (only #3, the oldest ready PR, gets it)
 branch nine dev           # PR 9: merged into three, not into dev
 branch twentyone nine     # PR 21 stacked on nine -> gets origin/three, retargeted to three
 git -C "$R" fetch -q
@@ -167,8 +167,9 @@ check "dirty worktree is skipped and kept" '[ "$(cat "$W/root/app-six/six.txt")"
 check "worktree not at the PR head is skipped" 'grep -q "#7.*no está en la punta" <<<"$out"'
 check "twenty, clean and one commit behind: fast-forwarded to the PR head" '[ "$(git -C "$W/root/app-twenty" rev-parse HEAD)" = "$(oid twenty)" ] && grep -q "#20 .*atrasado -> fast-forward" <<<"$out"'
 check "PR below merged into three, not dev: twentyone gets origin/three and is retargeted to three" 'anc twentyone three && pushed twentyone && grep -q "pr edit 21 --repo org/app --base three" "$W/gh/calls" && ! grep -q "pr edit 21 --repo org/app --base dev" "$W/gh/calls"'
-check "twentyseven, a draft behind dev without a conflict: dev not brought, nothing pushed" '! anc twentyseven dev && [ "$(git -C "$W/root/app-twentyseven" rev-parse HEAD)" = "$(oid twentyseven)" ] && grep -q "#27 .*borrador atrás de dev sin choque" <<<"$out"'
-check "three, ready and behind dev (no conflict): gets origin/dev and is pushed" 'anc three dev && pushed three && grep -q "#3 .*atrás de dev" <<<"$out"'
+check "twentyseven, a draft behind dev without a conflict: dev not brought, nothing pushed" '! anc twentyseven dev && [ "$(git -C "$W/root/app-twentyseven" rev-parse HEAD)" = "$(oid twentyseven)" ] && grep -q "#27 .*no es el próximo a mergearse (#3)" <<<"$out"'
+check "twenty, ready and behind dev but #3 is older: dev not brought" '! anc twenty dev && grep -q "#20 .*no es el próximo a mergearse (#3)" <<<"$out"'
+check "three, my oldest ready PR and behind dev (no conflict): gets origin/dev and is pushed" 'anc three dev && pushed three && grep -q "#3 .*atrás de dev" <<<"$out"'
 check "merged twelve: worktree and local branch removed" '[ ! -d "$W/root/app-twelve" ] && ! git -C "$R" rev-parse -q --verify refs/heads/twelve >/dev/null'
 check "merged twelve: remote branch deleted" '! git -C "$R" ls-remote --exit-code --heads origin twelve >/dev/null'
 check "merged one keeps its worktree: two is stacked on it" '[ -d "$W/root/app-one" ] && grep -q "#1.*apilado encima" <<<"$out"'
