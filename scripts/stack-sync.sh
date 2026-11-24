@@ -7,7 +7,9 @@
 #   3. base is the trunk and the branch is behind it (or GitHub says it conflicts) -> merge origin/<trunk>, push
 #      (ADR 0049: a PR never stays behind dev, with or without conflicts)
 #   4. a merge conflicts -> abort, and open a Claude in that PR's worktree through Orca with a brief: resolve,
-#      commit and push; only a real logic conflict runs the related tests, never the whole suite (ADR 0045). Once per (PR, base commit); its tab stays open.
+#      stage and leave a «resolved» mark; only a real logic conflict runs the related tests, never the whole suite
+#      (ADR 0045). Once per (PR, base commit); its tab stays open. The next run commits that merge and pushes it
+#      (ADR 0059): the repos' settings ask before `git commit` and `git push`, and this script runs outside Claude.
 #   5. someone else left a review that asks for changes or comments, or a plain PR comment (not me, not a bot; the
 #      newest of them by date), and no conflict agent is open for it -> open a Claude in that PR's
 #      worktree with a brief: apply each point as new commits, keep line endings, bring the base before pushing,
@@ -117,6 +119,9 @@ last="$state/last-full-sync"
 if [ "$precheck" -eq 1 ]; then
   changed=0
   [ -e "$last" ] && [ -n "$(find "$last" -mmin -30 2>/dev/null)" ] || changed=1
+  # a conflict an agent left resolved is local, GitHub does not see it: push it now, not in 30 min (ADR 0059)
+  # (only a recent mark: one whose PR closed or lost its worktree would force a sync every 2 min)
+  [ -n "$(find "$state" -maxdepth 1 -name 'resolved-*' -mmin "-$busy_minutes" 2>/dev/null)" ] && changed=1
   for slug in "${!slug_of[@]}"; do
     etag_file="$state/etag-${slug//\//_}"
     etag="$(cat "$etag_file" 2>/dev/null)"
@@ -153,6 +158,36 @@ merge_and_push() {
   launch_resolver "$slug" "$pr" "$branch" "$path" "$ref" "$why"
 }
 
+# resolved_mark <slug> <pr>: the file a conflict agent leaves when its merge is resolved and staged (ADR 0059)
+resolved_mark() { printf '%s/resolved-%s-%s' "$state" "${1//\//_}" "$2"; }
+
+# finish_resolved <slug> <pr> <branch> <path>: commit and push the merge a conflict agent left resolved. Only with
+# a merge in progress and no unmerged path; otherwise it touches nothing and says so. The mark goes either way, so
+# a failure is told once and the worktree waits for Loren (dirty or with a commit not pushed: later runs skip it).
+# 0 when it acted (the PR is done for this run: its head on GitHub is still the old one), 1 to go on as usual.
+finish_resolved() {
+  local slug="$1" pr="$2" branch="$3" path="$4" mark
+  mark="$(resolved_mark "$slug" "$pr")"
+  [ -e "$mark" ] || return 1
+  if ! git -C "$path" rev-parse -q --verify MERGE_HEAD >/dev/null ||
+     [ -n "$(git -C "$path" diff --name-only --diff-filter=U 2>/dev/null)" ]; then
+    say "#$pr ($slug, $branch): el agente marcó el conflicto como resuelto, pero no hay un merge listo en $path; no commiteo"
+    [ "$dry" -eq 1 ] || rm -f "$mark"; return 1
+  fi
+  [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug, $branch): conflicto resuelto -> commitearía el merge y pushearía"; return 0; }
+  rm -f "$mark"
+  local err
+  if ! err="$(git -C "$path" commit -q --no-edit 2>&1)"; then
+    say "#$pr ($slug, $branch): el commit del merge resuelto falló; queda en $path sin commitear: $(tail -n 3 <<<"$err" | tr '\n' ' ')"
+    return 0
+  fi
+  if git -C "$path" push -q origin "HEAD:$branch" 2>/dev/null; then
+    say "#$pr ($slug, $branch): conflicto resuelto por el agente -> commiteado y pusheado"
+  else
+    say "#$pr ($slug, $branch): commiteé el merge resuelto pero el push falló; queda local en $path"
+  fi
+}
+
 # busy_mark <slug> <pr>: the file that says an agent is working in that PR's worktree
 busy_mark() { printf '%s/busy/%s-%s' "$state" "${1//\//_}" "$2"; }
 # is_busy <slug> <pr>: an agent was launched there less than $busy_minutes ago and has not finished
@@ -184,7 +219,7 @@ launch_agent() {
 # launch_resolver: a Claude in that PR's worktree, through Orca, once per (PR, base commit)
 launch_resolver() {
   local slug="$1" pr="$2" branch="$3" path="$4" ref="$5" why="$6"
-  local refsha mark spec fail
+  local refsha mark spec fail resolved
   busy=1 # a conflict agent owns this worktree: no review agent on top of it in this run
   refsha="$(git -C "$path" rev-parse --short "$ref" 2>/dev/null)"
   mark="$state/launched-${slug//\//_}-$pr-$refsha"
@@ -192,6 +227,7 @@ launch_resolver() {
   [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug): conflicto con $ref -> abriría un Claude en $path"; return 0; }
   spec="$state/specs/${slug//\//_}-$pr.md"
   fail="$state/failed/${slug//\//_}-$pr.md"
+  resolved="$(resolved_mark "$slug" "$pr")"
   cat >"$spec" <<EOF
 # Resolver conflictos de merge (stack-sync)
 
@@ -211,11 +247,13 @@ Motivo: $why. Hay que traer \`$ref\` a esta rama y da conflictos.
    - Conflicto real (los dos cambiaron la misma lógica): corré solo los tests relacionados con los archivos que
      chocaron (\`npx jest --findRelatedTests <archivos>\` en el back, \`npx vitest related --run <archivos>\` en el
      front). Si el merge cambió el schema de Prisma, antes el \`prisma generate\` del CI del repo (hoy \`npx prisma generate\`; no toca la base).
-4. \`git commit --no-edit\` (commit del merge) y \`git push origin HEAD:$branch\` (sin force). No edites el PR: si
-   su base cambia, stack-sync lo retargetea solo.
+4. \`git add\` de los archivos resueltos, confirmá que no queda ninguno sin resolver (\`git diff --name-only
+   --diff-filter=U\` vacío) y dejá la marca: \`touch $resolved\`. **No commitees ni pushees**: el repo pide
+   confirmación para los dos, y stack-sync commitea el merge y lo pushea en su corrida siguiente. No edites el PR:
+   si su base cambia, stack-sync lo retargetea solo.
 5. Nunca rebase, force, amend ni \`--no-verify\`.
 
-Si abortaste, fallaron los checks o el push, escribí el motivo en una línea en \`$fail\`. Al terminar, avisá con
+Si abortaste o fallaron los checks, no dejes la marca y escribí el motivo en una línea en \`$fail\`. Al terminar, avisá con
 \`notify-send "stack-sync: PR #$pr" "<resultado en una línea>"\` y dejá acá qué conflictos había, cómo los
 resolviste y, si corriste tests, su salida. Esta pestaña queda abierta para que Loren lo lea.
 EOF
@@ -400,6 +438,7 @@ for slug in "${!slug_of[@]}"; do
     is_busy "$slug" "$pr" && { note "#$pr ($slug, $head): salteado, hay un agente trabajando en $path"; continue; }
     busy=0
     git -C "$path" fetch -q origin 2>/dev/null || { note "#$pr ($slug): fetch falló"; continue; }
+    finish_resolved "$slug" "$pr" "$head" "$path" && continue
     # -uno: un archivo sin trackear (el pnpm-lock.yaml que deja pnpm) no frena el merge; uno trackeado sí
     if [ -n "$(git -C "$path" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
       note "#$pr ($slug, $head): salteado, $path tiene cambios sin commitear"; continue
@@ -443,6 +482,8 @@ for slug in "${!slug_of[@]}"; do
   done <<<"$rows"
   clean_merged "$slug" "$json"
 done
+# a resolved mark nobody took in a day (its PR closed, or it lost its worktree) is dropped
+[ "$dry" -eq 1 ] || find "$state" -maxdepth 1 -name 'resolved-*' -mmin +1440 -delete 2>/dev/null
 
 [ "${#skips[@]}" -gt 0 ] && { [ -t 1 ] || [ "$dry" -eq 1 ]; } && printf '%s\n' "${skips[@]}"
 if [ "${#summary[@]}" -gt 0 ]; then

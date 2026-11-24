@@ -9,7 +9,8 @@
 # with a conflict agent gets no review agent, and a review on a PR without a worktree is notified once; PR comments
 # (ADR 0058): someone else's comment opens one Claude once, my own or a bot's (*[bot] or a known login like
 # github-actions) does not, a review by a *[bot] login still does, and with a review and a comment the newest one is
-# taken, either way; and a red CI
+# taken, either way; a conflict agent only stages and leaves a mark, and the script commits and pushes it (ADR 0059),
+# also from --precheck with nothing new on GitHub; and a red CI
 # (ADR 0048): a failed check on the PR head opens one Claude once, a green CI does not, and a review goes first;
 # a clean worktree only behind its PR head is fast-forwarded, and a PR below merged into a branch other than dev
 # retargets the PR above to that branch.
@@ -156,7 +157,7 @@ L="$W/gh/orca"
 check "trunk conflict on five: merge aborted, a Claude opened in its worktree" 'grep -q "agent launch --agent claude --worktree path:$W/root/app-five" "$L" && [ -z "$(git -C "$W/root/app-five" status --porcelain)" ]'
 check "conflict with the base on eight: its Claude points at its worktree" 'grep -q "worktree path:$W/root/app-eight" "$L"'
 check "mergeable UNKNOWN but conflicting locally: eleven gets its Claude" 'grep -q "worktree path:$W/root/app-eleven" "$L"'
-check "the brief tells the agent to push without force" 'grep -q "git push origin HEAD:five" "$W/state/specs/org_app-5.md" && ! grep -q -- "--force" "$W/state/specs/org_app-5.md"'
+check "the conflict brief stages and leaves the resolved mark, without commit, push or force (ADR 0059)" 'f="$W/state/specs/org_app-5.md"; grep -q "touch $W/state/resolved-org_app-5" "$f" && grep -q "No commitees ni pushees" "$f" && ! grep -qE "git (commit|push) " "$f" && ! grep -q -- "--force" "$f"'
 check "dirty worktree is skipped and kept" '[ "$(cat "$W/root/app-six/six.txt")" = dirty ] && grep -q "#6.*cambios sin commitear" <<<"$out"'
 check "worktree not at the PR head is skipped" 'grep -q "#7.*no está en la punta" <<<"$out"'
 check "twenty, clean and one commit behind: fast-forwarded to the PR head" '[ "$(git -C "$W/root/app-twenty" rev-parse HEAD)" = "$(oid twenty)" ] && grep -q "#20 .*atrasado -> fast-forward" <<<"$out"'
@@ -214,6 +215,22 @@ echo 304 >"$W/gh/api-status"; calls=$(wc -l <"$W/gh/calls")
 check "--precheck right after a sync, nothing changed (304): exits 1 without syncing" '! bash "$SYNC" --precheck >/dev/null 2>&1 && [ "$(tail -n +$((calls + 1)) "$W/gh/calls" | grep -c "pr list")" -eq 0 ]'
 echo 200 >"$W/gh/api-status"; calls=$(wc -l <"$W/gh/calls")
 check "--precheck when a PR changed (200): syncs and still exits 1" '! bash "$SYNC" --precheck >/dev/null 2>&1 && tail -n +$((calls + 1)) "$W/gh/calls" | grep -q "pr list"'
+# ADR 0059: the conflict agent of five resolves and stages its merge and leaves the mark; nothing changed on GitHub
+# (304), but the precheck syncs because of the mark, and the script commits the merge and pushes it
+git -C "$W/root/app-five" merge -q --no-edit origin/dev >/dev/null 2>&1; echo resolved >"$W/root/app-five/five.txt"
+git -C "$W/root/app-five" add five.txt; : >"$W/state/resolved-org_app-5"
+: >"$W/state/resolved-org_app-19" # a mark with no merge in progress: nothing to commit
+echo 304 >"$W/gh/api-status"; rm -f "$W/state/busy/"*
+bash "$SYNC" --precheck >/dev/null 2>&1
+check "--precheck with a resolved mark syncs even when nothing changed on GitHub" 'grep -q "#5 .*commiteado y pusheado" "$W/state/stack-sync.log"'
+check "a resolved conflict: the script commits the merge (two parents) and pushes it" 'pushed five && [ "$(git -C "$W/root/app-five" rev-list --parents -n1 HEAD | wc -w)" -eq 3 ] && anc five dev'
+check "the resolved mark goes after the push" '[ ! -e "$W/state/resolved-org_app-5" ]'
+check "a resolved mark without a merge in progress commits nothing, is told and removed" 'grep -q "#19 .*no hay un merge listo" "$W/state/stack-sync.log" && [ ! -e "$W/state/resolved-org_app-19" ] && pushed nineteen'
+touch -d '2 hours ago' "$W/state/resolved-org_app-99"; calls=$(wc -l <"$W/gh/calls")
+check "--precheck ignores an old resolved mark (its PR is gone): 304 and no sync" '! bash "$SYNC" --precheck >/dev/null 2>&1 && [ "$(tail -n +$((calls + 1)) "$W/gh/calls" | grep -c "pr list")" -eq 0 ]'
+touch -d '2 days ago' "$W/state/resolved-org_app-99"; bash "$SYNC" >/dev/null 2>&1
+check "a resolved mark nobody took in a day is dropped" '[ ! -e "$W/state/resolved-org_app-99" ]'
+echo 200 >"$W/gh/api-status"
 check "never force-pushes or rebases" '! grep -qE -- "git -C [^ ]+ (rebase|push[^#]*--force)" "$SYNC"'
 check "dry-run changes nothing" 'before=$(git -C "$W/root/app-four" rev-parse HEAD); bash "$SYNC" --dry-run >/dev/null 2>&1; [ "$(git -C "$W/root/app-four" rev-parse HEAD)" = "$before" ]'
 
