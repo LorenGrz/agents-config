@@ -162,7 +162,7 @@ detalle poco usado va a la skill que lo trata (por ejemplo, el roadmap vive en `
 
 ### Setup por repo
 
-Este árbol es global. La config de cada repo (`AGENTS.md`, `.claude/settings.json` con superpowers, hooks
+Este árbol es global. La config de cada repo (`AGENTS.md`, `.claude/settings.json` con mattpocock-skills, hooks
 de rama y lint, CI, GitHub Project) sale de la skill `skills/devops/project-init`, una vez por repo nuevo.
 `scripts/project-agents.sh --manifest <file> [--org <name>]` instala los packs que pide el manifiesto de la
 entrevista. Tests de project-init: `test-manifest.sh` y `test-docs-check.sh` (offline) y `e2e.sh --stack

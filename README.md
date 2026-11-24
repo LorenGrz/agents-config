@@ -38,14 +38,15 @@ una pregunta con tres opciones, siempre en este orden (`lane-guard.sh` lo impone
 |---|---|
 | Continuar | directo, sin plan |
 | Plan S | plan corto (archivos, cambio, check); sin entrevista, solo las preguntas críticas en un lote; subagentes solo si el trabajo los pide |
-| Plan L | entrevista de `mattpocock-skills:grilling`, spec y plan en `docs/superpowers/`, un líder por repo o workspace cuando el trabajo cruza repos |
+| Plan L | entrevista de `mattpocock-skills:grilling`, spec y tickets con `to-spec` y `to-tickets` en `.scratch/` (local, sin versionar), un `worker` por ticket desbloqueado, un líder por repo o workspace cuando el trabajo cruza repos |
 
 - **Orquestador**: la sesión principal. Planifica, escribe los briefs e integra; en Plan L no escribe código.
 - **Líder**: una sesión en cada repo que toca el trabajo, con las skills y restricciones de ese repo, o en la carpeta del workspace cuando las skills viven ahí (ese líder puede mandar un líder a cada repo hijo). Implementa, puede lanzar `worker`, `scout` y su reviewer, commitea en la rama de la tarea y hace revisar su diff. En un solo repo es el orquestador.
-- **`worker`**: implementa algo ya decidido, en segundo plano. Default para todo cambio no trivial. **`scout`**: solo lectura.
+- **`worker`** (Opus): implementa algo ya decidido, en segundo plano: test primero (`mattpocock-skills:tdd`), después código y docs; corre solo sus tests y no commitea. Default para todo cambio no trivial. **`scout`**: solo lectura.
 - **`reasoner`**: decisiones caras de errar (arquitectura, bugs sin causa conocida, cambios difíciles de revertir).
-- **Reviewer**: un agente aparte (el subagente `reviewer`) revisa el diff contra el pedido y corre los checks, sin
-  editar, antes de cada PR y del merge que cierra un Plan L. Una sola re-revisión; otro proveedor, solo a pedido (`review-handoff`).
+- **Reviewer**: dos agentes aparte (el subagente `reviewer`), en paralelo y sin editar, antes de cada PR y del merge que
+  cierra un Plan L: **Standards** (reglas del repo, smells y los checks del CI) y **Spec** (contra el ticket o la spec),
+  con los informes separados. Una re-revisión por eje; otro proveedor, solo a pedido (`review-handoff`).
 
 ```mermaid
 flowchart LR
@@ -54,9 +55,9 @@ flowchart LR
   OQ -- Orquestar --> LO[un líder por rama, en su sesión y worktree] --> O
   P -- Continuar --> W[worker en su worktree]
   P -- Plan S --> S[Plan corto]
-  P -- Plan L --> G[grilling, spec y plan] --> WL[un líder por repo o workspace, con sus workers]
+  P -- Plan L --> G[grilling, spec y tickets] --> WL[un líder por repo o workspace, con sus workers]
   W --> O[El orquestador revisa y commitea]
-  D & S & O & WL --> R[Reviewer: un agente aparte] --> M["PR o merge: se borran spec y plan, lo que queda va a un ADR"]
+  D & S & O & WL --> R["Revisión: Standards y Spec en paralelo"] --> M["PR o merge: lo que queda de la spec va a un ADR"]
 ```
 
 | Harness | Líder | `worker` | Reviewer |

@@ -52,7 +52,8 @@ check "Bash 'gh issue list' -> github-usage" 'tool Bash "gh issue list" | grep -
 check "Bash 'ls' is silent" '[ -z "$(tool Bash "ls -la")" ]'
 check "unknown tool is silent" '[ -z "$(tool Read)" ]'
 check "Jira key in a prompt (lowercased) -> jira-usage" 'prompt "mirá el ticket abc-123" "$W/plain" | grep -q "jira-usage"'
-check "plugin shortcut: unknown-cause bug -> systematic-debugging" 'prompt "no sé por qué falla el login" "$W/plain" | grep -q "systematic-debugging"'
+check "plugin shortcut: unknown-cause bug -> diagnosing-bugs" 'prompt "no sé por qué falla el login" "$W/plain" | grep -q "diagnosing-bugs"'
+check "plugin shortcut: design before building -> grilling, spec in .scratch/" 'out="$(prompt "diseñemos el módulo de pagos" "$W/plain")"; grep -q "mattpocock-skills:grilling" <<<"$out" && grep -q ".scratch/" <<<"$out"'
 
 # --- hook: organization replacement skills (router copied into a temp hub; HUB is derived from its location)
 OH="$W/orghub"; mkdir -p "$OH/config/hooks" "$OH/scripts" "$OH/organizations/acme/skills/acme-github"

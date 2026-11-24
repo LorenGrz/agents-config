@@ -30,9 +30,9 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 - Every repo keeps these, updated after merging:
   - `AGENTS.md`: the map new sessions read instead of the code.
   - `.agents/CONTEXT.md`: current state.
-  - `docs/superpowers/specs/` and `docs/superpowers/plans/`: the spec and plan being executed. Copy an
-    approved plan-mode plan into `docs/superpowers/plans/YYYY-MM-DD-<slug>.md` before implementing;
-    delete both in the merge that finishes the work, and move what must outlive them to an ADR.
+  - `.scratch/<topic>/` (local, ignored by git globally, never committed): the spec and tickets being
+    executed ("Issue tracker" below). Copy an approved plan-mode plan into `.scratch/<topic>/spec.md`
+    before implementing; before the merge that finishes the work, move what must outlive it to an ADR.
   - `docs/decisions/NNNN-<slug>.md`: ADRs for decisions with trade-offs.
   - `docs/prompts.md`: every AI prompt the app sends to a model (verbatim copy, where it lives in code,
     short history of what was tried and why it changed), updated in the same PR as any prompt change.
@@ -42,9 +42,9 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 - **Trivial change** (one line or a typo): do it directly. No question, no plan.
 - **Every other task** (any non-trivial repo change, one file included; unknown-cause bugs too): before
   editing, ask one question with exactly three options, always in this order: **Continuar** (direct, no
-  plan) · **Plan S** (short plan: files, change, check; no brainstorming, no spec docs, subagents only when
-  the work needs them) · **Plan L** (design, spec and plan in `docs/superpowers/`, then delegated to
-  subagents or workers). Option descriptions stay minimal: «directo», «plan corto», «plan complejo». Mark the recommended one with "(Recomendado)" and one
+  plan) · **Plan S** (short plan: files, change, check; no interview, no spec or tickets, subagents only when
+  the work needs them) · **Plan L** (interview, spec and tickets in `.scratch/`, then one worker per
+  ticket). Option descriptions stay minimal: «directo», «plan corto», «plan complejo». Mark the recommended one with "(Recomendado)" and one
   short line of why, without moving it: Continuar stays first.
 - **Always after the lane question** (ADR 0040), one more question with exactly two options, in this
   order: **Continuar** (the main session runs it) · **Orquestar** (one lead per task branch and repo, as a
@@ -58,7 +58,15 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   one batch. No rounds.
 - **Plan L starts with a grilling interview:** before designing anything, interview the user one question
   at a time (the `mattpocock-skills:grilling` skill where available) until nothing is left to assume. The
-  design step does not re-ask what was answered.
+  next steps do not re-ask what was answered.
+- **Plan L then follows Matt Pocock's skills** (ADR 0052): `to-spec` writes `.scratch/<topic>/spec.md`,
+  `to-tickets` splits it into `.scratch/<topic>/issues/NN-<slug>.md`, and execution follows `implement-spec`:
+  one `worker` per unblocked ticket, in parallel, each in its own worktree from the task branch; the lead
+  commits each worker's diff and merges it into the task branch, then starts the tickets it unblocks. Then
+  the two-axis review below, from the parent; no draft PR. `to-spec`, `to-tickets`, `implement-spec` and
+  `wayfinder` are user-invoked only: read their `SKILL.md` from the plugin
+  (`~/.claude/plugins/cache/mattpocock/mattpocock-skills/*/skills/engineering/<name>/SKILL.md`) and follow
+  it, with the exceptions in this section.
 - **Plan L splits the work by repo:** the main session plans, writes the briefs, integrates, and writes no
   code. Work that spans repos (backend, frontend) gets one lead per repo: a session opened in that repo, in
   the one worktree of its task branch, so that repo's `AGENTS.md`, skills and restrictions apply. When the
@@ -66,12 +74,15 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   lead to each child repo. A lead implements with the repo's skills, may start `worker` and `scout` agents there and
   commits on the task branch; it does not run lint, typecheck or the test suite, does not verify in a browser
   and does not start a reviewer (ADR 0048): the parent reviews. It never pushes or opens the PR. In a single repo the main session is the lead.
-- **A reviewer checks the work before every PR is opened**, and before the merge that closes a Plan L when
-  there is no PR: a separate reviewer agent (the profile names its model), started by the parent session
-  (one per PR, in parallel; back and front of one PR go to the same reviewer), gets only the diffs and the ticket,
-  reviews them with the repo's review skill and runs the repo's CI commands once (`.github/workflows`, never a
-  default package manager), without editing. Nobody else reruns them: workers don't run them either (their
-  briefs say so), and working alone in Plan S the main session runs them once at the end. Whoever asked for
+- **Two reviewers check the work before every PR is opened**, and before the merge that closes a Plan L when
+  there is no PR (`review-handoff`): separate reviewer agents (the profile names their model), started by the
+  parent session in one message (one pair per PR, in parallel; back and front of one PR go to the same pair),
+  get only the diffs and the ticket, without editing. **Standards** reviews against the repo's documented
+  rules, its review skill and a smell baseline, and runs the repo's CI commands once (`.github/workflows`,
+  never a default package manager); **Spec** reviews against the ticket or spec. Their reports are shown
+  under `## Standards` and `## Spec`, never merged. Nobody else reruns the checks: workers run only the
+  tests they wrote (their definition says so), and working alone in Plan S the main session runs them once
+  at the end. Whoever asked for
   the review fixes small findings, sends large ones to a worker and asks for one re-review; what is still
   open goes to the user. Another provider's model reviews only when the user asks for it. An agent that
   cannot start a reviewer says so before the PR instead of skipping the review.
@@ -82,12 +93,30 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 - **Every plan (S or L) is shown in the terminal message, not only in the plan file, with a table:** who
   does what, whether it runs in parallel, files, and how it is verified. Parallel or visual work adds an
   ASCII diagram of the order.
-- Outside a plan, don't pull in the heavy process (brainstorming, plan writing, subagent-driven execution)
+- Outside a plan, don't pull in the heavy process (grilling, `to-spec`, `to-tickets`, per-ticket workers)
   unless asked.
 - **Repo work goes to a background worker by default** (where the agent has subagents): every non-trivial
   change runs in a worker on the task branch, in its own worktree or in its lead's; whoever started it
   reviews the diff and commits. Trivial changes (one line or a typo) are done directly.
   In Plan S the main session executes and starts one only when the work needs it.
+
+## Agent skills
+
+### Issue tracker
+
+Matt Pocock's skills (`to-spec`, `to-tickets`, `implement-spec`, `wayfinder`, `code-review`) use local
+markdown in `.scratch/`, ignored by git globally and never committed. The team's tracker (GitHub issues,
+Jira) is separate: those skills never write to it.
+
+- One directory per topic: `.scratch/<topic>/`. The spec is `spec.md`; tickets are one file each,
+  `issues/NN-<slug>.md`, numbered from `01`.
+- Near the top of each ticket: a `Status:` line (`ready-for-agent`, `ready-for-human`, `needs-info`,
+  `claimed`, `resolved`) and a `Blocked by: NN, NN` line. A ticket is unblocked when every ticket it
+  lists is `resolved`.
+- "Publish to the issue tracker" means create the file; "fetch the ticket" means read it. Comments go at
+  the bottom under `## Comments`.
+- `wayfinder` keeps its map in `.scratch/<effort>/map.md`, with child tickets in `issues/` as above.
+- Full format: `issue-tracker-local.md` of `setup-matt-pocock-skills` in the plugin.
 
 ## Organizations (work repos)
 
@@ -137,11 +166,10 @@ Claude Code's `intent-router` hook injects this automatically. Outbound actions 
 - `google-workspace-usage`: email, calendar, drive files
 - `jira-ticket-review`: review my tickets
 - `jira-usage`: Jira ticket
-- `mattpocock-skills:grilling`: stress-test an idea
+- `mattpocock-skills:diagnosing-bugs`: unknown-cause bug
+- `mattpocock-skills:grilling`: stress-test an idea, design before building
+- `mattpocock-skills:tdd`: test first
 - `notebooklm-obsidian-sync`: NotebookLM
 - `obsidian-vault`: vault notes
 - `slack-usage`: read or search Slack, send to Slack
-- `superpowers:brainstorming`: design before building
-- `superpowers:systematic-debugging`: unknown-cause bug
-- `superpowers:test-driven-development`: test first
 <!-- intents:end -->

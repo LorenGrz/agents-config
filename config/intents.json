@@ -111,6 +111,18 @@
       ]
     },
     {
+      "skill": "mattpocock-skills:diagnosing-bugs",
+      "tools": [],
+      "bash": [],
+      "intents": [
+        {
+          "label": "unknown-cause bug",
+          "re": "no s[eé] por qu[eé] (falla|pasa|anda|rompe)|why (is|does) .* (fail|break|crash)|root cause|causa ra[ií]z|intermitente|flaky",
+          "cmd": "reproduce, isolate, form a hypothesis and verify it before changing code; use debug-assistant only for a pasted stack trace"
+        }
+      ]
+    },
+    {
       "skill": "mattpocock-skills:grilling",
       "tools": [],
       "bash": [],
@@ -119,6 +131,23 @@
           "label": "stress-test an idea",
           "re": "gr[ií]ll?ame|grill me|estres[aá] (esta|mi) idea|stress[- ]test (this|my) (idea|plan)",
           "cmd": "interview the user relentlessly about the idea before building anything"
+        },
+        {
+          "label": "design before building",
+          "re": "brainstorm|pensemos (el )?dise[ñn]o|dise[ñn]emos|armemos un plan|let'?s design|plan this feature",
+          "cmd": "grill the user until nothing is left to assume, then read the plugin's to-spec SKILL.md and follow it: the spec goes to .scratch/<topic>/spec.md (local, never committed)"
+        }
+      ]
+    },
+    {
+      "skill": "mattpocock-skills:tdd",
+      "tools": [],
+      "bash": [],
+      "intents": [
+        {
+          "label": "test first",
+          "re": "\\btdd\\b|test[- ]first|escrib[ií] (el )?test primero|red[- ]green",
+          "cmd": "write the failing test, make it pass, refactor; write tests with unit-test-generator, run them with execute-test-suite"
         }
       ]
     },
@@ -166,42 +195,6 @@
           "label": "send to Slack",
           "re": "mand[aá]le (a|al)|envi[aá] (un )?mensaje|post (this )?(in|to) #|send a slack",
           "cmd": "draft first; send only the approved text"
-        }
-      ]
-    },
-    {
-      "skill": "superpowers:brainstorming",
-      "tools": [],
-      "bash": [],
-      "intents": [
-        {
-          "label": "design before building",
-          "re": "brainstorm|pensemos (el )?dise[ñn]o|dise[ñn]emos|armemos un plan|let'?s design|plan this feature",
-          "cmd": "brainstorm, write the spec in docs/superpowers/specs/, then writing-plans for the plan in docs/superpowers/plans/"
-        }
-      ]
-    },
-    {
-      "skill": "superpowers:systematic-debugging",
-      "tools": [],
-      "bash": [],
-      "intents": [
-        {
-          "label": "unknown-cause bug",
-          "re": "no s[eé] por qu[eé] (falla|pasa|anda|rompe)|why (is|does) .* (fail|break|crash)|root cause|causa ra[ií]z|intermitente|flaky",
-          "cmd": "reproduce, isolate, form a hypothesis and verify it before changing code; use debug-assistant only for a pasted stack trace"
-        }
-      ]
-    },
-    {
-      "skill": "superpowers:test-driven-development",
-      "tools": [],
-      "bash": [],
-      "intents": [
-        {
-          "label": "test first",
-          "re": "\\btdd\\b|test[- ]first|escrib[ií] (el )?test primero|red[- ]green",
-          "cmd": "write the failing test, make it pass, refactor; write tests with unit-test-generator, run them with execute-test-suite"
         }
       ]
     }
