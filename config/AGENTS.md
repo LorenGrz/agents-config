@@ -141,6 +141,10 @@ The learning roadmap and current stage are personal: see your profile and the `r
 
 - If the repo has `scripts/gh-flow.sh` (repos scaffolded with `project-init`), use it: the repo's AGENTS.md
   flow (base `dev`, PR + squash) overrides this section.
+- Every branch starts from the repo's base (`origin/dev`, or the default branch without `dev`) and its PR
+  targets that base: never stack a branch on another open PR, because a PR against a non-base branch runs
+  no CI (ADR 0054). Before branching, check whether the task needs code from an unmerged PR; if it does,
+  tell the user instead of stacking (wait for that merge, or add the task to that PR).
 - Assume the worktree may already be dirty; inspect `git status --short` before committing.
 - Prefer non-interactive git commands: inline `-m` messages, never open an editor, never `-i`.
 - Never use destructive commands like `git reset --hard` or checkout-based reverts unless the user
