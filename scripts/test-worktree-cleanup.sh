@@ -21,9 +21,13 @@ chmod +x "$W/bin/gh"
 export FAKE_PRS="$W/prs"
 export PATH="$W/bin:$PATH"
 
-# mkrepo <dir> -> repo with one commit on main and a github origin (never fetched)
+# mkrepo <dir> -> repo with one commit on main and a github origin (never fetched; origin/main faked at init)
 mkrepo() { mkdir -p "$1" && git -C "$1" init -q -b main && git -C "$1" commit -q --allow-empty -m init \
-  && git -C "$1" remote add origin https://github.com/acme/"$(basename "$1")".git; }
+  && git -C "$1" remote add origin https://github.com/acme/"$(basename "$1")".git && push_main "$1"; }
+# push_main <repo> -> origin/main points at the local main (a push, without a remote)
+push_main() { git -C "$1" update-ref refs/remotes/origin/main "$(git -C "$1" rev-parse main)"; }
+# mergein <repo> <branch> -> --no-ff merge of the branch into main (main is checked out in the main worktree)
+mergein() { git -C "$1" merge -q --no-ff "$2" -m "Merge $2"; }
 # mkwt <repo> <branch> -> worktree <repo>-<branch> with one extra commit
 mkwt() { git -C "$1" worktree add -q -b "$2" "$1-$2" && git -C "$1-$2" commit -q --allow-empty -m "work $2"; }
 # merged <branch> <oid> <number> -> the fake PR lookup answers a merged PR
@@ -79,11 +83,35 @@ check "folder mode cleans the worktrees of every repo inside" '[ ! -d "$F/repo-b
 check "folder mode keeps the unmerged one and the main repos" '[ -d "$F/repo-c-t3" ] && [ -d "$F/repo-b/.git" ] && [ -d "$F/repo-c/.git" ]'
 check "folder mode reports both" '[ "$(jq -r ".hookSpecificOutput.additionalContext" <<<"$out" | wc -l)" = 2 ]'
 
+# --- local --no-ff merge, no PR (personal repos): the tip is in origin/<default> but off its first-parent chain
+L="$W/r2/repo-l"; mkrepo "$L"; git -C "$L" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
+git -C "$L" worktree add -q -b feat-fresh "$L-feat-fresh"            # created, no commits of its own
+mkwt "$L" feat-local; mkwt "$L" feat-ldirty; mkwt "$L" feat-lhere
+mergein "$L" feat-local; mergein "$L" feat-ldirty; mergein "$L" feat-lhere; echo x >"$L-feat-ldirty/new.txt"
+git -C "$L" worktree add -q -b feat-stale "$L-feat-stale"            # created at the base tip...
+git -C "$L" commit -q --allow-empty -m advance; push_main "$L"         # ...and the base moved on
+mkwt "$L" feat-unpushed; mergein "$L" feat-unpushed                   # merged into local main only
+out="$(run "$L-feat-lhere")"
+check "local: deletes the worktree merged into origin/main with --no-ff" '[ ! -d "$L-feat-local" ] && ! has_branch "$L" feat-local'
+check "local: reports it with the base, no PR number" 'jq -r ".hookSpecificOutput.additionalContext" <<<"$out" | grep -qx "worktree-cleanup: borré .*repo-l-feat-local (rama feat-local, mergeada en origin/main)"'
+check "local: keeps a fresh worktree with no commits" '[ -d "$L-feat-fresh" ] && has_branch "$L" feat-fresh'
+check "local: keeps a fresh worktree after the base moved on" '[ -d "$L-feat-stale" ] && has_branch "$L" feat-stale'
+check "local: keeps a merged worktree with uncommitted changes" '[ -d "$L-feat-ldirty" ] && has_branch "$L" feat-ldirty'
+check "local: keeps the merged worktree that holds the cwd" '[ -d "$L-feat-lhere" ] && has_branch "$L" feat-lhere'
+check "local: keeps a worktree merged only into the local base" '[ -d "$L-feat-unpushed" ] && has_branch "$L" feat-unpushed'
+check "local: reports only what it deleted" '[ "$(jq -r ".hookSpecificOutput.additionalContext" <<<"$out" | wc -l)" = 1 ]'
+git -C "$L" update-ref -d refs/remotes/origin/HEAD; push_main "$L"
+run "$L" >/dev/null
+check "local: without origin/HEAD it falls back to origin/main" '[ ! -d "$L-feat-unpushed" ]'
+
 # --- no gh: silent, exit 0 (PATH with only the tools the hook needs)
 mkdir -p "$W/nogh"; for c in bash git jq sed grep head cat timeout dirname basename; do ln -sf "$(command -v "$c")" "$W/nogh/$c"; done
 mkwt "$R" feat-nogh; merged feat-nogh "$(head_of "$R-feat-nogh")" 61
 out="$(jq -n --arg c "$R" '{cwd:$c}' | PATH="$W/nogh" bash "$HOOK"; echo "rc=$?")"
 check "without gh it exits 0 with no output and deletes nothing" '[ "$out" = "rc=0" ] && [ -d "$R-feat-nogh" ]'
+mkwt "$L" feat-lnogh; mergein "$L" feat-lnogh; push_main "$L"
+out="$(jq -n --arg c "$L" '{cwd:$c}' | PATH="$W/nogh" bash "$HOOK" | jq -r .hookSpecificOutput.additionalContext)"
+check "without gh a local --no-ff merge is still cleaned" '[ ! -d "$L-feat-lnogh" ] && grep -q "feat-lnogh.*mergeada en origin/main" <<<"$out"'
 
 # --- gh failing (no network): silent, nothing deleted
 cat >"$W/bin/gh" <<'GH'

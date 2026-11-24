@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# SessionStart: delete the linked git worktrees whose PR is already merged (ADR 0030).
-# "Merged" is read from GitHub, not from git ancestry: squash merges leave the branch unmerged for git.
-# A worktree is removed only when it is clean AND its HEAD is exactly the head the merged PR had, so no
-# later local commit is lost. Never breaks the session: any failure exits 0 in silence, ~10 s budget.
+# SessionStart: delete the linked git worktrees whose branch is already merged (ADR 0030, 0053).
+# Merged means either of:
+#   - a merged PR on GitHub whose head is exactly the worktree's HEAD (squash merges leave the branch
+#     unmerged for git, so PR repos are read from GitHub);
+#   - no PR: the HEAD is in origin/<default> but off its first-parent chain, i.e. it came in through a
+#     --no-ff merge that was pushed (the personal-repo flow). A fresh branch with no commits of its own sits
+#     on that chain, so it is never taken; a fast-forward merge is not detected either (kept, the safe side).
+# A worktree is removed only when it is clean, so nothing uncommitted is lost. No fetch: a stale origin ref
+# only delays the cleanup. Never breaks the session: any failure exits 0 in silence, ~10 s budget.
 #
 # Usage (hook): reads the SessionStart JSON on stdin (`cwd`), prints additionalContext when it deleted something.
 #   worktree-cleanup.sh --cwd <dir> [--dry-run]   manual run: plain-text summary; --dry-run only lists.
@@ -22,6 +27,7 @@ done
 
 deadline=$((SECONDS + BUDGET))
 lines=()
+have_gh=0
 
 say_note() { [ "$manual" -eq 1 ] && echo "worktree-cleanup: $1"; return 0; }
 
@@ -41,10 +47,18 @@ gh_merged() {
 # Process the linked worktrees of one repo (any of its worktrees as $1).
 clean_repo() {
   local any="$1" main="" path="" branch="" line
-  local slug url
-  url="$(git -C "$any" remote get-url origin 2>/dev/null)" || return 0
-  slug="$(printf '%s' "$url" | sed -nE 's#^.*github\.com[:/]+([^/]+/[^/]+)$#\1#p' | sed -E 's#\.git$##')"
-  [ -n "$slug" ] || return 0
+  local slug="" url="" base="" b firstparent=""
+  url="$(git -C "$any" remote get-url origin 2>/dev/null)" || url=""
+  [ "$have_gh" -eq 1 ] && slug="$(printf '%s' "$url" | sed -nE 's#^.*github\.com[:/]+([^/]+/[^/]+)$#\1#p' | sed -E 's#\.git$##')"
+  # pushed default branch: origin/HEAD, else origin/main or origin/master
+  base="$(git -C "$any" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)" || base=""
+  if [ -z "$base" ]; then
+    for b in main master; do
+      git -C "$any" show-ref --verify --quiet "refs/remotes/origin/$b" && { base="origin/$b"; break; }
+    done
+  fi
+  [ -n "$base" ] && firstparent="$(git -C "$any" rev-list --first-parent "$base" 2>/dev/null)"
+  [ -n "$slug" ] || [ -n "$firstparent" ] || return 0
 
   local porcelain; porcelain="$(git -C "$any" worktree list --porcelain 2>/dev/null)" || return 0
   main="$(printf '%s\n' "$porcelain" | sed -n '1s/^worktree //p')"
@@ -71,30 +85,37 @@ clean_repo() {
     case "$cwd_real/" in "$path"/*) continue ;; esac
     # a. dirty: not touched
     [ -z "$(git -C "$path" status --porcelain 2>/dev/null)" ] || continue
-    # b. merged PR
-    local json num oid head
-    json="$(gh_merged "$slug" "$branch" 2>/dev/null)" || continue
-    num="$(printf '%s' "$json" | jq -r '.[0].number // empty' 2>/dev/null)"
-    oid="$(printf '%s' "$json" | jq -r '.[0].headRefOid // empty' 2>/dev/null)"
-    [ -n "$num" ] && [ -n "$oid" ] || continue
-    # c. the PR head is exactly what is checked out here
+    local json num oid head reason=""
     head="$(git -C "$path" rev-parse HEAD 2>/dev/null)" || continue
-    [ "$head" = "$oid" ] || continue
+    # b. merged PR whose head is exactly what is checked out here
+    if [ -n "$slug" ] && json="$(gh_merged "$slug" "$branch" 2>/dev/null)"; then
+      num="$(printf '%s' "$json" | jq -r '.[0].number // empty' 2>/dev/null)"
+      oid="$(printf '%s' "$json" | jq -r '.[0].headRefOid // empty' 2>/dev/null)"
+      [ -n "$num" ] && [ "$head" = "$oid" ] && reason="PR #$num mergeado"
+    fi
+    # c. no PR: pushed --no-ff merge (in the base, off its first-parent chain)
+    if [ -z "$reason" ] && [ -n "$firstparent" ] \
+      && git -C "$path" merge-base --is-ancestor "$head" "$base" 2>/dev/null \
+      && ! grep -qxF "$head" <<<"$firstparent"; then
+      reason="mergeada en $base"
+    fi
+    [ -n "$reason" ] || continue
     # d. remove (no --force: git refuses when it is not safe); -D because a squash merge leaves the branch "unmerged"
     if [ "$dry" -eq 1 ]; then
-      lines+=("worktree-cleanup (dry-run): borraría $path (rama $branch, PR #$num mergeado)")
+      lines+=("worktree-cleanup (dry-run): borraría $path (rama $branch, $reason)")
       continue
     fi
     git -C "$main" worktree remove "$path" >/dev/null 2>&1 || continue
     git -C "$main" branch -D "$branch" >/dev/null 2>&1
-    lines+=("worktree-cleanup: borré $path (rama $branch, PR #$num mergeado)")
+    lines+=("worktree-cleanup: borré $path (rama $branch, $reason)")
   done
   return 0
 }
 
 main() {
   command -v git >/dev/null 2>&1 && command -v jq >/dev/null 2>&1 || return 0
-  command -v gh >/dev/null 2>&1 || { say_note "gh no está disponible"; return 0; }
+  # without gh only the local-merge check runs
+  if command -v gh >/dev/null 2>&1; then have_gh=1; else say_note "gh no está disponible: solo merges locales"; fi
 
   if [ "$manual" -eq 0 ] && [ ! -t 0 ]; then
     cwd="$(jq -r '.cwd // empty' 2>/dev/null || true)"
