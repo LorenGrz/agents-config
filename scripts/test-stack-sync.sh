@@ -85,6 +85,7 @@ branch twentysix dev      # PR 26: up to date, only a review by copilot[bot] -> 
 branch eighteen dev       # PR 18: up to date, a CI check failed -> CI agent
 branch nineteen dev       # PR 19: up to date, CI green -> nothing
 branch twenty dev         # PR 20: clean worktree one commit behind its PR head -> fast-forward
+branch twentyseven dev    # PR 27: draft behind dev, no conflict -> dev not brought
 branch nine dev           # PR 9: merged into three, not into dev
 branch twentyone nine     # PR 21 stacked on nine -> gets origin/three, retargeted to three
 git -C "$R" fetch -q
@@ -121,9 +122,9 @@ ci18='[{"name":"Lint, tests y build","conclusion":"FAILURE"},{"name":"schema","c
 write_open() {
 # five conflicts and also has a review: the conflict agent owns it. 17 has a review but no local worktree.
 five_rev="$(row 5 five dev CONFLICTING | sed "s/}\$/,\"author\":{\"login\":\"me\"},\"reviews\":[$(rev R5 ana CHANGES_REQUESTED)]}/")"
-printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
+printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
   "$five_rev" "$(row 6 six dev MERGEABLE)" "$(row 7 seven dev MERGEABLE)" "$(row 8 eight three MERGEABLE)" \
-  "$(rowp 10 ten)" "$(row 11 eleven dev UNKNOWN)" \
+  "$(rowp 10 ten)" "$(row 11 eleven dev UNKNOWN | sed 's/}$/,"isDraft":true}/')" \
   "$(rowr 15 fifteen "[$(rev R15a me COMMENTED),$(rev R15 ana CHANGES_REQUESTED)]" | sed 's/}$/,"statusCheckRollup":[{"name":"tests","conclusion":"FAILURE"}]}/')" \
   "$(rowr 16 sixteen "[$(rev R16 me COMMENTED)]")" \
   '{"number":17,"headRefName":"seventeen","baseRefName":"dev","mergeable":"MERGEABLE","headRefOid":"x","author":{"login":"me"},"reviews":[{"id":"R17","author":{"login":"ana"},"state":"COMMENTED"}]}' \
@@ -137,6 +138,7 @@ printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(r
   "$(rowk 25 twentyfive "[$(rev R25 ana CHANGES_REQUESTED | sed 's/}$/,"submittedAt":"2026-11-24T18:00:00Z"}/')]" \
      "[$(com C25 ana 2026-11-20T14:00:00Z)]")" \
   "$(rowr 26 twentysix "[$(rev R26 'copilot[bot]' COMMENTED)]")" \
+  "$(row 27 twentyseven dev MERGEABLE | sed 's/}$/,"isDraft":true}/')" \
   >"$W/gh/open.json"
 }
 write_open
@@ -165,7 +167,8 @@ check "dirty worktree is skipped and kept" '[ "$(cat "$W/root/app-six/six.txt")"
 check "worktree not at the PR head is skipped" 'grep -q "#7.*no está en la punta" <<<"$out"'
 check "twenty, clean and one commit behind: fast-forwarded to the PR head" '[ "$(git -C "$W/root/app-twenty" rev-parse HEAD)" = "$(oid twenty)" ] && grep -q "#20 .*atrasado -> fast-forward" <<<"$out"'
 check "PR below merged into three, not dev: twentyone gets origin/three and is retargeted to three" 'anc twentyone three && pushed twentyone && grep -q "pr edit 21 --repo org/app --base three" "$W/gh/calls" && ! grep -q "pr edit 21 --repo org/app --base dev" "$W/gh/calls"'
-check "three behind dev (no conflict): gets origin/dev and is pushed" 'anc three dev && pushed three && grep -q "#3 .*atrás de dev" <<<"$out"'
+check "twentyseven, a draft behind dev without a conflict: dev not brought, nothing pushed" '! anc twentyseven dev && [ "$(git -C "$W/root/app-twentyseven" rev-parse HEAD)" = "$(oid twentyseven)" ] && grep -q "#27 .*borrador atrás de dev sin choque" <<<"$out"'
+check "three, ready and behind dev (no conflict): gets origin/dev and is pushed" 'anc three dev && pushed three && grep -q "#3 .*atrás de dev" <<<"$out"'
 check "merged twelve: worktree and local branch removed" '[ ! -d "$W/root/app-twelve" ] && ! git -C "$R" rev-parse -q --verify refs/heads/twelve >/dev/null'
 check "merged twelve: remote branch deleted" '! git -C "$R" ls-remote --exit-code --heads origin twelve >/dev/null'
 check "merged one keeps its worktree: two is stacked on it" '[ -d "$W/root/app-one" ] && grep -q "#1.*apilado encima" <<<"$out"'
