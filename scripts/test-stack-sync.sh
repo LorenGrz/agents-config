@@ -226,6 +226,10 @@ check "--precheck with a resolved mark syncs even when nothing changed on GitHub
 check "a resolved conflict: the script commits the merge (two parents) and pushes it" 'pushed five && [ "$(git -C "$W/root/app-five" rev-list --parents -n1 HEAD | wc -w)" -eq 3 ] && anc five dev'
 check "the resolved mark goes after the push" '[ ! -e "$W/state/resolved-org_app-5" ]'
 check "a resolved mark without a merge in progress commits nothing, is told and removed" 'grep -q "#19 .*no hay un merge listo" "$W/state/stack-sync.log" && [ ! -e "$W/state/resolved-org_app-19" ] && pushed nineteen'
+touch -d '2 hours ago' "$W/state/resolved-org_app-99"; calls=$(wc -l <"$W/gh/calls")
+check "--precheck ignores an old resolved mark (its PR is gone): 304 and no sync" '! bash "$SYNC" --precheck >/dev/null 2>&1 && [ "$(tail -n +$((calls + 1)) "$W/gh/calls" | grep -c "pr list")" -eq 0 ]'
+touch -d '2 days ago' "$W/state/resolved-org_app-99"; bash "$SYNC" >/dev/null 2>&1
+check "a resolved mark nobody took in a day is dropped" '[ ! -e "$W/state/resolved-org_app-99" ]'
 echo 200 >"$W/gh/api-status"
 check "never force-pushes or rebases" '! grep -qE -- "git -C [^ ]+ (rebase|push[^#]*--force)" "$SYNC"'
 check "dry-run changes nothing" 'before=$(git -C "$W/root/app-four" rev-parse HEAD); bash "$SYNC" --dry-run >/dev/null 2>&1; [ "$(git -C "$W/root/app-four" rev-parse HEAD)" = "$before" ]'

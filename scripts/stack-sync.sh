@@ -120,7 +120,8 @@ if [ "$precheck" -eq 1 ]; then
   changed=0
   [ -e "$last" ] && [ -n "$(find "$last" -mmin -30 2>/dev/null)" ] || changed=1
   # a conflict an agent left resolved is local, GitHub does not see it: push it now, not in 30 min (ADR 0059)
-  compgen -G "$state/resolved-*" >/dev/null && changed=1
+  # (only a recent mark: one whose PR closed or lost its worktree would force a sync every 2 min)
+  [ -n "$(find "$state" -maxdepth 1 -name 'resolved-*' -mmin "-$busy_minutes" 2>/dev/null)" ] && changed=1
   for slug in "${!slug_of[@]}"; do
     etag_file="$state/etag-${slug//\//_}"
     etag="$(cat "$etag_file" 2>/dev/null)"
@@ -175,8 +176,10 @@ finish_resolved() {
   fi
   [ "$dry" -eq 1 ] && { say "dry-run: #$pr ($slug, $branch): conflicto resuelto -> commitearía el merge y pushearía"; return 0; }
   rm -f "$mark"
-  if ! git -C "$path" commit -q --no-edit >/dev/null 2>&1; then
-    say "#$pr ($slug, $branch): el commit del merge resuelto falló (¿hook?); queda en $path sin commitear"; return 0
+  local err
+  if ! err="$(git -C "$path" commit -q --no-edit 2>&1)"; then
+    say "#$pr ($slug, $branch): el commit del merge resuelto falló; queda en $path sin commitear: $(tail -n 3 <<<"$err" | tr '\n' ' ')"
+    return 0
   fi
   if git -C "$path" push -q origin "HEAD:$branch" 2>/dev/null; then
     say "#$pr ($slug, $branch): conflicto resuelto por el agente -> commiteado y pusheado"
@@ -479,6 +482,8 @@ for slug in "${!slug_of[@]}"; do
   done <<<"$rows"
   clean_merged "$slug" "$json"
 done
+# a resolved mark nobody took in a day (its PR closed, or it lost its worktree) is dropped
+[ "$dry" -eq 1 ] || find "$state" -maxdepth 1 -name 'resolved-*' -mmin +1440 -delete 2>/dev/null
 
 [ "${#skips[@]}" -gt 0 ] && { [ -t 1 ] || [ "$dry" -eq 1 ]; } && printf '%s\n' "${skips[@]}"
 if [ "${#summary[@]}" -gt 0 ]; then
