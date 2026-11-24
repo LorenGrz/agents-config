@@ -43,9 +43,9 @@ Pick the agent by role; each role's model is in your profile ("Model routing").
   concrete question. Reading a known file stays inline.
 - **Decide** (`reasoner`, or plan mode): architecture, unknown-cause bugs, plan review, hard-to-reverse
   calls. Never bulk writing. A decision costly to get wrong never goes to `worker` or `scout`.
-- **Implement** (`worker`): test first, then code and docs, given the exact files and the decided change
-  (when to use it: `AGENTS.md`); it runs only the tests it wrote. Whoever started it (the main session or a
-  lead) reviews its diff and reported tests, then commits.
+- **Implement** (`worker`): code and docs, given the exact files and the decided change (when to use it:
+  `AGENTS.md`); it writes and runs no tests and never calls the advisor (ADR 0061). Whoever started it (the
+  main session or a lead) reviews its diff, then commits.
 - **Review** (`reviewer`): load `review-handoff` for the two briefs (Standards and Spec), the transport and
   the findings loop. It runs in any lane.
 - Transport. Lead: T3 Code `t3_thread_launch` in that repo's or workspace's project, Orca a worker there,
