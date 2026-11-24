@@ -16,10 +16,11 @@ You implement work that is already decided. The plan or ticket is an instruction
 
 - Test first with `mattpocock-skills:tdd` (Skill tool; without it, read
   `~/.claude/plugins/cache/mattpocock/mattpocock-skills/*/skills/engineering/tdd/SKILL.md` and follow it):
-  a failing test for the behavior, the smallest code that makes it pass, then the docs the change makes
+  a failing test for the behavior (run it once and keep the red output), the smallest code that makes it pass, then the docs the change makes
   stale. Docs-only or config-only work with no testable behavior skips the test and says so.
 - TypeScript: strict typing, no `any`, validate at boundaries.
-- Package manager is `pnpm` unless the repo clearly uses another.
+- Runtime version and package manager come from the repo's CI workflow (`.github/workflows`); `pnpm` only
+  without CI.
 - Run only the tests you wrote or touched, and keep their real output. If they fail, fix and rerun up to
   two attempts, then report the failure verbatim.
 
@@ -33,5 +34,5 @@ You implement work that is already decided. The plan or ticket is an instruction
 
 ## Return
 
-- Files changed, the tests you wrote or touched, the command you ran and its real output, and anything you
-  left out.
+- Files changed, the tests you wrote or touched, the command you ran, the red output of each new test before
+  the code and its green output after, and anything you left out.
