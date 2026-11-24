@@ -7,8 +7,9 @@
 # agents (ADR 0050): one per worktree at a time, at most 2 attempts per PR and day, Sonnet first and Opus second;
 # and reviews (ADR 0047): someone else's review opens one Claude in that worktree once, my own review does not, a PR
 # with a conflict agent gets no review agent, and a review on a PR without a worktree is notified once; PR comments
-# (ADR 0058): someone else's comment opens one Claude once, my own or a *[bot] login's does not, and with a review and
-# a comment the newest one is taken; and a red CI
+# (ADR 0058): someone else's comment opens one Claude once, my own or a bot's (*[bot] or a known login like
+# github-actions) does not, a review by a *[bot] login still does, and with a review and a comment the newest one is
+# taken, either way; and a red CI
 # (ADR 0048): a failed check on the PR head opens one Claude once, a green CI does not, and a review goes first;
 # a clean worktree only behind its PR head is fast-forwarded, and a PR below merged into a branch other than dev
 # retargets the PR above to that branch.
@@ -76,8 +77,10 @@ branch fourteen dev       # PR 14: merged, another untracked file -> kept, notif
 branch fifteen dev        # PR 15: up to date, someone else asked for changes -> review agent
 branch sixteen dev        # PR 16: up to date, only my own review -> nothing
 branch twentytwo dev      # PR 22: up to date, a PR comment by someone else -> review agent
-branch twentythree dev    # PR 23: up to date, only my own and a bot's PR comments -> nothing
+branch twentythree dev    # PR 23: up to date, only my own and bots' PR comments -> nothing
 branch twentyfour dev     # PR 24: up to date, an older review and a newer PR comment -> agent for the comment
+branch twentyfive dev     # PR 25: up to date, a newer review and an older PR comment -> agent for the review
+branch twentysix dev      # PR 26: up to date, only a review by copilot[bot] -> review agent
 branch eighteen dev       # PR 18: up to date, a CI check failed -> CI agent
 branch nineteen dev       # PR 19: up to date, CI green -> nothing
 branch twenty dev         # PR 20: clean worktree one commit behind its PR head -> fast-forward
@@ -117,7 +120,7 @@ ci18='[{"name":"Lint, tests y build","conclusion":"FAILURE"},{"name":"schema","c
 write_open() {
 # five conflicts and also has a review: the conflict agent owns it. 17 has a review but no local worktree.
 five_rev="$(row 5 five dev CONFLICTING | sed "s/}\$/,\"author\":{\"login\":\"me\"},\"reviews\":[$(rev R5 ana CHANGES_REQUESTED)]}/")"
-printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
+printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
   "$five_rev" "$(row 6 six dev MERGEABLE)" "$(row 7 seven dev MERGEABLE)" "$(row 8 eight three MERGEABLE)" \
   "$(rowp 10 ten)" "$(row 11 eleven dev UNKNOWN)" \
   "$(rowr 15 fifteen "[$(rev R15a me COMMENTED),$(rev R15 ana CHANGES_REQUESTED)]" | sed 's/}$/,"statusCheckRollup":[{"name":"tests","conclusion":"FAILURE"}]}/')" \
@@ -127,9 +130,12 @@ printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 t
   "$(rowc 19 nineteen '[{"name":"Lint, tests y build","conclusion":"SUCCESS"}]')" \
   "$(row 20 twenty dev MERGEABLE)" "$(row 21 twentyone nine MERGEABLE)" \
   "$(rowk 22 twentytwo '[]' "[$(com C22 ana 2026-11-24T18:00:00Z)]")" \
-  "$(rowk 23 twentythree '[]' "[$(com C23 me 2026-11-24T18:00:00Z),$(com C23b 'ci[bot]' 2026-11-24T18:05:00Z)]")" \
+  "$(rowk 23 twentythree '[]' "[$(com C23 me 2026-11-24T18:00:00Z),$(com C23b 'ci[bot]' 2026-11-24T18:05:00Z),$(com C23c github-actions 2026-11-24T18:10:00Z)]")" \
   "$(rowk 24 twentyfour "[$(rev R24 ana CHANGES_REQUESTED | sed 's/}$/,"submittedAt":"2026-11-20T14:00:00Z"}/')]" \
      "[$(com C24 ana 2026-11-24T18:00:00Z)]")" \
+  "$(rowk 25 twentyfive "[$(rev R25 ana CHANGES_REQUESTED | sed 's/}$/,"submittedAt":"2026-11-24T18:00:00Z"}/')]" \
+     "[$(com C25 ana 2026-11-20T14:00:00Z)]")" \
+  "$(rowr 26 twentysix "[$(rev R26 'copilot[bot]' COMMENTED)]")" \
   >"$W/gh/open.json"
 }
 write_open
@@ -167,8 +173,10 @@ check "only my own review: no agent for sixteen" '! grep -q "app-sixteen" "$L"'
 check "the open-PR list asks gh for the comments" 'grep -q -- "--author .*--json [^ ]*comments" "$W/gh/calls"'
 check "PR comment by someone else: a Claude opened in twentytwo's worktree" 'grep -q "worktree path:$W/root/app-twentytwo" "$L" && grep -q "#22.*review de ana" <<<"$out" && [ -e "$W/state/review-org_app-22-C22" ]'
 check "the brief says a plain comment is answered with gh pr comment" 'grep -q "comentario suelto del PR: .gh pr comment 22" "$W/state/specs/org_app-22-review.md"'
-check "only my own and a *[bot] login's PR comments: no agent for twentythree" '! grep -q "app-twentythree" "$L"'
+check "only my own, a *[bot] login's and github-actions' PR comments: no agent for twentythree" '! grep -q "app-twentythree" "$L"'
 check "an older review and a newer PR comment: the comment is taken" '[ -e "$W/state/review-org_app-24-C24" ] && [ ! -e "$W/state/review-org_app-24-R24" ]'
+check "a newer review and an older PR comment: the review is taken" '[ -e "$W/state/review-org_app-25-R25" ] && [ ! -e "$W/state/review-org_app-25-C25" ]'
+check "a review by copilot[bot] still opens the review agent" 'grep -q "worktree path:$W/root/app-twentysix" "$L" && [ -e "$W/state/review-org_app-26-R26" ]'
 check "conflict and review on five: only the conflict agent" '[ "$(grep -c "worktree path:$W/root/app-five" "$L")" -eq 1 ] && [ ! -e "$W/state/specs/org_app-5-review.md" ]'
 check "review on a PR without a worktree is notified" 'grep -q "#17.*no hay worktree local" <<<"$out"'
 check "red CI: a Claude opened in eighteen's worktree, naming the failed check" 'grep -q "worktree path:$W/root/app-eighteen" "$L" && grep -q "#18.*CI en rojo (Lint, tests y build)" <<<"$out"'

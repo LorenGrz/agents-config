@@ -8,8 +8,8 @@
 #      (ADR 0049: a PR never stays behind dev, with or without conflicts)
 #   4. a merge conflicts -> abort, and open a Claude in that PR's worktree through Orca with a brief: resolve,
 #      commit and push; only a real logic conflict runs the related tests, never the whole suite (ADR 0045). Once per (PR, base commit); its tab stays open.
-#   5. someone else left a review that asks for changes or comments, or a plain PR comment (not me, not a *[bot]
-#      login; the newest of them by date), and no conflict agent is open for it -> open a Claude in that PR's
+#   5. someone else left a review that asks for changes or comments, or a plain PR comment (not me, not a bot; the
+#      newest of them by date), and no conflict agent is open for it -> open a Claude in that PR's
 #      worktree with a brief: apply each point as new commits, keep line endings, bring the base before pushing,
 #      push, and answer each comment with what changed (ADR 0047, 0049, 0058). It never resolves threads nor edits
 #      the PR. Once per review or comment (by id); its tab stays open.
@@ -227,16 +227,19 @@ EOF
 }
 
 # last_review <pr> <open-json>: id and author of the newest review (asking for changes or commenting) or PR comment
-# by someone else (neither me nor a *[bot] login), by date (ADR 0047, 0058)
+# by someone else, by date (ADR 0047, 0058). Bots are left out only from the comments: gh drops the [bot] suffix
+# there (`vercel`), so a few known logins are listed too.
 last_review() {
   jq -r --argjson n "$1" '.[] | select(.number == $n) | .author.login as $me
     | [(.reviews[]? | select(.state == "CHANGES_REQUESTED" or .state == "COMMENTED") | . + {at: .submittedAt}),
-       (.comments[]? | . + {at: .createdAt})]
-    | map(select(.author.login != $me and ((.author.login // "") | endswith("[bot]") | not)))
+       (.comments[]? | (.author.login // "") as $l
+        | select(($l | endswith("[bot]")) or ($l | IN("github-actions", "vercel", "dependabot", "renovate", "codecov")) | not)
+        | . + {at: .createdAt})]
+    | map(select(.author.login != $me))
     | sort_by(.at // "") | last // empty | [.id, .author.login] | @tsv' <<<"$2" 2>/dev/null
 }
 
-# fix_review <slug> <pr> <branch> <path> <review-id> <reviewer> <base>: a Claude in that PR's worktree, once per review
+# fix_review <slug> <pr> <branch> <path> <review-id> <reviewer> <base>: a Claude in that PR's worktree, once per review or comment
 fix_review() {
   local slug="$1" pr="$2" branch="$3" path="$4" rid="$5" who="$6" base="$7" mark spec fail
   mark="$state/review-${slug//\//_}-$pr-$rid"
