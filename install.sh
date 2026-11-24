@@ -434,21 +434,16 @@ echo "== global git ignore =="
 GIT_IGNORE="$(git config --global --path core.excludesFile 2>/dev/null || true)"
 [ -n "$GIT_IGNORE" ] || GIT_IGNORE="${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore"
 # A symlinked ignore file (dotfiles repo) is written through: show where the line really lands.
-GIT_IGNORE_REAL="$GIT_IGNORE"; GIT_IGNORE_SHOWN="$GIT_IGNORE"
-if [ -L "$GIT_IGNORE" ]; then
-  GIT_IGNORE_REAL="$(readlink -f "$GIT_IGNORE")"; GIT_IGNORE_SHOWN="$GIT_IGNORE -> $GIT_IGNORE_REAL"
-fi
+# readlink -f resolves a link anywhere on the path (the file or its folder), not only the last part.
+GIT_IGNORE_REAL="$(readlink -f "$GIT_IGNORE" 2>/dev/null || echo "$GIT_IGNORE")"; GIT_IGNORE_SHOWN="$GIT_IGNORE"
+[ "$GIT_IGNORE_REAL" = "$GIT_IGNORE" ] || GIT_IGNORE_SHOWN="$GIT_IGNORE -> $GIT_IGNORE_REAL"
 if [ -f "$GIT_IGNORE_REAL" ] && grep -qxF '.scratch/' "$GIT_IGNORE_REAL"; then
   echo "ok:      $GIT_IGNORE_SHOWN already ignores .scratch/"
 else
   echo "append:  .scratch/ -> $GIT_IGNORE_SHOWN"
-  if [ -L "$GIT_IGNORE" ]; then
-    case "$GIT_IGNORE_REAL" in
-      "$HOME/.config/"*) ;;
-      *) repo="$(git -C "$(dirname "$GIT_IGNORE_REAL")" rev-parse --show-toplevel 2>/dev/null || true)"
-         echo "note:    the change lands in ${repo:-$(dirname "$GIT_IGNORE_REAL")}, outside ~/.config: commit it there" ;;
-    esac
-  fi
+  # Only when the line lands inside a git repo: that change has to be committed there.
+  repo="$(git -C "$(dirname "$GIT_IGNORE_REAL")" rev-parse --show-toplevel 2>/dev/null || true)"
+  [ -z "$repo" ] || echo "note:    the change lands in $repo, a git repo: commit it there"
   if [ "$DRY_RUN" -eq 1 ]; then
     echo "  [dry-run] append '.scratch/' to '$GIT_IGNORE_REAL'"
   else

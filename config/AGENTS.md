@@ -84,7 +84,7 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   under `## Standards` and `## Spec`, never merged. Nobody else reruns the checks: workers run only the
   tests they wrote (their definition says so), and working alone in Plan S the main session runs them once
   at the end. Whoever asked for
-  the review fixes small findings, sends large ones to a worker and asks for one re-review; what is still
+  the review fixes small findings, sends large ones to a worker and asks for one re-review per axis; what is still
   open goes to the user. Another provider's model reviews only when the user asks for it. An agent that
   cannot start a reviewer says so before the PR instead of skipping the review.
 - **An agent started from a brief** (lead, worker, scout, reviewer) executes it without the lane
