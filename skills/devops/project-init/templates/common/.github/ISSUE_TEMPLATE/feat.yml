@@ -15,6 +15,6 @@ body:
     id: spec
     attributes:
       label: Spec / plan link
-      description: Link to docs/superpowers/specs/ and docs/superpowers/plans/ once written.
+      description: Summary of the spec once written (it lives in .scratch/, never committed).
     validations:
       required: false

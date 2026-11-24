@@ -1,14 +1,14 @@
 {
   "extraKnownMarketplaces": {
-    "superpowers-marketplace": {
+    "mattpocock": {
       "source": {
         "source": "github",
-        "repo": "obra/superpowers-marketplace"
+        "repo": "mattpocock/skills"
       }
     }
   },
   "enabledPlugins": {
-    "superpowers@superpowers-marketplace": true
+    "mattpocock-skills@mattpocock": true
   },
   "permissions": {
     "allow": [

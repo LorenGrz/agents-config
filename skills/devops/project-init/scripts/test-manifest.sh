@@ -82,7 +82,7 @@ for mode in required light off; do
   sddm $mode; D="$W/sdd-app-$mode"; mkdir -p "$D"
   bash "$SD/init.sh" --manifest "$W/sdd-$mode.json" --dir "$D" --owner o >"$W/sdd-$mode.log" 2>&1
 done
-check "sdd=required keeps the spec-driven template text" 'grep -q "^2\. Non-trivial" "$W/sdd-app-required/AGENTS.md" && grep -q "spec-driven, with superpowers" "$W/sdd-app-required/AGENTS.md"'
+check "sdd=required keeps the spec-driven template text" 'grep -q "^2\. Non-trivial" "$W/sdd-app-required/AGENTS.md" && grep -q "spec-driven, with mattpocock-skills" "$W/sdd-app-required/AGENTS.md"'
 check "sdd=light limits specs to big work" 'grep -q "Small changes skip the spec" "$W/sdd-app-light/AGENTS.md" && grep -q "specs for big work" "$W/sdd-app-light/AGENTS.md" && ! grep -q "^2\. Non-trivial" "$W/sdd-app-light/AGENTS.md"'
 check "sdd=off drops the spec requirement" 'grep -q "not required in this project" "$W/sdd-app-off/AGENTS.md" && grep -q "issue-driven" "$W/sdd-app-off/AGENTS.md"'
 check "the sdd ADR is still written" 'ls "$W/sdd-app-off/docs/decisions" | grep -q "sdd"'

@@ -4,6 +4,7 @@ Estado: aceptado (2026-10-10). Reemplazado en parte por [0009](0009-opusplan-and
 luego [0018](0018-opus-medium-default-reasoner-high.md): la sesión principal corre en Opus con esfuerzo medio
 y las decisiones profundas van a `reasoner` (esfuerzo alto). [0006](0006-always-delegate.md) acota la regla de
 «≤3 archivos conocidos inline»: vale solo para archivos conocidos; las búsquedas abiertas van a `scout`.
+Ajustado por [0052](0052-flujo-de-matt-sin-superpowers.md): `worker` = Opus.
 
 ## Contexto
 

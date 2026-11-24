@@ -24,6 +24,7 @@
 #     * every other existing top-level key (machine/project-specific blocks
 #       such as per-machine auto-approval config) is preserved as-is.
 #   settings.json is backed up before any write.
+# - Adds `.scratch/` to git's global ignore file once (ADR 0052).
 #
 # Idempotent and safe: never deletes a real file or directory. If a symlink
 # or generated-file target already exists as a real file/dir we don't own
@@ -90,7 +91,7 @@ while [ $# -gt 0 ]; do
     --with-integrations) WITH_INTEGRATIONS=1; shift ;;
     --with-cli-baselines) WITH_CLI_BASELINES=1; shift ;;
     -h|--help)
-      sed -n '2,55p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,56p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -423,6 +424,32 @@ if jq -e '.enabledPlugins["ponytail@ponytail"] == true' "$BASE" >/dev/null 2>&1 
   else
     mkdir -p "$CLAUDE_DIR"
     printf 'off\n' >"$BAND_FLAG"
+  fi
+fi
+
+# .scratch/ (ADR 0052): the local issue tracker of Matt Pocock's skills, never committed. One line in git's
+# global ignore file (core.excludesFile, or git's default ${XDG_CONFIG_HOME:-~/.config}/git/ignore), added once.
+echo
+echo "== global git ignore =="
+GIT_IGNORE="$(git config --global --path core.excludesFile 2>/dev/null || true)"
+[ -n "$GIT_IGNORE" ] || GIT_IGNORE="${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore"
+# A symlinked ignore file (dotfiles repo) is written through: show where the line really lands.
+# readlink -f resolves a link anywhere on the path (the file or its folder), not only the last part.
+GIT_IGNORE_REAL="$(readlink -f "$GIT_IGNORE" 2>/dev/null || echo "$GIT_IGNORE")"; GIT_IGNORE_SHOWN="$GIT_IGNORE"
+[ "$GIT_IGNORE_REAL" = "$GIT_IGNORE" ] || GIT_IGNORE_SHOWN="$GIT_IGNORE -> $GIT_IGNORE_REAL"
+if [ -f "$GIT_IGNORE_REAL" ] && grep -qxF '.scratch/' "$GIT_IGNORE_REAL"; then
+  echo "ok:      $GIT_IGNORE_SHOWN already ignores .scratch/"
+else
+  echo "append:  .scratch/ -> $GIT_IGNORE_SHOWN"
+  # Only when the line lands inside a git repo: that change has to be committed there.
+  repo="$(git -C "$(dirname "$GIT_IGNORE_REAL")" rev-parse --show-toplevel 2>/dev/null || true)"
+  [ -z "$repo" ] || echo "note:    the change lands in $repo, a git repo: commit it there"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "  [dry-run] append '.scratch/' to '$GIT_IGNORE_REAL'"
+  else
+    mkdir -p "$(dirname "$GIT_IGNORE_REAL")"
+    if [ -s "$GIT_IGNORE_REAL" ] && [ -n "$(tail -c1 "$GIT_IGNORE_REAL")" ]; then printf '\n' >>"$GIT_IGNORE_REAL"; fi
+    printf '.scratch/\n' >>"$GIT_IGNORE_REAL"
   fi
 fi
 

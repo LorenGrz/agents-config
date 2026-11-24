@@ -3,6 +3,7 @@
 Estado: aceptado (2026-11-09); ADR 0025 agrega el hook que impone el orden y la entrevista de grilling.
 Reemplaza la elección de lane de ADR 0020 y acota ADR 0006 (la delegación aplica al trabajo que sale de un
 plan aprobado). Ajustado por 0037: Plan S lanza subagentes cuando el trabajo los pide.
+Reemplazado en parte por [0052](0052-flujo-de-matt-sin-superpowers.md): el Plan L ya no usa `brainstorming` ni `writing-plans`, sino `grilling`, `to-spec`, `to-tickets` e `implement-spec`, con spec y tickets en `.scratch/`.
 
 ## Contexto
 

@@ -6,7 +6,7 @@ HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 W="$(mktemp -d)"; trap 'rm -rf "$W"' EXIT
 pass=0; failn=0
 check() { if eval "$2"; then pass=$((pass + 1)); echo "ok   $1"; else failn=$((failn + 1)); echo "FAIL $1"; fi; }
-run() { HOME="$W/home" bash "$HUB/install.sh" --profile _template "$@" 2>&1; }
+run() { env -u XDG_CONFIG_HOME -u GIT_CONFIG_GLOBAL HOME="$W/home" bash "$HUB/install.sh" --profile _template "$@" 2>&1; }
 F="$W/home/.claude/CLAUDE.md"
 
 run >/dev/null

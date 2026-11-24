@@ -31,7 +31,7 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 ## Model routing
 
 - Main session: Opus at high effort (ADR 0024); it designs the plans. Never pass `model: fable` to a subagent. Fable is only the advisor (`advisorModel: "fable"` in `~/.claude/settings.json`). A reasoner is Opus at high effort consulting that advisor: the main session is one, and so is every lead.
-- `worker` = Sonnet. The `reasoner` subagent = Opus. `scout` = Haiku. Roles: `AGENTS.md` and `CLAUDE.md` "Agent Routing".
+- `worker` = Opus (ADR 0052). The `reasoner` subagent = Opus. `scout` = Haiku. Roles: `AGENTS.md` and `CLAUDE.md` "Agent Routing".
 - Leads are always Opus. Automatic `stack-sync` agents (ADR 0050): conflicts and red CI start on Sonnet and go to Opus on the second attempt; review fixes always run on Opus.
 - A lead (`AGENTS.md` "Workflow lanes") is a reasoner session, not the `reasoner` subagent.
 - Gemini (`agy`): manual and optional, only when Loren asks for it, for bulk writing, wide reading or a review.

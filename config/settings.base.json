@@ -224,7 +224,7 @@
   },
   "enabledPlugins": {
     "vercel@claude-plugins-official": false,
-    "superpowers@superpowers-marketplace": true,
+    "superpowers@superpowers-marketplace": false,
     "playwright@anthropic-plugin-directory": false,
     "skill-creator@anthropic-plugin-directory": true,
     "github@anthropic-plugin-directory": false,
@@ -238,12 +238,6 @@
     "modern-web-guidance@googlechrome": true
   },
   "extraKnownMarketplaces": {
-    "superpowers-marketplace": {
-      "source": {
-        "source": "github",
-        "repo": "obra/superpowers-marketplace"
-      }
-    },
     "paste-preview": {
       "source": {
         "source": "github",

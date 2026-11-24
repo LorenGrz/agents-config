@@ -1,6 +1,7 @@
 # 0050 — Agentes con tope, uno por worktree, modelo según el intento, y los comandos del CI
 
 Estado: aceptado (2026-11-20). Ajusta 0045, 0047, 0048 y 0049.
+Ajustado por [0052](0052-flujo-de-matt-sin-superpowers.md): la revisión por PR es un par Standards y Spec, no un reviewer solo.
 
 ## Contexto
 

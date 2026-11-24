@@ -4,7 +4,7 @@
 # Env: EVAL_RUNS (default 1), EVAL_MAX_COST (USD cap, default 2).
 #
 # Each case is a real, paid model session. The sandbox loads only this plugin,
-# so trigger rates can be higher than in a real session with superpowers etc.
+# so trigger rates can be higher than in a real session with other plugins loaded.
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."

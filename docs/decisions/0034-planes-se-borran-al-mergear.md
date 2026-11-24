@@ -1,6 +1,7 @@
 # 0034 — Spec y plan se borran al mergear
 
 Estado: aceptado (2026-11-18). Cambia el punto (c) de los documentos del repo en `config/AGENTS.md`.
+Reemplazado en parte por [0052](0052-flujo-de-matt-sin-superpowers.md): la spec y los tickets viven en `.scratch/` local y nunca se commitean, en vez de `docs/superpowers/`.
 
 ## Contexto
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # test-install-settings.sh - the settings.json merge of install.sh keeps what other tools own: hook entries
-# that do not run a hub hook (e.g. Orca's) and an existing theme (ADR 0038). HOME is a temp dir: nothing real is touched.
+# that do not run a hub hook (e.g. Orca's) and an existing theme (ADR 0038); .scratch/ lands once in git's global ignore (ADR 0052). HOME is a temp dir: nothing real is touched.
 set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 W="$(mktemp -d)"; trap 'rm -rf "$W"' EXIT
 pass=0; failn=0
 check() { if eval "$2"; then pass=$((pass + 1)); echo "ok   $1"; else failn=$((failn + 1)); echo "FAIL $1"; fi; }
-run() { env -u CLAUDE_DIR -u CODEX_DIR -u AGENTS_CONFIG_STATE_DIR -u AGENT_CONFIG_STATE_DIR -u CLAUDE_SKILLS_MIRROR -u CLAUDE_PLUGINS_DIR \
+run() { env -u XDG_CONFIG_HOME -u GIT_CONFIG_GLOBAL -u CLAUDE_DIR -u CODEX_DIR -u AGENTS_CONFIG_STATE_DIR -u AGENT_CONFIG_STATE_DIR -u CLAUDE_SKILLS_MIRROR -u CLAUDE_PLUGINS_DIR \
         HOME="$W/home" bash "$HUB/install.sh" --profile _template "$@" 2>&1; }
 S="$W/home/.claude/settings.json"
 BASE="$HUB/config/settings.base.json"
@@ -18,6 +18,15 @@ count() { jq --arg e "$1" --arg c "$2" '[(.hooks[$e] // [])[] | select(any((.hoo
 
 run >/dev/null
 check "a fresh HOME gets the base hooks" 'jq -e --slurpfile b "$BASE" ".hooks == \$b[0].hooks" "$S" >/dev/null'
+GI="$W/home/.config/git/ignore"
+check "a fresh HOME gets .scratch/ in git's global ignore (ADR 0052)" '[ "$(grep -cxF ".scratch/" "$GI")" -eq 1 ]'
+printf 'node_modules/' >"$GI"; run >/dev/null; run >/dev/null
+check ".scratch/ is added once, on its own line, after a last line with no newline" '[ "$(grep -cxF ".scratch/" "$GI")" -eq 1 ] && grep -qxF "node_modules/" "$GI"'
+DOT="$W/dotfiles"; mkdir -p "$DOT/git" && git -C "$DOT" init -q && printf 'a/\n' >"$DOT/git/ignore" && rm "$GI" && ln -s "$DOT/git/ignore" "$GI"
+dry="$(run --dry-run)"
+check "--dry-run names the symlink's real target and the repo it lands in" 'grep -qF "$GI -> $DOT/git/ignore" <<<"$dry" && grep -qF "note:    the change lands in $DOT" <<<"$dry" && ! grep -qxF ".scratch/" "$DOT/git/ignore"'
+run >/dev/null
+check "a symlinked ignore is written through, the link kept" '[ -L "$GI" ] && [ "$(grep -cxF ".scratch/" "$DOT/git/ignore")" -eq 1 ]'
 
 # Simulate Orca: a foreign entry on an event the base uses, one on an event it does not, a custom theme;
 # plus a stale entry of our own (a hook the base no longer has).
