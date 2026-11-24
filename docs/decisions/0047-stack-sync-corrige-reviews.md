@@ -1,6 +1,6 @@
 # 0047 — stack-sync abre un Claude para corregir lo que pide una review
 
-Estado: aceptado (2026-11-20). Ajusta 0045.
+Estado: aceptado (2026-11-20). Ajusta 0045. Ajustado por 0058.
 
 ## Contexto
 
@@ -28,4 +28,4 @@ que el precheck con ETag de 0045 ya la detecta sin consultas de más.
 - Una review se empieza a corregir en hasta 2 minutos, dentro del horario de la automatización y con Orca abierto.
 - Una review que solo comenta (por ejemplo, un «está bien») también abre un agente; si no hay nada que cambiar,
   lo dice y no commitea.
-- Los comentarios sueltos del PR que no son parte de una review no disparan nada.
+- Los comentarios sueltos del PR: ver 0058.

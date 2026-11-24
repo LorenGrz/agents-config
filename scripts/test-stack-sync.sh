@@ -6,7 +6,10 @@
 # stacked; with pnpm's untracked files too; another untracked file keeps it and is notified once), --precheck (ETag: syncs only when something changed, always exits 1),
 # agents (ADR 0050): one per worktree at a time, at most 2 attempts per PR and day, Sonnet first and Opus second;
 # and reviews (ADR 0047): someone else's review opens one Claude in that worktree once, my own review does not, a PR
-# with a conflict agent gets no review agent, and a review on a PR without a worktree is notified once; and a red CI
+# with a conflict agent gets no review agent, and a review on a PR without a worktree is notified once; PR comments
+# (ADR 0058): someone else's comment opens one Claude once, my own or a bot's (*[bot] or a known login like
+# github-actions) does not, a review by a *[bot] login still does, and with a review and a comment the newest one is
+# taken, either way; and a red CI
 # (ADR 0048): a failed check on the PR head opens one Claude once, a green CI does not, and a review goes first;
 # a clean worktree only behind its PR head is fast-forwarded, and a PR below merged into a branch other than dev
 # retargets the PR above to that branch.
@@ -73,6 +76,11 @@ branch thirteen dev       # PR 13: merged, only pnpm's untracked files -> remove
 branch fourteen dev       # PR 14: merged, another untracked file -> kept, notified once
 branch fifteen dev        # PR 15: up to date, someone else asked for changes -> review agent
 branch sixteen dev        # PR 16: up to date, only my own review -> nothing
+branch twentytwo dev      # PR 22: up to date, a PR comment by someone else -> review agent
+branch twentythree dev    # PR 23: up to date, only my own and bots' PR comments -> nothing
+branch twentyfour dev     # PR 24: up to date, an older review and a newer PR comment -> agent for the comment
+branch twentyfive dev     # PR 25: up to date, a newer review and an older PR comment -> agent for the review
+branch twentysix dev      # PR 26: up to date, only a review by copilot[bot] -> review agent
 branch eighteen dev       # PR 18: up to date, a CI check failed -> CI agent
 branch nineteen dev       # PR 19: up to date, CI green -> nothing
 branch twenty dev         # PR 20: clean worktree one commit behind its PR head -> fast-forward
@@ -104,12 +112,15 @@ rowr() { printf '{"number":%s,"headRefName":"%s","baseRefName":"dev","mergeable"
 # rowc <n> <branch> <checks-json>: an up-to-date PR to dev with CI checks and no reviews
 rowc() { printf '{"number":%s,"headRefName":"%s","baseRefName":"dev","mergeable":"MERGEABLE","headRefOid":"%s","author":{"login":"me"},"reviews":[],"statusCheckRollup":%s}' "$1" "$2" "$(oid "$2")" "$3"; }
 rev() { printf '{"id":"%s","author":{"login":"%s"},"state":"%s"}' "$1" "$2" "$3"; }
+# rowk <n> <branch> <reviews-json> <comments-json>: like rowr, with PR comments; com <id> <author> <createdAt>
+rowk() { rowr "$1" "$2" "$3" | sed "s/}\$/,\"comments\":$4}/"; }
+com() { printf '{"id":"%s","author":{"login":"%s"},"createdAt":"%s"}' "$1" "$2" "$3"; }
 rowp() { printf '{"number":%s,"headRefName":"%s","baseRefName":"dev","mergeable":"CONFLICTING","headRefOid":"%s"}' "$1" "$2" "$(oidp "$2")"; }
 ci18='[{"name":"Lint, tests y build","conclusion":"FAILURE"},{"name":"schema","conclusion":"SUCCESS"}]'
 write_open() {
 # five conflicts and also has a review: the conflict agent owns it. 17 has a review but no local worktree.
 five_rev="$(row 5 five dev CONFLICTING | sed "s/}\$/,\"author\":{\"login\":\"me\"},\"reviews\":[$(rev R5 ana CHANGES_REQUESTED)]}/")"
-printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
+printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one MERGEABLE)" "$(row 3 three dev MERGEABLE)" "$(row 4 four three MERGEABLE)" \
   "$five_rev" "$(row 6 six dev MERGEABLE)" "$(row 7 seven dev MERGEABLE)" "$(row 8 eight three MERGEABLE)" \
   "$(rowp 10 ten)" "$(row 11 eleven dev UNKNOWN)" \
   "$(rowr 15 fifteen "[$(rev R15a me COMMENTED),$(rev R15 ana CHANGES_REQUESTED)]" | sed 's/}$/,"statusCheckRollup":[{"name":"tests","conclusion":"FAILURE"}]}/')" \
@@ -118,6 +129,13 @@ printf '[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]\n' "$(row 2 two one ME
   "$(rowc 18 eighteen "$ci18")" \
   "$(rowc 19 nineteen '[{"name":"Lint, tests y build","conclusion":"SUCCESS"}]')" \
   "$(row 20 twenty dev MERGEABLE)" "$(row 21 twentyone nine MERGEABLE)" \
+  "$(rowk 22 twentytwo '[]' "[$(com C22 ana 2026-11-24T18:00:00Z)]")" \
+  "$(rowk 23 twentythree '[]' "[$(com C23 me 2026-11-24T18:00:00Z),$(com C23b 'ci[bot]' 2026-11-24T18:05:00Z),$(com C23c github-actions 2026-11-24T18:10:00Z)]")" \
+  "$(rowk 24 twentyfour "[$(rev R24 ana CHANGES_REQUESTED | sed 's/}$/,"submittedAt":"2026-11-20T14:00:00Z"}/')]" \
+     "[$(com C24 ana 2026-11-24T18:00:00Z)]")" \
+  "$(rowk 25 twentyfive "[$(rev R25 ana CHANGES_REQUESTED | sed 's/}$/,"submittedAt":"2026-11-24T18:00:00Z"}/')]" \
+     "[$(com C25 ana 2026-11-20T14:00:00Z)]")" \
+  "$(rowr 26 twentysix "[$(rev R26 'copilot[bot]' COMMENTED)]")" \
   >"$W/gh/open.json"
 }
 write_open
@@ -152,6 +170,13 @@ check "merged fourteen with another untracked file: kept, and the log names the 
 check "review by someone else: a Claude opened in fifteen's worktree" 'grep -q "worktree path:$W/root/app-fifteen" "$L" && grep -q "#15.*review de ana" <<<"$out"'
 check "the review brief keeps line endings, brings dev before pushing and answers each comment" 'f="$W/state/specs/org_app-15-review.md"; grep -q "ignore-cr-at-eol" "$f" && grep -q "merge --no-edit origin/dev" "$f" && grep -q "comments/<id>/replies" "$f" && grep -q "No resuelvas los hilos" "$f"'
 check "only my own review: no agent for sixteen" '! grep -q "app-sixteen" "$L"'
+check "the open-PR list asks gh for the comments" 'grep -q -- "--author .*--json [^ ]*comments" "$W/gh/calls"'
+check "PR comment by someone else: a Claude opened in twentytwo's worktree" 'grep -q "worktree path:$W/root/app-twentytwo" "$L" && grep -q "#22.*review de ana" <<<"$out" && [ -e "$W/state/review-org_app-22-C22" ]'
+check "the brief says a plain comment is answered with gh pr comment" 'grep -q "comentario suelto del PR: .gh pr comment 22" "$W/state/specs/org_app-22-review.md"'
+check "only my own, a *[bot] login's and github-actions' PR comments: no agent for twentythree" '! grep -q "app-twentythree" "$L"'
+check "an older review and a newer PR comment: the comment is taken" '[ -e "$W/state/review-org_app-24-C24" ] && [ ! -e "$W/state/review-org_app-24-R24" ]'
+check "a newer review and an older PR comment: the review is taken" '[ -e "$W/state/review-org_app-25-R25" ] && [ ! -e "$W/state/review-org_app-25-C25" ]'
+check "a review by copilot[bot] still opens the review agent" 'grep -q "worktree path:$W/root/app-twentysix" "$L" && [ -e "$W/state/review-org_app-26-R26" ]'
 check "conflict and review on five: only the conflict agent" '[ "$(grep -c "worktree path:$W/root/app-five" "$L")" -eq 1 ] && [ ! -e "$W/state/specs/org_app-5-review.md" ]'
 check "review on a PR without a worktree is notified" 'grep -q "#17.*no hay worktree local" <<<"$out"'
 check "red CI: a Claude opened in eighteen's worktree, naming the failed check" 'grep -q "worktree path:$W/root/app-eighteen" "$L" && grep -q "#18.*CI en rojo (Lint, tests y build)" <<<"$out"'
@@ -169,7 +194,8 @@ check "a review agent runs on Opus from the first attempt" 'grep "worktree path:
 rm -f "$W/state/busy/"* # the agents of the first run ended
 bash "$SYNC" >/dev/null 2>&1
 check "a second run opens the CI agent of fifteen, now that its review has one" '[ -e "$W/state/specs/org_app-15-ci.md" ]'
-check "a second run does not open the same conflicts, reviews or CI fixes again" '[ "$(grep -c "agent launch" "$L")" -eq "$((n_launch + 1))" ]'
+check "a second run does not open the agent of twentytwo's comment again" '[ "$(grep -c "worktree path:$W/root/app-twentytwo" "$L")" -eq 1 ]'
+check "a second run does not open the same conflicts, reviews, comments or CI fixes again" '[ "$(grep -c "agent launch" "$L")" -eq "$((n_launch + 1))" ]'
 check "a second run does not notify the blocked fourteen again" '[ "$(grep -c "#14" "$W/state/stack-sync.log")" -eq 1 ]'
 check "a second run does not notify the review on seventeen again" '[ "$(grep -c "#17" "$W/state/stack-sync.log")" -eq 1 ]'
 check "the second attempt on a PR runs on Opus at high effort" 'grep "worktree path:$W/root/app-fifteen" "$L" | tail -1 | grep -q -- "--model claude-opus-5-5 --effort high"'

@@ -8,11 +8,12 @@
 #      (ADR 0049: a PR never stays behind dev, with or without conflicts)
 #   4. a merge conflicts -> abort, and open a Claude in that PR's worktree through Orca with a brief: resolve,
 #      commit and push; only a real logic conflict runs the related tests, never the whole suite (ADR 0045). Once per (PR, base commit); its tab stays open.
-#   5. someone else left a review that asks for changes or comments (and no conflict agent is open for it) -> open
-#      a Claude in that PR's worktree with a brief: apply each point as new commits, keep line endings, bring the
-#      base before pushing, push, and answer each comment with what changed (ADR 0047, 0049). It never resolves
-#      threads nor edits the PR. Once per review; its tab stays open.
-#      A review on a PR without a local worktree is notified once.
+#   5. someone else left a review that asks for changes or comments, or a plain PR comment (not me, not a bot; the
+#      newest of them by date), and no conflict agent is open for it -> open a Claude in that PR's
+#      worktree with a brief: apply each point as new commits, keep line endings, bring the base before pushing,
+#      push, and answer each comment with what changed (ADR 0047, 0049, 0058). It never resolves threads nor edits
+#      the PR. Once per review or comment (by id); its tab stays open.
+#      A review or comment on a PR without a local worktree is notified once.
 #   6. a CI check failed on the PR head (and no conflict or review agent was opened for it in this run) -> open a
 #      Claude in that PR's worktree: read the failed logs, fix, run only what is related, push (ADR 0048). Once per
 #      (PR, head commit); its tab stays open.
@@ -225,14 +226,20 @@ EOF
   esac
 }
 
-# last_review <pr> <open-json>: id and author of the newest review by someone else that asks for changes or comments
+# last_review <pr> <open-json>: id and author of the newest review (asking for changes or commenting) or PR comment
+# by someone else, by date (ADR 0047, 0058). Bots are left out only from the comments: gh drops the [bot] suffix
+# there (`vercel`), so a few known logins are listed too.
 last_review() {
   jq -r --argjson n "$1" '.[] | select(.number == $n) | .author.login as $me
-    | [.reviews[]? | select(.author.login != $me and (.state == "CHANGES_REQUESTED" or .state == "COMMENTED"))]
-    | last // empty | [.id, .author.login] | @tsv' <<<"$2" 2>/dev/null
+    | [(.reviews[]? | select(.state == "CHANGES_REQUESTED" or .state == "COMMENTED") | . + {at: .submittedAt}),
+       (.comments[]? | (.author.login // "") as $l
+        | select(($l | endswith("[bot]")) or ($l | IN("github-actions", "vercel", "dependabot", "renovate", "codecov")) | not)
+        | . + {at: .createdAt})]
+    | map(select(.author.login != $me))
+    | sort_by(.at // "") | last // empty | [.id, .author.login] | @tsv' <<<"$2" 2>/dev/null
 }
 
-# fix_review <slug> <pr> <branch> <path> <review-id> <reviewer> <base>: a Claude in that PR's worktree, once per review
+# fix_review <slug> <pr> <branch> <path> <review-id> <reviewer> <base>: a Claude in that PR's worktree, once per review or comment
 fix_review() {
   local slug="$1" pr="$2" branch="$3" path="$4" rid="$5" who="$6" base="$7" mark spec fail
   mark="$state/review-${slug//\//_}-$pr-$rid"
@@ -249,7 +256,7 @@ Estás en el worktree del PR #$pr de $slug (\`$path\`, rama \`$branch\`). No toq
 \`AGENTS.md\`/\`CLAUDE.md\` del repo (y el de la carpeta de arriba, si hay) y usá sus skills: en un front, las de UI
 del repo y la librería de componentes primero.
 
-$who dejó una review (\`$rid\`). Leela entera:
+$who dejó una review o un comentario en el PR (\`$rid\`). Leelo entero:
 - \`gh pr view $pr --repo $slug --json reviews,comments\` (el cuerpo de cada review y los comentarios del PR);
 - \`gh api repos/$slug/pulls/$pr/comments --paginate\` (los comentarios en líneas del código).
 
@@ -267,7 +274,8 @@ $who dejó una review (\`$rid\`). Leela entera:
 7. \`git push origin HEAD:$branch\` (sin force). Nunca rebase, force, amend ni \`--no-verify\`.
 8. Contestá cada comentario, en español y corto: qué cambiaste y en qué commit, o por qué no.
    - En una línea del código: \`gh api repos/$slug/pulls/$pr/comments/<id>/replies -f body="…"\`.
-   - El cuerpo de la review: \`gh pr comment $pr --repo $slug --body "…"\`, punto por punto.
+   - El cuerpo de la review o un comentario suelto del PR: \`gh pr comment $pr --repo $slug --body "…"\`, punto por
+     punto.
 9. No resuelvas los hilos, no edites el PR y no toques Jira ni Slack.
 
 Si no pudiste resolver algún punto o falló el push, escribí el motivo en una línea en \`$fail\`. Al terminar,
@@ -373,7 +381,7 @@ clean_merged() {
 # PRs, bottom-up: trunk-based first, then those stacked on them (depth by base chain)
 for slug in "${!slug_of[@]}"; do
   json="$(tgh pr list --repo "$slug" --author @me --state open --limit 100 \
-    --json number,headRefName,baseRefName,mergeable,headRefOid,author,reviews,statusCheckRollup 2>/dev/null)" || continue
+    --json number,headRefName,baseRefName,mergeable,headRefOid,author,reviews,comments,statusCheckRollup 2>/dev/null)" || continue
   [ -n "$json" ] || continue
   rows="$(jq -r --arg t "$trunk" '
     (map({key: .headRefName, value: .baseRefName}) | from_entries) as $base
