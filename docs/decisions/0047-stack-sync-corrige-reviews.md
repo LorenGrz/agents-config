@@ -1,6 +1,6 @@
 # 0047 — stack-sync abre un Claude para corregir lo que pide una review
 
-Estado: aceptado (2026-11-20). Ajustado por 0058.
+Estado: aceptado (2026-11-20). Ajusta 0045. Ajustado por 0058.
 
 ## Contexto
 

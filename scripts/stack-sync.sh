@@ -232,7 +232,7 @@ last_review() {
   jq -r --argjson n "$1" '.[] | select(.number == $n) | .author.login as $me
     | [(.reviews[]? | select(.state == "CHANGES_REQUESTED" or .state == "COMMENTED") | . + {at: .submittedAt}),
        (.comments[]? | . + {at: .createdAt})]
-    | map(select(.author.login != $me and (.author.login | endswith("[bot]") | not)))
+    | map(select(.author.login != $me and ((.author.login // "") | endswith("[bot]") | not)))
     | sort_by(.at // "") | last // empty | [.id, .author.login] | @tsv' <<<"$2" 2>/dev/null
 }
 

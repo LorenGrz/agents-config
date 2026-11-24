@@ -164,6 +164,7 @@ check "merged fourteen with another untracked file: kept, and the log names the 
 check "review by someone else: a Claude opened in fifteen's worktree" 'grep -q "worktree path:$W/root/app-fifteen" "$L" && grep -q "#15.*review de ana" <<<"$out"'
 check "the review brief keeps line endings, brings dev before pushing and answers each comment" 'f="$W/state/specs/org_app-15-review.md"; grep -q "ignore-cr-at-eol" "$f" && grep -q "merge --no-edit origin/dev" "$f" && grep -q "comments/<id>/replies" "$f" && grep -q "No resuelvas los hilos" "$f"'
 check "only my own review: no agent for sixteen" '! grep -q "app-sixteen" "$L"'
+check "the open-PR list asks gh for the comments" 'grep -q -- "--author .*--json [^ ]*comments" "$W/gh/calls"'
 check "PR comment by someone else: a Claude opened in twentytwo's worktree" 'grep -q "worktree path:$W/root/app-twentytwo" "$L" && grep -q "#22.*review de ana" <<<"$out" && [ -e "$W/state/review-org_app-22-C22" ]'
 check "the brief says a plain comment is answered with gh pr comment" 'grep -q "comentario suelto del PR: .gh pr comment 22" "$W/state/specs/org_app-22-review.md"'
 check "only my own and a *[bot] login's PR comments: no agent for twentythree" '! grep -q "app-twentythree" "$L"'
