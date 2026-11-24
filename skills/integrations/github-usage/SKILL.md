@@ -130,9 +130,10 @@ Loren's open PRs are kept mergeable without asking (ADR 0032, 0041, 0043-0045); 
   hours, only while Orca is open; no systemd timer): `scripts/stack-sync.sh --precheck` asks GitHub with an ETag
   whether any PR changed and only then syncs: merges the base into each PR branch in its worktree and pushes,
   retargets a stacked PR when its base merged, and opens a Claude in the worktree of each conflicting PR
-  (`orca agent launch`), which resolves, stages and leaves a «resolved» mark, fast: only a real logic conflict
-  runs the related tests, never lint or the whole suite; its tab stays open. The next run commits that merge and
-  pushes it (no force): the work repos' settings ask before `git commit`/`git push` (ADR 0059).
+  (`orca agent launch`), which resolves, commits and pushes (no force), fast: only a real logic conflict runs
+  the related tests, never lint or the whole suite; its tab stays open. Every stack-sync agent (conflict, review,
+  red CI) commits and pushes only through `scripts/stack-sync-git.sh`, which a work repo's `ask` on
+  `git commit`/`git push` doesn't stop and which only works in a worktree with its live busy mark (ADR 0060).
 - A merged PR of mine loses its worktree, its session and its branch, local and remote (only when clean, at the
   PR head and with nothing stacked on it; pnpm's untracked `pnpm-lock.yaml`/`pnpm-workspace.yaml` don't block it,
   any other untracked file keeps it and is notified once, ADR 0046). The precheck always exits 1, so the automation itself starts nothing.

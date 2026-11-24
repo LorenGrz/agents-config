@@ -1,6 +1,6 @@
 # 0059 — stack-sync commitea y pushea el conflicto que resuelve el agente
 
-Estado: aceptado (2026-11-24). Ajusta 0044 (el agente de conflictos ya no commitea ni pushea).
+Estado: reemplazado por 0060 (2026-11-24). Ajustaba 0044 (el agente de conflictos ya no commitea ni pushea).
 
 ## Contexto
 
