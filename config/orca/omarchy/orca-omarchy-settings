@@ -1,0 +1,112 @@
+#!/bin/bash
+# Lleva a Orca lo que define Omarchy y que su plugin de tema no alcanza a cubrir:
+# - fuente, tamaño y parpadeo del cursor de la terminal, iguales a los de Ghostty (pt -> px = pt * 4/3);
+# - el tema claro de la app y de la terminal apuntando al plugin local.omarchy-theme;
+# - los divisores de paneles y el tinte del sidebar con los colores del tema actual.
+#
+# Orca no tiene CLI de settings: viven en profile-state.db (documento "settings", content_hash = sha256 del
+# JSON tal cual). Solo se escribe con Orca cerrado: abierto, pisa la base con lo que tiene en memoria.
+#
+#   orca-omarchy-settings              aplica si Orca está cerrado; si está abierto, avisa y sale con 1
+#   orca-omarchy-settings --defer      si Orca está abierto, deja un proceso que aplica apenas se cierre
+#   orca-omarchy-settings --relaunch   (con --defer) vuelve a abrir Orca después de aplicar
+#   orca-omarchy-settings --dry-run    muestra el cambio sin escribir
+set -euo pipefail
+
+DATA=${ORCA_USER_DATA_PATH:-$HOME/.config/orca}
+GHOSTTY=$HOME/.config/ghostty/config
+THEME_DIR=$HOME/.local/share/orca-omarchy-theme
+PLUGIN=plugin:local.omarchy-theme
+LOCK=${XDG_RUNTIME_DIR:-/tmp}/orca-omarchy-settings.lock
+DEFER=0 RELAUNCH=0 DRY=0
+
+for a in "$@"; do
+  case $a in
+    --defer) DEFER=1 ;;
+    --relaunch) RELAUNCH=1 ;;
+    --dry-run) DRY=1 ;;
+    -h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "argumento desconocido: $a" >&2; exit 2 ;;
+  esac
+done
+
+orca_running() { pgrep -f 'orca-ide/orca-ide\.js' >/dev/null; }
+
+if orca_running && [ $DRY -eq 0 ]; then
+  if [ $DEFER -eq 0 ]; then
+    echo "Orca está abierto: cerralo y volvé a correr, o usá --defer" >&2
+    exit 1
+  fi
+  # Un solo proceso en espera: si ya hay uno, ese aplica (lee los valores al momento de aplicar).
+  args=()
+  [ $RELAUNCH -eq 1 ] && args+=(--relaunch)
+  setsid bash -c '
+    exec 9>"$1"; flock -n 9 || exit 0
+    shift
+    while pgrep -f "orca-ide/orca-ide\.js" >/dev/null; do sleep 2; done
+    sleep 1
+    "$0" "$@"
+  ' "$0" "$LOCK" "${args[@]}" >/dev/null 2>&1 </dev/null &
+  echo "Orca está abierto: los cambios se aplican cuando lo cierres"
+  exit 0
+fi
+
+profile=$(jq -r '.activeProfileId // "local-default"' "$DATA/orca-profile-index.json" 2>/dev/null || echo local-default)
+DB=$DATA/profiles/$profile/profile-state.db
+[ -f "$DB" ] || { echo "no encuentro la base de Orca: $DB" >&2; exit 1; }
+
+# --- Valores de Ghostty ---
+gval() { sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*//p" "$GHOSTTY" 2>/dev/null | tail -1 | tr -d '"'; }
+family=$(gval font-family)
+pt=$(gval font-size)
+blink=$(gval cursor-style-blink)
+px=""
+[[ $pt =~ ^[0-9]+([.][0-9]+)?$ ]] && px=$(awk -v p="$pt" 'BEGIN { printf "%d", p * 4 / 3 + 0.5 }')
+
+# --- Colores del tema (los JSON que arma el hook 60-orca-theme) ---
+token() { jq -r --arg k "$2" '.tokens[$k] // empty' "$THEME_DIR/themes/$1.json" 2>/dev/null; }
+div_dark=$(token dark --border)
+div_light=$(token light --border)
+mode=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | grep -q light && echo light || echo dark)
+tint=$(token "$mode" --primary)
+
+current=$(sqlite3 -readonly "$DB" "select payload from profile_state_documents where domain='settings'")
+[ -n "$current" ] || { echo "la base no tiene el documento settings" >&2; exit 1; }
+
+new=$(jq -c \
+  --arg family "$family" --arg px "$px" --arg blink "$blink" \
+  --arg divd "$div_dark" --arg divl "$div_light" --arg tint "$tint" \
+  --arg dark "$PLUGIN/omarchy-dark" --arg light "$PLUGIN/omarchy-light" '
+  (if $family != "" then .terminalFontFamily = $family else . end)
+  | (if $px != "" then .terminalFontSize = ($px | tonumber) else . end)
+  | (if $blink == "false" then .terminalCursorBlink = false elif $blink == "true" then .terminalCursorBlink = true else . end)
+  | .pluginAppThemeDark = $dark | .terminalThemeDark = $dark
+  | .pluginAppThemeLight = $light | .terminalThemeLight = $light
+  | (if $divd != "" then .terminalDividerColorDark = $divd else . end)
+  | (if $divl != "" then .terminalDividerColorLight = $divl else . end)
+  | (if $tint != "" then .leftSidebarTintColor = $tint else . end)
+' <<<"$current")
+
+if [ "$new" = "$current" ]; then
+  echo "Orca ya está al día con Omarchy"
+else
+  if [ $DRY -eq 1 ]; then
+    diff <(jq -S . <<<"$current") <(jq -S . <<<"$new") || true
+    exit 0
+  fi
+  sqlite3 "$DB" ".backup '$DB.omarchy-bak'"
+  hash=$(printf '%s' "$new" | sha256sum | cut -d' ' -f1)
+  esc=${new//\'/\'\'}
+  sqlite3 "$DB" "begin;
+    update profile_state_documents set payload='$esc', content_hash='$hash',
+      revision=revision+1, updated_at=cast(strftime('%s','now') as integer)*1000 where domain='settings';
+    update profile_state_meta set value=cast(value as integer)+1 where key='revision';
+    commit;"
+  echo "Orca actualizado (respaldo: $DB.omarchy-bak)"
+fi
+
+if [ $RELAUNCH -eq 1 ] && ! orca_running; then
+  if command -v uwsm-app >/dev/null; then launch=(uwsm-app -- orca-ide); else launch=(orca-ide); fi
+  setsid "${launch[@]}" >/dev/null 2>&1 </dev/null &
+fi
+exit 0

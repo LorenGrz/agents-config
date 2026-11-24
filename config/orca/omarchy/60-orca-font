@@ -1,0 +1,5 @@
+#!/bin/bash
+# Hook font-set de Omarchy: lleva a la terminal de Orca la fuente que omarchy font set acaba de poner en Ghostty.
+# Con Orca abierto, el cambio se aplica cuando se cierra (Orca no admite cambiar settings en caliente).
+[[ -x $HOME/.local/bin/orca-omarchy-settings ]] && "$HOME/.local/bin/orca-omarchy-settings" --defer >/dev/null 2>&1
+exit 0

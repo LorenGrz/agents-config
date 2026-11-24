@@ -60,6 +60,7 @@ clon espejo personal, lo sincronizás vos (el repo no lo sigue).
 | `intents.json`, `intents.plugins.md` | Tabla de intenciones generada desde la sección Shortcuts de cada skill; los atajos de plugins que no pueden vivir en el plugin | `hooks/intent-router.sh`; lo escribe `scripts/gen-intents.sh` |
 | `patches/` | Parches locales e idempotentes a plugins de terceros (`paste-preview-no-autoedit.sh`) | `install.sh` |
 | `rulesync/` | Generación para Codex CLI, Cursor y Antigravity (ver «rulesync/») | `rulesync`, por `build.sh` |
+| `orca/` | Orca: `settings.json` (preferencias sin cuentas, cookies, rutas ni telemetría) y `omarchy/` (el tema de Omarchy en Orca: hooks de theme-set y font-set, `orca-omarchy-settings` y plantillas) | `scripts/orca-setup.sh` en una PC nueva; `scripts/orca-settings.py export` las vuelve a guardar (ADR 0056) |
 
 Las skills no están acá: viven en `skills/<category>/<skill>/` y `sync.sh` las espeja en `~/.claude/skills`.
 
