@@ -22,6 +22,7 @@ You handle the decisions that are expensive to get wrong.
 ## Never
 
 - Do not propose a fix until you can name the mechanism that produces the symptom.
+- Never call the `advisor` tool: only the main session consults it (ADR 0061).
 
 ## Return
 

@@ -86,9 +86,8 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   get only the diffs and the ticket, without editing. **Standards** reviews against the repo's documented
   rules, its review skill and a smell baseline, and runs the repo's CI commands once (`.github/workflows`,
   never a default package manager); **Spec** reviews against the ticket or spec. Their reports are shown
-  under `## Standards` and `## Spec`, never merged. Nobody else reruns the checks: workers run only the
-  tests they wrote (their definition says so), and working alone in Plan S the main session runs them once
-  at the end. Whoever asked for
+  under `## Standards` and `## Spec`, never merged. Nobody else reruns the checks: workers and leads write
+  and run no tests (ADR 0061), and working alone in Plan S the main session runs them once at the end. Whoever asked for
   the review fixes small findings, sends large ones to a worker and asks for one re-review per axis; what is still
   open goes to the user. Another provider's model reviews only when the user asks for it. An agent that
   cannot start a reviewer says so before the PR instead of skipping the review.
