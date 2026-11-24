@@ -1,0 +1,60 @@
+#!/bin/bash
+# Hook theme-set de Omarchy: pasa el tema actual a Orca como plugin local de temas (local.omarchy-theme).
+# Omarchy completa ~/.config/omarchy/themed/orca-{theme,terminal}.json.tpl con colors.toml en cada theme set;
+# este hook copia esos JSON al plugin y le pide a Orca que lo vuelva a copiar.
+# Orca guarda un tema "Dark" y uno "Light" por separado y elige según el modo del sistema (Omarchy lo cambia
+# con gsettings), por eso el plugin trae los dos: cada theme set actualiza el de su modo.
+
+SRC="$HOME/.local/state/omarchy/current/theme"
+DIR="$HOME/.local/share/orca-omarchy-theme"
+ORCA=/usr/lib/orca-ide/bin/orca-ide
+KEY=local.omarchy-theme
+
+[[ -f $SRC/orca-theme.json && -f $SRC/orca-terminal.json ]] || exit 0
+mode=$(sed -n 's/.*"base": *"\(light\|dark\)".*/\1/p' "$SRC/orca-theme.json" | head -1)
+[[ $mode == light || $mode == dark ]] || exit 0
+other=$([[ $mode == dark ]] && echo light || echo dark)
+
+mkdir -p "$DIR/themes" "$DIR/terminal"
+cp "$SRC/orca-theme.json" "$DIR/themes/$mode.json"
+cp "$SRC/orca-terminal.json" "$DIR/terminal/$mode.json"
+# El manifest declara los dos modos: hasta que se use un tema del otro modo, ese archivo es una copia con la base cambiada.
+[[ -f $DIR/themes/$other.json ]] || sed "s/\"base\": *\"$mode\"/\"base\": \"$other\"/" "$SRC/orca-theme.json" >"$DIR/themes/$other.json"
+[[ -f $DIR/terminal/$other.json ]] || sed "s/\"mode\": *\"$mode\"/\"mode\": \"$other\"/" "$SRC/orca-terminal.json" >"$DIR/terminal/$other.json"
+
+cat >"$DIR/orca-plugin.json" <<'JSON'
+{
+  "manifestVersion": 2,
+  "id": "omarchy-theme",
+  "name": "Omarchy",
+  "version": "1.0.0",
+  "execution": "data",
+  "description": "El tema actual de Omarchy, generado desde colors.toml en cada omarchy theme set.",
+  "license": "MIT",
+  "engines": { "orca": ">=1.4.246" },
+  "contributes": {
+    "themes": [
+      { "id": "omarchy-dark", "title": "Omarchy Dark", "path": "themes/dark.json" },
+      { "id": "omarchy-light", "title": "Omarchy Light", "path": "themes/light.json" }
+    ],
+    "terminalThemes": [
+      { "id": "omarchy-dark", "title": "Omarchy Dark", "path": "terminal/dark.json" },
+      { "id": "omarchy-light", "title": "Omarchy Light", "path": "terminal/light.json" }
+    ]
+  },
+  "capabilities": []
+}
+JSON
+
+# Divisores, tinte del sidebar y temas claro/oscuro en los settings de Orca (con Orca abierto, se aplican al cerrarlo).
+[[ -x $HOME/.local/bin/orca-omarchy-settings ]] && "$HOME/.local/bin/orca-omarchy-settings" --defer >/dev/null 2>&1
+
+# Con Orca cerrado no hay a quién avisar: el plugin se actualiza en el próximo theme set con Orca abierto.
+[[ -x $ORCA ]] || exit 0
+"$ORCA" status --json 2>/dev/null | grep -q '"reachable": true' || exit 0
+if "$ORCA" plugin list --json 2>/dev/null | grep -q "\"pluginKey\": \"$KEY\""; then
+  "$ORCA" plugin update "$KEY" >/dev/null 2>&1
+else
+  "$ORCA" plugin install "$DIR" >/dev/null 2>&1
+fi
+exit 0

@@ -85,7 +85,7 @@ AGENTS.md, CLAUDE.md   mapa para agentes (CLAUDE.md lo importa); install.sh, syn
 config/                instrucciones, baseline, perfiles, reglas, hooks, subagentes, settings base
 skills/<category>/     la biblioteca de skills
 packs/, organizations/ packs por arquitectura (ADR 0014); contrato y plantilla de org (sus repos, fuera de git)
-scripts/               project-agents.sh, orgs.sh, detect-stack.sh, gen-*.sh, lint-docs.sh, leak-guard.sh, eval-skills.sh, export-obsidian.sh, stack-sync.sh, test-*.sh
+scripts/               project-agents.sh, orgs.sh, detect-stack.sh, gen-*.sh, lint-docs.sh, leak-guard.sh, eval-skills.sh, export-obsidian.sh, stack-sync.sh, orca-setup.sh y orca-settings.py (Orca en una PC nueva), test-*.sh
 hooks/, .claude-plugin/  el plugin; gen-plugin.sh genera hooks/hooks.json y las skills de plugin.json
 docs/decisions/        ADRs de este repo; evals/: evals de activación de skills
 .agents/CONTEXT.md     estado actual, para agentes; .githooks/: leak guard en commit y push
