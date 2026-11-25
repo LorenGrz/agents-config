@@ -26,7 +26,7 @@ Read `organizations/README.md` (the contract) first.
 5. **Validate**: `scripts/orgs.sh validate <name>`, then apply it to a throwaway project with `scripts/project-agents.sh --org <name>` and check the result.
 6. **Commit inside the org repo only.** Creating the private remote and pushing (`scripts/orgs.sh push <name>`) need the user's explicit confirmation.
 
-## Promote a project skill to the org
+### Promote a project skill to the org
 
 A skill in a repo's `.claude/skills` that more than that repo uses (git, tracker, PR cycle, chat, a UI library
 shared by several fronts) belongs to the org. Each skill keeps exactly one carrier.
