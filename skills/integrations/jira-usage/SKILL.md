@@ -1,6 +1,6 @@
 ---
 name: jira-usage
-description: Use when the user mentions Jira tickets, issues, sprints, JQL, transitions, worklogs or Confluence pages, or asks to read, search, create, comment on or update them, via the Atlassian connector (mcp__claude_ai_Atlassian_Rovo__*) or the atlassian project MCP.
+description: Use when the user mentions Jira tickets, issues, sprints, JQL, transitions, worklogs or Confluence pages, or asks to read, search, create, comment on or update them, via the Atlassian connector (mcp__claude_ai_Atlassian_Rovo__*) or the atlassian project MCP. In a repo of an organization that ships its own skill for this (org.json `replaces`), use that one.
 ---
 
 # Jira and Confluence Usage

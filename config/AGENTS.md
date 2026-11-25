@@ -133,8 +133,9 @@ The canonical roles are the label strings themselves (`needs-triage`, `needs-inf
 
 In a repo that matches an organization (`organizations/INDEX.md`): never commit on `main`/`master`/`dev`,
 ask before every push or PR, and a new ticket or a comment goes to the tracker only with the user's OK on the exact text.
-Load the `github-usage` skill (full org rules) before the first git action there. An org's `POLICIES.md`
-may add to these rules, never relax them.
+Load the org's git skill before the first git action there: the one its `org.json` `replaces` names for
+`github-usage`, or `github-usage` itself. An org's `POLICIES.md` may add to these rules; it relaxes one only
+through an ADR in the org repo (baseline rule 7).
 
 ## Roadmap
 
@@ -154,7 +155,7 @@ The learning roadmap and current stage are personal: see your profile and the `r
 - Never use destructive commands like `git reset --hard` or checkout-based reverts unless the user
   explicitly asks. Never `git push --force` to `main`/`master` or any shared branch.
 - Before committing, pushing, merging or opening a PR, follow the `github-usage` skill (gitignore gate,
-  branch, verify, commit, push, merge, update `AGENTS.md` after merging).
+  branch, verify, commit, push, merge, update `AGENTS.md` after merging), or the org's git skill in an org repo.
 
 ## Verification
 
