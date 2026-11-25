@@ -80,6 +80,13 @@ printf '%s\n' '{"bash":[{"id":"chk","re":"^npm run lint\\b","hint":"usá acme-ch
 check "org intents.json: a manual command in an org repo gets the org hint" 'otool Bash "cd x && npm run lint" "$W/acme-repo" | grep -q "Tool (acme): usá acme-checks"'
 check "org intents.json: silent in a repo of another owner" '! otool Bash "npm run lint" "$W/other-repo" | grep -q "acme-checks"'
 check "org intents.json: unrelated command stays silent" '[ -z "$(otool Bash "ls -la" "$W/acme-repo")" ]'
+mkdir -p "$OH/organizations/acme/common/skills/acme-git" "$OH/organizations/acme/common/.claude-plugin"
+printf -- '---\nname: acme-git\n---\n' >"$OH/organizations/acme/common/skills/acme-git/SKILL.md"
+jq '.replaces["github-usage"] = "acme-git" | .shared = "common"' "$OH/organizations/acme/org.json" >"$W/o.json" && mv "$W/o.json" "$OH/organizations/acme/org.json"
+check "shared folder without a plugin manifest: bare name" 'otool Bash "git push origin x" "$W/acme-repo" | grep -q "skill \`acme-git\`"'
+printf '%s\n' '{"name":"acme"}' >"$OH/organizations/acme/common/.claude-plugin/plugin.json"
+check "shared folder that is a plugin: <plugin>:<skill>" 'otool Bash "git push origin x" "$W/acme-repo" | grep -q "skill \`acme:acme-git\`"'
+check "product-folder skills keep the bare name" 'otool mcp__claude_ai_Atlassian_Rovo__getJiraIssue "" "$W/acme-repo" | grep -q "skill \`acme-jira\`"'
 check "org with an unreadable org.json: falls back silently" 'echo "{" >"$OH/organizations/acme/org.json"; oprompt "traete los cambios" "$W/acme-repo" | grep -q "github-usage"'
 
 # --- detect-stack

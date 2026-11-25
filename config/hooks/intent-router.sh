@@ -61,17 +61,27 @@ resolve_org() {
 
 # org_skill <skill>: inside an organization repo, the org's replacement (org.json `replaces`, commands
 # starting with "/" ignored) when the org ships it; otherwise the skill itself. Any failure -> unchanged.
+# A replacement in the org.json `shared` folder that is a Claude Code plugin is named <plugin>:<skill>
+# (ADR 0062), the name the Skill tool expects.
 org_known=""; org=""  # org is filled by the caller (a $(...) here would lose the cache)
 org_skill() {
   local rep
   [ -n "$org" ] && [ -f "$HUB/organizations/$org/org.json" ] || { echo "$1"; return; }
   rep="$(jq -r --arg s "$1" '.replaces[$s] // empty | select(type == "string")' "$HUB/organizations/$org/org.json" 2>/dev/null)"
   case "$rep" in
-    ""|/*|*[!A-Za-z0-9_-]*) echo "$1" ;;
-    # Skills sit in skills/ or in a product folder (<org>/<product>/skills).
-    *) if compgen -G "$HUB/organizations/$org/skills/$rep/SKILL.md" >/dev/null ||
-          compgen -G "$HUB/organizations/$org/*/skills/$rep/SKILL.md" >/dev/null; then echo "$rep"; else echo "$1"; fi ;;
+    ""|/*|*[!A-Za-z0-9_-]*) echo "$1"; return ;;
   esac
+  local od="$HUB/organizations/$org" shared plugin
+  shared="$(jq -r '.shared // empty | select(type == "string")' "$od/org.json" 2>/dev/null)"
+  if [ -n "$shared" ] && [ -f "$od/$shared/skills/$rep/SKILL.md" ]; then
+    plugin="$(jq -r '.name // empty' "$od/$shared/.claude-plugin/plugin.json" 2>/dev/null)"
+    case "$plugin" in ""|*[!A-Za-z0-9_-]*) echo "$rep" ;; *) echo "$plugin:$rep" ;; esac
+  # Skills sit in skills/ or in a product folder (<org>/<product>/skills).
+  elif compgen -G "$od/skills/$rep/SKILL.md" >/dev/null || compgen -G "$od/*/skills/$rep/SKILL.md" >/dev/null; then
+    echo "$rep"
+  else
+    echo "$1"
+  fi
 }
 
 # matches: lines of "skill<TAB>label<TAB>cmd" (label/cmd empty for tool and bash matches).

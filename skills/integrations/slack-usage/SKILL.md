@@ -1,6 +1,6 @@
 ---
 name: slack-usage
-description: Use when the user asks to read, search, summarize, draft or send anything in Slack - channels, threads, DMs, canvases, "post this in Slack", "what did the team say about X" - via the claude.ai Slack connector (mcp__claude_ai_Slack__*).
+description: Use when the user asks to read, search, summarize, draft or send anything in Slack - channels, threads, DMs, canvases, "post this in Slack", "what did the team say about X" - via the claude.ai Slack connector (mcp__claude_ai_Slack__*). In a repo of an organization that ships its own skill for this (org.json `replaces`), use that one.
 ---
 
 # Slack Usage
