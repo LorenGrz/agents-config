@@ -84,7 +84,9 @@ if [ -n "$ORG" ]; then
   [ -f "$OJ" ] || die "organization '$ORG' is not installed (scripts/orgs.sh add)"
   bash "$HUB/scripts/orgs.sh" validate "$OD" >/dev/null || die "organization '$ORG' does not validate (scripts/orgs.sh validate $ORG)"
   [ -z "$(find "$OD" -path "$OD/.git" -prune -o -type l -print -quit)" ] || die "organization '$ORG' contains symlinks"
-  # OSRC: where the org's skills/, commands/ and POLICIES.md come from (the org, or one of its products)
+  # OSRC: where the org's skills/, commands/ and POLICIES.md come from (the org, or one of its products).
+  # The org.json "shared" folder is never copied: it reaches the project outside the hub (a plugin), and
+  # replaces entries that point at it still remove the base item they replace.
   OSRC="$OD"
   if jq -e '.products | type == "object"' "$OJ" >/dev/null; then
     if [ -z "$PRODUCT" ]; then

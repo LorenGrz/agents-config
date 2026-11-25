@@ -195,6 +195,26 @@ PN="$W/prd-none"; mkp "$PN"
 check "no product match fails closed" '! bash "$PA" --stack react-vite --org prd --dir "$PN" >/dev/null 2>&1 && [ ! -d "$PN/.claude/skills/prd-common" ]'
 check "--product on an org without products is an error" '! bash "$PA" --stack react-vite --org rw --product alpha --dir "$PN" >/dev/null 2>&1'
 
+# shared: a folder common to every product (distributed as a plugin, never copied by project-agents)
+mkdir -p "$PD/common/skills/prd-shared"
+printf -- '---\nname: prd-shared\ndescription: x\n---\n' > "$PD/common/skills/prd-shared/SKILL.md"
+setj prd '.replaces = {"ui-builder":"prd-shared"}'
+check "a replaces target only in the shared folder fails without shared" '! bash "$ORGS" validate prd >/dev/null 2>&1'
+setj prd '.shared = "common"'
+check "with shared, a replaces target in the shared folder validates" 'bash "$ORGS" validate prd >/dev/null 2>&1'
+setj prd '.shared = "missing"'
+check "a shared folder that does not exist does not validate" '! bash "$ORGS" validate prd >/dev/null 2>&1'
+setj prd '.shared = ["common"]'
+check "shared must be a string" '! bash "$ORGS" validate prd >/dev/null 2>&1'
+setj prd '.shared = "common"'
+printf -- '---\ndescription: x\n---\n' > "$PD/common/skills/prd-shared/SKILL.md"
+check "skills in the shared folder need name and description" '! bash "$ORGS" validate prd >/dev/null 2>&1'
+printf -- '---\nname: prd-shared\ndescription: x\n---\n' > "$PD/common/skills/prd-shared/SKILL.md"
+PS="$W/prd-s"; mkp "$PS"
+bash "$PA" --stack react-vite --org prd --product alpha --dir "$PS" >/dev/null 2>&1
+check "project-agents does not copy the shared folder" '[ -d "$PS/.claude/skills/prd-alpha" ] && [ ! -d "$PS/.claude/skills/prd-shared" ]'
+cp "$W/prd.bak" "$PD/org.json"
+
 # status / remove / push safety
 st="$(bash "$ORGS" status 2>&1)"
 check "status reports the org" 'grep -q "^acme: 0.1.0" <<<"$st"'
