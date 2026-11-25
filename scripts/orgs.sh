@@ -87,6 +87,7 @@ SHAPE_JQ='def arr_str: type == "array" and all(.[]; type == "string");
     ((.replaces // {}) | if type == "object" then to_entries[] | select(.value | type != "string") | "replaces values must be strings" else empty end),
     (if has("assets") and ((.assets | type) != "object") then "assets must be an object" else empty end),
     (if has("products") and ((.products | type) != "object" or (.products | length) == 0) then "products must be a non-empty object" else empty end),
+    (if has("shared") and ((.shared | type) != "string") then "shared must be a string (a folder name)" else empty end),
     ((.products // {}) | if type == "object" then to_entries[] | select((.value | type) != "object" or ((.value.remote_patterns // []) | arr_str | not)) | "product \(.key) needs an object with remote_patterns as an array of strings" else empty end),
     ((.assets // {}) | if type == "object" then to_entries[] | select((.value | type) != "object" or ((.value.stacks // []) | arr_str | not)) | "asset stacks must be an array of strings" else empty end)
   ] | .[]'
@@ -118,6 +119,14 @@ cmd_validate() {
     done < <(jq -r '.products | keys[]' "$d/org.json")
   else
     srcs=("$d")
+  fi
+  # shared: a folder whose skills/ and commands/ belong to every product, distributed outside the hub
+  # (for example as a Claude Code plugin); it counts for replaces targets and the checks below
+  local shared; shared="$(jq -r '.shared // empty | select(type == "string")' "$d/org.json" 2>/dev/null)"
+  if [ -n "$shared" ]; then
+    if ! valid_name "$shared"; then fail "shared '$shared' is not a valid folder name"
+    elif [ ! -d "$d/$shared" ]; then fail "shared folder $shared/ does not exist"
+    else srcs+=("$d/$shared"); fi
   fi
   while IFS=$'\t' read -r _f t; do
     [ -n "$t" ] || continue
