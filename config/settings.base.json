@@ -164,6 +164,17 @@
             "command": "bash ~/.claude/hooks/orquestar.sh"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/marcar-capturas.sh",
+            "timeout": 180,
+            "statusMessage": "marcando capturas"
+          }
+        ]
       }
     ],
     "SessionStart": [
