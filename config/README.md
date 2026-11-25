@@ -103,8 +103,8 @@ Cada regla carga solo cuando Claude toca un archivo que coincide. Globales: `sec
 
 Registrados en `settings.base.json` (la fuente de verdad del cableado). La columna Plugin dice si el método
 del marketplace también lo trae: `scripts/gen-plugin.sh` arma `hooks/hooks.json` en la raíz con todos menos
-`guard-omarchy.sh` y `rtk.sh`. Los que «niegan» bloquean la herramienta; `format-file.sh` reescribe el archivo
-editado y `worktree-cleanup.sh` borra worktrees; el resto solo agrega contexto.
+`guard-omarchy.sh`, `rtk.sh` y `marcar-capturas.sh`. Los que «niegan» bloquean la herramienta; `format-file.sh` reescribe el archivo
+editado, `marcar-capturas.sh` escribe imágenes marcadas junto a las capturas y `worktree-cleanup.sh` borra worktrees; el resto solo agrega contexto.
 
 | Script | Evento | Qué hace | Plugin |
 |---|---|---|---|
@@ -115,6 +115,7 @@ editado y `worktree-cleanup.sh` borra worktrees; el resto solo agrega contexto.
 | `intent-router.sh` | UserPromptSubmit, PreToolUse (Bash y MCP de integraciones) | frase natural («traete los cambios») -> «skill X; corré `git pull origin <base>`»; primera llamada a `gh`, `git push` o a un MCP de Slack, Jira, GitHub, Google, Obsidian o NotebookLM -> «cargá la skill X». Una vez por sesión y skill, callado en subagentes | sí |
 | `lane-guard.sh` | PreToolUse (AskUserQuestion\|ExitPlanMode) | niega una pregunta de lanes que no esté en el orden Continuar, Plan S, Plan L (o Continuar, Orquestar, ADR 0039), y un `ExitPlanMode` de Plan L sin la entrevista de `mattpocock-skills:grilling` desde que se entró a plan mode (ADR 0025, 0031). No revisa subagentes | sí |
 | `orquestar.sh` | PostToolUse (AskUserQuestion) | si el usuario eligió «Orquestar», inyecta el procedimiento fijo: un líder por worktree como sesión aparte (Orca, T3 Code), en paralelo, con su brief, y antes los imports del `CLAUDE.md` aprobados con `scripts/approve-claude-imports.sh` (ADR 0039). No revisa subagentes | sí |
+| `marcar-capturas.sh` | PostToolUse (Bash) | después de un `node pr-screenshots.mjs`, marca cada par antes/después de su `--out` con el `marcar-cambios.sh` de la primera skill instalada que lo traiga (o `$MARCAR_CAPTURAS`): recorte con recuadro y pantalla entera; los pares iguales quedan «sin cambios». Le dice a la sesión qué archivos subir. Sin marcador, callado; también con `--login` y en subagentes | no |
 | `format-file.sh` | PostToolUse (Edit\|Write\|MultiEdit) | formatea el archivo con las herramientas del proyecto: prettier o eslint `--fix` (TS/JS), `ktlint -F` (Kotlin), `ruff` (Python). Saltea las rutas listadas en `~/.claude/format-skip` | sí |
 | `session-start.sh` | SessionStart | reinyecta la regla de ruteo (lanes, `worker`, `scout`, reviewer, «con brief no se pregunta la lane»); en repos de 200 archivos o más pide crear `.agents/CONTEXT.md` o refrescarlo si está 30 commits atrás; repo sin `AGENTS.md` -> proponer `project-init`; repo sin skills de su stack -> proponer `project-agents.sh --stack <detectado> --dry-run`; carpeta workspace -> leer su `AGENTS.md`; carpeta que no es ni repo ni workspace -> un aviso (si tiene 2 o más repos los nombra y ofrece el modo workspace) | sí |
 | `worktree-cleanup.sh` | SessionStart | borra los worktrees limpios cuyo PR está mergeado en GitHub con el mismo head, o (sin PR) cuya rama entró a `origin/<default>` por un merge `--no-ff`, y su rama local; presupuesto de ~10 s; a mano: `--cwd <dir> [--dry-run]` (ADR 0030, 0053) | sí |
@@ -187,7 +188,7 @@ entrevista. Tests de project-init: `test-manifest.sh` y `test-docs-check.sh` (of
 
 - `bash scripts/lint-docs.sh --strict --files config/rules/*.md` revisa el frontmatter `paths:` de cada regla.
 - `bash scripts/test-cli-baselines.sh` y `bash scripts/test-packs.sh` revisan los baselines y los packs.
-- `bash scripts/test-lane-guard.sh`, `bash scripts/test-orquestar.sh` y `bash scripts/test-worktree-cleanup.sh` revisan esos hooks.
+- `bash scripts/test-lane-guard.sh`, `bash scripts/test-orquestar.sh`, `bash scripts/test-worktree-cleanup.sh` y `bash scripts/test-marcar-capturas.sh` revisan esos hooks.
 - `./install.sh --dry-run` muestra qué enlazaría o escribiría, sin tocar `~/.claude`.
 - `bash scripts/gen-intents.sh --check` compara `intents.json` y el bloque Shortcuts de `AGENTS.md` con las
   skills.

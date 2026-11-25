@@ -12,7 +12,7 @@ HOOKS="$HUB/hooks/hooks.json"
 SCOPES="$HUB/config/scopes.json"
 BASE="$HUB/config/settings.base.json"
 # Hooks that only make sense on the author's machine (desktop/tooling specific).
-LOCAL_ONLY='guard-omarchy|rtk\.sh'
+LOCAL_ONLY='guard-omarchy|rtk\.sh|marcar-capturas'
 CHECK=0
 [ "${1:-}" = "--check" ] && CHECK=1
 command -v jq >/dev/null || { echo "Error: jq is required" >&2; exit 1; }
