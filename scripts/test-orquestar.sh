@@ -21,6 +21,12 @@ check "Orquestar picked (answer text) injects the procedure" \
   '[[ "$(answered "\"Your questions have been answered: \\\"q\\\"=\\\"Orquestar\\\". You can now continue.\"")" == *"Procedimiento fijo"* ]]'
 check "the procedure names the approval script with an absolute path" \
   '[[ "$(answered "{\"answers\":{\"q\":\"Orquestar\"}}")" == *"$HUB/scripts/approve-claude-imports.sh"* ]]'
+check "leads close on their own: no --keep-open by default (ADR 0064)" \
+  '[[ "$(answered "{\"answers\":{\"q\":\"Orquestar\"}}")" != *"<modelo de líder> --keep-open"* ]]'
+check "review fixes go through send to the dispatch" \
+  '[[ "$(answered "{\"answers\":{\"q\":\"Orquestar\"}}")" == *"send --to dispatch:"* ]]'
+check "a dependent ticket uses an Orca task with --deps" \
+  '[[ "$(answered "{\"answers\":{\"q\":\"Orquestar\"}}")" == *"--deps"* ]]'
 check "Continuar picked stays silent" '[ -z "$(answered "{\"answers\":{\"q\":\"Continuar\"}}")" ]'
 check "Orquestar only offered, not picked, stays silent" \
   '[ -z "$(answered "{\"questions\":[{\"options\":[{\"label\":\"Orquestar\"}]}],\"answers\":{\"q\":\"Continuar\"}}")" ]'

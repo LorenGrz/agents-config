@@ -1,6 +1,6 @@
 # 0039 — «Orquestar»: un líder por rama, en su propia sesión, con un procedimiento fijo
 
-Estado: aceptado (2026-11-19). Ajusta 0036 en cómo se lanza el líder y 0022 en las preguntas de carril.
+Estado: aceptado (2026-11-19). Ajusta 0036 en cómo se lanza el líder y 0022 en las preguntas de carril. Ajustado por 0064 (cierre de los líderes y orden de lo que depende).
 
 ## Contexto
 
