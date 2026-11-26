@@ -13,8 +13,9 @@
 #     - exactly one `git commit` (or `git -C <dir> commit`) at a command position, at most one `cd` before it;
 #     - only the flags below (no --amend, --no-verify, -n, --fixup...);
 #     - the target is a linked worktree on a branch that is not a base (main, master, dev, develop, qa, origin/HEAD);
-#     - the session is a supervised Orca worker (`orca orchestration worker-start`) whose active terminal
-#       ($ORCA_TERMINAL_HANDLE) works on that worktree, or a stack-sync agent with a live busy mark there (ADR 0060).
+#     - the session is a supervised Orca worker (`orca orchestration worker-start`) whose terminal
+#       ($ORCA_TERMINAL_HANDLE) works on that worktree, or a stack-sync agent with a live busy mark there (ADR 0060);
+#     - the `git commit` is not inside the body of a heredoc that comes before it.
 #   wrapper (`worker-commit.sh [-C <dir>] commit <args>`): checks the same again on the real arguments and runs
 #     `git commit`; every use goes to ~/.local/state/agents-config/worker-commit.log.
 #
@@ -71,11 +72,20 @@ authorized() {
   done
   [ -n "${ORCA_TERMINAL_HANDLE:-}" ] || return 1
   orca="${WORKER_COMMIT_ORCA:-${ORCA_CLI_COMMAND:-orca}}"
-  while IFS= read -r p; do
-    [ -n "$p" ] && [ "$(cd "$p" 2>/dev/null && pwd -P)" = "$(cd "$top" && pwd -P)" ] && return 0
-  done < <("$orca" orchestration worker-list --json --terminal-state active --limit 100 2>/dev/null |
-    jq -r --arg h "$ORCA_TERMINAL_HANDLE" \
-      '.result.workers[]? | select(.terminal == $h) | (.workspace // "") | sub("^[^:]*::"; "")' 2>/dev/null)
+  # any terminal state: a follow-up dispatch reuses the same terminal, which may show as retained, and a released
+  # terminal has no live session left to carry its handle. Up to 10 pages of 100.
+  local cursor="" page n=0 real
+  real="$(cd "$top" && pwd -P)"
+  while [ "$n" -lt 10 ]; do
+    n=$((n + 1))
+    page="$("$orca" orchestration worker-list --json --limit 100 ${cursor:+--cursor "$cursor"} 2>/dev/null)" || return 1
+    while IFS= read -r p; do
+      [ -n "$p" ] && [ "$(cd "$p" 2>/dev/null && pwd -P)" = "$real" ] && return 0
+    done < <(jq -r --arg h "$ORCA_TERMINAL_HANDLE" \
+      '.result.workers[]? | select(.terminal == $h) | (.workspace // "") | sub("^[^:]*::"; "")' <<<"$page" 2>/dev/null)
+    cursor="$(jq -r '.result.nextCursor // empty' <<<"$page" 2>/dev/null)"
+    [ -n "$cursor" ] || return 1
+  done
   return 1
 }
 
@@ -126,6 +136,7 @@ whole=${BASH_REMATCH[0]} lead=${BASH_REMATCH[1]}${BASH_REMATCH[2]} copt=${BASH_R
 pre=${m%%"$whole"*}
 start=$((${#pre} + ${#lead})) # index of "git"
 [[ ${m:start+3} =~ $re_commit ]] && exit 0 # more than one commit
+[[ ${m:0:start} == *"<<"* ]] && exit 0      # inside a heredoc body that comes before: data, not a command
 
 # the commit segment ends at the next unquoted operator
 seg_m=${m:start}

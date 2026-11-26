@@ -21,12 +21,16 @@ git -C "$R" worktree add -q -b feat/x "$WT"
 git -C "$R" worktree add -q "$DEV" dev
 git -C "$R" switch -q -c feat/main # the main checkout on a non-base branch: refused for being the main checkout
 
-# fake orca: worker-list answers with one active worker, terminal term_w on $WT
+# fake orca: worker-list answers in two pages; term_w (on $WT, retained as after a follow-up dispatch) is on the
+# second one, term_o (on the main checkout) on the first
 mkdir -p "$W/bin"
 cat >"$W/bin/orca" <<EOF
 #!/usr/bin/env bash
 [ "\$1 \$2" = "orchestration worker-list" ] || exit 1
-printf '{"ok":true,"result":{"workers":[{"terminal":"term_w","workspace":"id::%s"},{"terminal":"term_o","workspace":"id::%s"}]}}\n' "$WT" "$R"
+case " \$* " in
+  *" --cursor c2 "*) printf '{"ok":true,"result":{"workers":[{"terminal":"term_w","terminalState":"retained","workspace":"id::%s"}],"nextCursor":null}}\n' "$WT" ;;
+  *) printf '{"ok":true,"result":{"workers":[{"terminal":"term_o","terminalState":"active","workspace":"id::%s"}],"nextCursor":"c2"}}\n' "$R" ;;
+esac
 EOF
 chmod +x "$W/bin/orca"
 export WORKER_COMMIT_ORCA="$W/bin/orca" ORCA_TERMINAL_HANDLE=term_w
@@ -56,6 +60,8 @@ for c in 'git commit --amend -m x' 'git commit --no-verify -m x' 'git commit -n 
   'git commit -m x && git commit -m y' "cd $WT && cd $WT && git commit -m x" 'git push' 'echo "git commit -m x"'; do
   check "silencio: $c" "[ -z \"\$(hook $WT '$c')\" ]"
 done
+body=$'cat > x.sh <<\'EOF\'\ngit commit -q -m init\nEOF'
+check "silencio: git commit dentro del cuerpo de un heredoc" "[ -z \"\$(hook $WT \"\$body\")\" ]"
 check "silencio: rama base (dev)" "[ -z \"\$(hook $DEV 'git commit -m x')\" ]"
 check "silencio: checkout principal" "[ -z \"\$(ORCA_TERMINAL_HANDLE=term_o hook $R 'git commit -m x')\" ]"
 check "silencio: otra terminal" "[ -z \"\$(ORCA_TERMINAL_HANDLE=term_x hook $WT 'git commit -m x')\" ]"

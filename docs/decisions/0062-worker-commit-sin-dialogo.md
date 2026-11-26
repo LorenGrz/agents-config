@@ -23,7 +23,8 @@ cambia en los repos.
   - un único `git commit` (o `git -C <dir> commit`) en posición de comando, con a lo sumo un `cd` antes;
   - solo `-m`, `-F`, `-q`, `-a`, `-s`, `-v`, `--allow-empty` y `--no-edit` durante un merge;
   - el destino es un worktree enlazado en una rama que no es base (`main`, `master`, `dev`, `develop`, `qa`, la de `origin/HEAD`);
-  - la sesión es un worker supervisado (`$ORCA_TERMINAL_HANDLE` con terminal activa en `orca orchestration worker-list`, con ese worktree), o un agente de stack-sync con su marca de ocupado viva ahí.
+  - la sesión es un worker supervisado (`$ORCA_TERMINAL_HANDLE` figura en `orca orchestration worker-list` con ese worktree, en cualquier estado: un despacho de seguimiento reusa la terminal), o un agente de stack-sync con su marca de ocupado viva ahí;
+  - el `git commit` no está dentro del cuerpo de un heredoc anterior (un script que se escribe es dato, no comando).
 - El mismo archivo, llamado con `commit`, revalida todo sobre los argumentos reales y deja una línea en
   `~/.local/state/agents-config/worker-commit.log`.
 - `git add` no se toca: ningún repo le pone `ask`, y en modo bypass pasa.
@@ -31,10 +32,11 @@ cambia en los repos.
 ## Consecuencias
 
 - Un `git add -A && git commit -m …` de un worker corre sin diálogo. Si el comando también trae `git push`,
-  `gh pr create` o `gh pr merge`, sigue preguntando por esa parte. `--force` y las reglas `deny` siguen igual, y las
-  guardas de la org (`pre-bash-guard.sh`) ven el comando original.
+  `gh pr create` o `gh pr merge`, sigue preguntando por esa parte. `--force` y las reglas `deny` siguen igual. El hook
+  rechaza por su cuenta la rama base y los flags peligrosos, sin depender de las guardas de la org.
 - `--amend`, `--no-verify` o un flag fuera de la lista vuelven al diálogo, y ahí decide el orquestador o Loren.
-- Las sesiones que no son workers (Loren, el orquestador) siguen viendo el `ask` del repo.
+- Las sesiones que no son workers (Loren, el orquestador) siguen viendo el `ask` del repo, salvo en un worktree con
+  una marca de stack-sync viva, como ya pasaba con `stack-sync-git.sh`.
 - Cada `git commit` de un worker hace una consulta a Orca de ~0,2 s. Sin Orca abierto o sin `jq`, el hook calla.
-- Rige recién después del merge y de `install.sh`; una org instalada por copia hay que reinstalarla.
+- Rige recién después del merge y de `install.sh`, que lo suma al `settings.json` global.
 - `stack-sync-git.sh` sigue siendo el push de los agentes de stack-sync: este hook no toca `git push`.
