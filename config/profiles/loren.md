@@ -62,4 +62,4 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 
 ## Notes
 
-- All of Loren's repos are public except `omarchy-loren` (per-machine config and the new-PC setup). Baseline rule 1 (no secrets) applies to all of them, private included.
+- Not all of Loren's repos are public: personal setup, org config and some projects are private. Check `gh repo view <repo> --json visibility` instead of assuming. Baseline rule 1 (no secrets) applies to all of them, private included.
