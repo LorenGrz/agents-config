@@ -11,7 +11,8 @@
 # the scout and reviewer subagents, a deny rule that matches git commit and a hooksPath of /dev/null; and the
 # wrapper refuses to run without the hook's one-time token, with a used token, with a bad argument or elsewhere.
 # WORKER_COMMIT_E2E=1 also runs `claude -p` (network, a few cents): without the hook a project `ask` on
-# `git commit *` stops the commit even in bypass; with it a lone commit passes and a commit with a push does not run.
+# `git commit *` stops the commit even in bypass; with it a lone commit passes, a commit with a push is denied with the
+# reason (and the reason is absent without the hook), and a compound commit ends committed after the retry.
 set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOOK="$HUB/config/hooks/worker-commit.sh"
@@ -26,6 +27,12 @@ unset CLAUDE_PROJECT_DIR
 
 R="$W/repo" WT="$W/wt" WT2="$W/wt2" DEV="$W/wt-dev" DET="$W/wt-det" HEADB="$W/wt-head"
 git init -q -b master "$R" && git -C "$R" commit -q --allow-empty -m init
+# the project asks for git commit, as the work repos do; every worktree below inherits it
+mkdir -p "$R/.claude" && echo '{"permissions":{"ask":["Bash(git commit *)"]}}' >"$R/.claude/settings.json"
+git -C "$R" add .claude && git -C "$R" commit -q -m settings
+# a repo with no ask at all: the hook leaves it alone
+N="$W/plain" NW="$W/plain-wt"
+git init -q -b master "$N" && git -C "$N" commit -q --allow-empty -m init && git -C "$N" worktree add -q -b feat/n "$NW"
 git -C "$R" branch dev
 git -C "$R" worktree add -q -b feat/x "$WT"
 git -C "$R" worktree add -q -b feat/y "$WT2"
@@ -43,7 +50,7 @@ cat >"$W/bin/orca" <<EOF
 [ "\$1 \$2" = "orchestration worker-list" ] || exit 1
 case " \$* " in
   *" --cursor c2 "*) printf '{"ok":true,"result":{"workers":[{"terminal":"term_w","terminalState":"retained","workspace":"id::%s"}],"nextCursor":null}}\n' "$WT" ;;
-  *) printf '{"ok":true,"result":{"workers":[{"terminal":"term_o","workspace":"id::%s"},{"terminal":"term_d","workspace":"id::%s"},{"terminal":"term_h","workspace":"id::%s"}],"nextCursor":"c2"}}\n' "$R" "$DET" "$HEADB" ;;
+  *) printf '{"ok":true,"result":{"workers":[{"terminal":"term_o","workspace":"id::%s"},{"terminal":"term_d","workspace":"id::%s"},{"terminal":"term_h","workspace":"id::%s"},{"terminal":"term_n","workspace":"id::%s"}],"nextCursor":"c2"}}\n' "$R" "$DET" "$HEADB" "$NW" ;;
 esac
 EOF
 chmod +x "$W/bin/orca"
@@ -54,7 +61,7 @@ hook() { jq -n --arg c "$2" --arg d "$1" --arg t "${3:-}" \
   '{tool_name:"Bash",cwd:$d,tool_input:{command:$c,description:"x"}} + (if $t == "" then {} else {agent_type:$t} end)' |
   bash "$HOOK" | jq -r '.hookSpecificOutput.updatedInput.command // empty'; }
 # what <cwd> <command>: rewrite, deny (only with the expected reason) or dialog (no output)
-REASON='Mandá git add y git commit en comandos aparte, cada uno en una línea; el mensaje con -m en una línea (varios -m si hace falta)'
+REASON='Mandá git add y git commit en comandos aparte, cada uno en una línea; el mensaje con -m en una línea (varios -m si hace falta). Sin redirecciones ni nada encadenado; si el mensaje trae $, ` o \, va entre comillas simples.'
 what() { local o; o="$(jq -n --arg c "$2" --arg d "$1" '{tool_name:"Bash",cwd:$d,tool_input:{command:$c}}' | bash "$HOOK")"
   if [ -z "$o" ]; then echo dialog
   elif [ "$(jq -r '.hookSpecificOutput.permissionDecision // empty' <<<"$o")" = deny ]; then
@@ -182,7 +189,30 @@ for d in 'Bash(git commit:*)' 'Bash(git commit *)' 'Bash(git *)' 'Bash(git*)' 'B
 done
 echo '{"permissions":{"deny":["Bash(git push --force *)"]}}' >"$WT/.claude/settings.local.json"
 check "un deny de git push no lo frena" "[ -n \"\$(hook $WT 'git commit -m \"x\"')\" ]"
-rm -rf "$WT/.claude"
+rm -f "$WT/.claude/settings.local.json"
+# a deny more specific than `git commit -m x` still applies to the command it matches
+for pair in 'Bash(git commit -a*)|git commit -a -m "x"' 'Bash(git commit -a:*)|git commit -a -m "x"' \
+  'Bash(git commit --all*)|git commit --all -m "x"' 'Bash(git commit -q*)|git commit -q -m "x"' 'Bash(git commit -F*)|git commit -F .msg'; do
+  jq -n --arg d "${pair%%|*}" '{permissions:{deny:[$d]}}' >"$WT/.claude/settings.local.json"
+  check "diálogo: deny ${pair%%|*} con ${pair#*|}" "[ \"\$(what $WT '${pair#*|}')\" = dialog ]"
+done
+jq -n '{permissions:{deny:["Bash(git commit -a*)"]}}' >"$WT/.claude/settings.local.json"
+check "un deny de -a no frena un commit sin -a" "[ \"\$(what $WT 'git commit -q -m \"x\"')\" = rewrite ]"
+rm -f "$WT/.claude/settings.local.json"
+
+# a repo with no ask on git commit: nothing changes, neither the rewrite nor the deny
+check "repo sin ask: un commit suelto sigue igual" "[ \"\$(ORCA_TERMINAL_HANDLE=term_n what $NW 'git commit -q -m \"x\"')\" = dialog ]"
+check "repo sin ask: un compuesto sigue igual (sin deny)" "[ \"\$(ORCA_TERMINAL_HANDLE=term_n what $NW 'git add a && git commit -q -m \"x\"')\" = dialog ]"
+mkdir -p "$NW/.claude"; echo '{"permissions":{"ask":["Bash(git commit:*)"]}}' >"$NW/.claude/settings.local.json"
+check "repo con ask en settings.local: reescribe" "[ \"\$(ORCA_TERMINAL_HANDLE=term_n what $NW 'git commit -q -m \"x\"')\" = rewrite ]"
+check "repo con ask en settings.local: compuesto, deny" "[ \"\$(ORCA_TERMINAL_HANDLE=term_n what $NW 'git add a && git commit -q -m \"x\"')\" = deny ]"
+rm -rf "$NW/.claude"
+
+# a message source is required; --no-edit inside a message is text
+for c in 'git commit -q' 'git commit -a' 'git commit -a -q'; do
+  check "diálogo: sin mensaje, $c" "[ \"\$(what $WT '$c')\" = dialog ]"
+done
+check "--no-edit dentro del mensaje no cuenta como flag" "[ \"\$(what $WT 'git commit -q -m \"quita --no-edit del script\"')\" = rewrite ]"
 git -C "$WT" config core.hooksPath /dev/null
 check "diálogo: core.hooksPath en /dev/null" "[ -z \"\$(hook $WT 'git commit -m \"x\"')\" ]"
 git -C "$WT" config --unset core.hooksPath
@@ -208,13 +238,13 @@ if [ "${WORKER_COMMIT_E2E:-0}" = 1 ] && command -v claude >/dev/null; then
   printf '#!/usr/bin/env bash\nprintf %s\n' "'{\"ok\":true,\"result\":{\"workers\":[{\"terminal\":\"term_e\",\"workspace\":\"id::$E/wt\"}]}}'" >"$W/bin/orca-e2e"
   chmod +x "$W/bin/orca-e2e"
   set_hook="{\"hooks\":{\"PreToolUse\":[{\"matcher\":\"Bash\",\"hooks\":[{\"type\":\"command\",\"command\":\"bash $HOOK\"}]}]}}"
-  ask() { # <settings or empty> <command>
+  ask() { # <settings or empty> <command> [prompt]: the session's stream goes to $E/out
     (cd "$E/wt" && HOME=$REAL_HOME WORKER_COMMIT_ORCA="$W/bin/orca-e2e" ORCA_TERMINAL_HANDLE=term_e timeout 240 claude -p \
-      "Run exactly this Bash command once, verbatim, nothing added or removed:
+      "${3:-Run exactly this Bash command once, verbatim, nothing added or removed:
 $2
-Then reply only with its output or the denial text." \
+Then reply only with its output or the denial text.}" \
       --model haiku --dangerously-skip-permissions --setting-sources user,project,local ${1:+--settings "$1"} \
-      --output-format text </dev/null >/dev/null 2>&1); }
+      --output-format stream-json --verbose </dev/null >"$E/out" 2>&1); }
   n0=$(git -C "$E/wt" rev-list --count HEAD)
   ask "" "git commit --allow-empty -q -m sin-hook"
   check "e2e: sin el hook, el ask de git commit lo frena" "[ \$(git -C $E/wt rev-list --count HEAD) = $n0 ]"
@@ -222,8 +252,14 @@ Then reply only with its output or the denial text." \
   ask "$set_hook" "git commit -q -m \"con-hook\""
   check "e2e: con el hook, un commit suelto pasa sin diálogo" "[ \"\$(git -C $E/wt log -1 --format=%s)\" = con-hook ]"
   echo b >"$E/wt/b"; git -C "$E/wt" add b
+  ask "" "git commit -q -m \"con-push\" && git push origin feat/e"
+  check "e2e: sin el hook, el compuesto no trae el motivo" "! grep -q 'comandos aparte' $E/out"
   ask "$set_hook" "git commit -q -m \"con-push\" && git push origin feat/e"
-  check "e2e: commit con push en un worker, no corre (deny; ni commit ni push)" "[ \"\$(git -C $E/wt log -1 --format=%s)\" = con-hook ] && ! git -C $E/origin.git rev-parse -q --verify feat/e >/dev/null"
+  check "e2e: con el hook, el compuesto se niega con el motivo" "grep -q 'Mandá git add y git commit en comandos aparte' $E/out"
+  check "e2e: y no corre (ni commit ni push)" "[ \"\$(git -C $E/wt log -1 --format=%s)\" = con-hook ] && ! git -C $E/origin.git rev-parse -q --verify feat/e >/dev/null"
+  echo c >"$E/wt/c"
+  ask "$set_hook" "" 'Commit the new file c in this repo with: git add c && git commit -q -m "ciclo" (if a hook denies a command, follow its reason exactly and retry). Do not push. Reply only "listo" or the error.'
+  check "e2e: deny, reintento aparte y commit (el ciclo entero)" "[ \"\$(git -C $E/wt log -1 --format=%s)\" = ciclo ]"
 fi
 
 echo "$pass ok, $failn fail"

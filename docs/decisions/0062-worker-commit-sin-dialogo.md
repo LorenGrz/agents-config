@@ -32,18 +32,23 @@ cambia en los repos.
 - Un comando compuesto o de varias líneas que trae un `git commit` en posición de comando (al principio, o después
   de `;`, `&`, `|`, `(` o un salto de línea) se niega con `deny`, solo para un worker autorizado (los mismos
   chequeos de abajo), con el motivo «Mandá git add y git commit en comandos aparte, cada uno en una línea; el
-  mensaje con -m en una línea (varios -m si hace falta)». El worker lee el motivo y reintenta en comandos sueltos,
+  mensaje con -m en una línea (varios -m si hace falta). Sin redirecciones ni nada encadenado; si el mensaje trae
+  $, ` o \, va entre comillas simples». El worker lee el motivo y reintenta en comandos sueltos,
   que se reescriben, sin diálogo y sin depender de que su brief lo diga. Un `deny` no amplía permisos: el comando
   no corre. Fuera de un worker autorizado no cambia nada: sigue al diálogo.
 - Para reescribir o negar hace falta todo esto, y el chequeo de worker va antes de cualquier análisis:
+  - una regla `ask` (usuario, proyecto, local o managed) cubre `git commit`: para reescribir, la que matchea ese
+    mismo comando; para negar, la que matchea `git commit -m x`. Sin ese `ask`, el hook no hace nada y el worker
+    commitea como siempre, también encadenado;
   - la sesión es un worker supervisado (`$ORCA_TERMINAL_HANDLE` figura en `orca orchestration worker-list` con ese
     worktree, en cualquier estado, porque un despacho de seguimiento reusa la terminal) o un agente de stack-sync
     con su marca de ocupado viva ahí; nunca los subagentes `scout` ni `reviewer`. El hook lee el entorno del proceso
     de Claude, que el modelo no cambia desde su shell;
   - el directorio de la sesión es un worktree enlazado en una rama que no es base (`main`, `master`, `dev`,
     `develop`, `qa`, la de `origin/HEAD`), con un `core.hooksPath` que no es `/dev/null`;
-  - para reescribir, además, ninguna regla `deny` (usuario, proyecto o managed) matchea `git commit`, porque la
-    reescritura también la esquivaría.
+  - para reescribir, además, el commit trae `-m`, `-F` o `--no-edit` fuera de las comillas, y ninguna regla `deny`
+    matchea el comando real ni `git commit -m x`, porque la reescritura también la esquivaría. Las reglas se prueban
+    como glob, con la forma vieja `prefijo:*` incluida.
 - El hook deja un token de un solo uso atado al worktree. Llamado con ese token, el mismo archivo corre solo si el
   token tiene menos de 5 minutos y es de ese worktree. Lo borra, revalida los argumentos, la rama y el
   `core.hooksPath` sobre el argv real, limpia las variables de git y de husky que saltean o desvían los hooks del
@@ -63,7 +68,7 @@ cambia en los repos.
 - El caso de CX-829 (`diff <(…) && … && git add … && git commit … && git log`) queda cubierto por el `deny`: el
   worker recibe el motivo y manda el `git add` y el `git commit` por separado. No depende de la skill de
   orquestación de la org, que el 25/11 escribió los briefs de los líderes sin el cierre de `orquestar.sh`.
-- Costo: un reintento del worker por cada comando compuesto. Si en un worker un script o un heredoc trae una línea
+- Costo: un reintento del worker por cada comando compuesto, solo en repos con el `ask`. Si en un worker un script o un heredoc trae una línea
   que empieza con `git commit` (un texto, no un commit), también se niega; el worker puede escribirlo con su
   herramienta de archivos.
 - Las sesiones que no son workers (Loren, el orquestador) siguen viendo el `ask` del repo. La excepción es un
@@ -73,10 +78,16 @@ cambia en los repos.
 - Cualquier worker supervisado de ese worktree queda autorizado. Eso incluye a un reviewer de Orca que commitee por
   error y a una orden directa de Loren en la terminal de un worker ya terminado (`retained`). El reviewer es de solo
   lectura por su brief; el hook no lo distingue.
+- Límites conocidos. El hook no lee reglas de un `--settings` pasado al arrancar ni de
+  `/etc/claude-code/managed-settings.d/`. Sobre `core.hooksPath` solo rechaza el literal `/dev/null`: apuntarlo a
+  una carpeta vacía con un `git config` previo saltea los hooks, la misma evasión deliberada que forjar el token.
+  Un `git commit` con prefijo dentro de un compuesto (`&& HUSKY=0 git commit`, `&& git -c … commit`) no se
+  reconoce y va al diálogo.
 - Cada `git commit` suelto de un worker hace una consulta a Orca de ~0,2 s. Sin Orca abierto o sin `jq`, el hook
   calla.
 - Rige recién después del merge y de `install.sh`, que lo suma al `settings.json` global.
 - `stack-sync-git.sh` sigue siendo el push de los agentes de stack-sync: este hook no toca `git push`.
 - Para reproducir, `WORKER_COMMIT_E2E=1 bash scripts/test-worker-commit.sh` corre `claude -p` (red, centavos). Muestra
-  que sin el hook un `ask` de proyecto frena el commit aun en bypass, que con el hook un commit suelto pasa, y que
-  un commit con push sigue preguntando.
+  que sin el hook un `ask` de proyecto frena el commit aun en bypass y que con el hook un commit suelto pasa. Un
+  commit con push en un worker se niega con el motivo (sin el hook el motivo no aparece) y no corre ni el commit ni
+  el push. Pedido el compuesto, el modelo recibe el deny, reintenta aparte y el commit queda hecho.
