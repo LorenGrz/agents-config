@@ -15,7 +15,10 @@
 #       -F | --file     followed by a plain path ([A-Za-z0-9._/-], not starting with -)
 #   One line: no line break anywhere (a multi-line message goes as several -m). No &&, ;, |, $, backticks, <(,
 #   redirections, heredocs or prefixes (env, export, cd, git -C). Anything else,
-#   --amend, --no-verify and -n included, stays silent and the normal permission flow (the dialog) decides.
+#   --amend, --no-verify and -n included, stays silent and the normal permission flow (the dialog) decides,
+#   with one exception: for an authorized worker (the same checks below), a compound or multi-line command that
+#   carries a `git commit` at a command position is denied with a reason that tells the worker how to send it
+#   (git add and git commit as separate one-line commands, the message as -m), so it retries without a dialog.
 #   It also needs: the session is a supervised Orca worker (`orca orchestration worker-start`) whose terminal
 #   ($ORCA_TERMINAL_HANDLE) works on that worktree, or a stack-sync agent with a live busy mark there (ADR 0060),
 #   and never the `scout` or `reviewer` subagents; the cwd is a linked worktree on a branch that is not a base
@@ -91,7 +94,7 @@ fi
 
 # ---- hook mode: any problem exits 0 without output (the normal permission flow) ---------------------------
 input="$(cat 2>/dev/null)" || exit 0
-case $input in *'"git commit '*) ;; *) exit 0 ;; esac
+case $input in *git*commit*) ;; *) exit 0 ;; esac
 # the worker gate first, before any parsing: a worker handle or a stack-sync busy mark
 busy="${STACK_SYNC_STATE:-$HOME/.local/state/stack-sync}/busy"
 if [ -z "${ORCA_TERMINAL_HANDLE:-}" ]; then
@@ -110,10 +113,23 @@ dq='"[^"$`\\]*"'
 path='[A-Za-z0-9._/][A-Za-z0-9._/-]*'
 arg="(-q|--quiet|-a|--all|--no-edit|(-m|--message) ($sq|$dq)|(-F|--file) $path)"
 re="^git commit( $arg)+\$"
-[[ $cmd != *$'\n'* && $cmd =~ $re ]] || exit 0
+mode=rewrite
+if ! [[ $cmd != *$'\n'* && $cmd =~ $re ]]; then
+  # not a lone commit. A compound or multi-line command that carries a `git commit` at a command position
+  # (start, or after ; & | ( or a line break) gets the deny below; a single command (--amend, -m unquoted,
+  # HUSKY=0 git commit) stays with the dialog.
+  re_pos=$'(^|[;&|(\n])[ \t]*git([ \t]+-C[ \t]+[^ \t;&|]+)?[ \t]+commit([ \t]|$)'
+  [[ $cmd =~ $re_pos ]] || exit 0
+  if [[ $cmd != *$'\n'* ]]; then
+    bare="$(sed -E "s/$sq//g; s/\"[^\"]*\"//g" <<<"$cmd")"
+    case $bare in *'&&'* | *'||'* | *';'* | *'|'* | *'&'*) ;; *) exit 0 ;; esac
+  fi
+  mode=deny
+fi
 
 top="$(target_ok "$cwd")" || exit 0
 real="$(cd "$top" && pwd -P)"
+if [ "$mode" = rewrite ]; then
 case " $cmd " in *" --no-edit "*) git -C "$top" rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1 || exit 0 ;; esac
 
 # a deny rule that matches `git commit` must keep working: the rewrite would dodge it
@@ -130,6 +146,7 @@ for s in "$HOME/.claude/settings.json" "$HOME/.claude/settings.local.json" "${CL
     [[ "git commit -m x" == $p ]] && exit 0
   done < <(jq -r '.permissions.deny[]? | strings' "$s" 2>/dev/null)
 done
+fi
 
 # authorized: a stack-sync agent with a live busy mark there, or a supervised Orca worker of that worktree
 authorized() {
@@ -156,6 +173,12 @@ authorized() {
   return 1
 }
 authorized || exit 0
+
+if [ "$mode" = deny ]; then
+  jq -nc --arg r "Mandá git add y git commit en comandos aparte, cada uno en una línea; el mensaje con -m en una línea (varios -m si hace falta)" \
+    '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $r}}'
+  exit 0
+fi
 
 # a one-time token for the wrapper; old ones are dropped
 mkdir -p "$TOKENS" 2>/dev/null && chmod 700 "$TOKENS" 2>/dev/null || exit 0

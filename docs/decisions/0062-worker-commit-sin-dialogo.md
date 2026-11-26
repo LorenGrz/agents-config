@@ -27,21 +27,28 @@ cambia en los repos.
   - `-F`/`--file` seguido de una ruta simple.
 
   No acepta saltos de línea (tampoco dentro de las comillas), `&&`, `;`, `|`, `$`, backticks, `<(`, redirecciones,
-  heredocs ni prefijos (`env`, `export`, `cd`, `git -C`). Todo lo demás, `--amend`, `--no-verify` y `-n` incluidos, sigue al diálogo de siempre.
-- Además hace falta todo esto, y el chequeo de worker va antes de cualquier análisis:
+  heredocs ni prefijos (`env`, `export`, `cd`, `git -C`). Un comando simple fuera de la lista (`--amend`,
+  `--no-verify`, `-n`, `-m` sin comillas, `HUSKY=0 git commit`, `git -C`) sigue al diálogo de siempre.
+- Un comando compuesto o de varias líneas que trae un `git commit` en posición de comando (al principio, o después
+  de `;`, `&`, `|`, `(` o un salto de línea) se niega con `deny`, solo para un worker autorizado (los mismos
+  chequeos de abajo), con el motivo «Mandá git add y git commit en comandos aparte, cada uno en una línea; el
+  mensaje con -m en una línea (varios -m si hace falta)». El worker lee el motivo y reintenta en comandos sueltos,
+  que se reescriben, sin diálogo y sin depender de que su brief lo diga. Un `deny` no amplía permisos: el comando
+  no corre. Fuera de un worker autorizado no cambia nada: sigue al diálogo.
+- Para reescribir o negar hace falta todo esto, y el chequeo de worker va antes de cualquier análisis:
   - la sesión es un worker supervisado (`$ORCA_TERMINAL_HANDLE` figura en `orca orchestration worker-list` con ese
     worktree, en cualquier estado, porque un despacho de seguimiento reusa la terminal) o un agente de stack-sync
     con su marca de ocupado viva ahí; nunca los subagentes `scout` ni `reviewer`. El hook lee el entorno del proceso
     de Claude, que el modelo no cambia desde su shell;
   - el directorio de la sesión es un worktree enlazado en una rama que no es base (`main`, `master`, `dev`,
     `develop`, `qa`, la de `origin/HEAD`), con un `core.hooksPath` que no es `/dev/null`;
-  - ninguna regla `deny` (usuario, proyecto o managed) matchea `git commit`, porque la reescritura también la
-    esquivaría.
+  - para reescribir, además, ninguna regla `deny` (usuario, proyecto o managed) matchea `git commit`, porque la
+    reescritura también la esquivaría.
 - El hook deja un token de un solo uso atado al worktree. Llamado con ese token, el mismo archivo corre solo si el
   token tiene menos de 5 minutos y es de ese worktree. Lo borra, revalida los argumentos, la rama y el
   `core.hooksPath` sobre el argv real, limpia las variables de git y de husky que saltean o desvían los hooks del
   commit, commitea y deja una línea en `~/.local/state/agents-config/worker-commit.log`. Sin token se niega.
-- Los workers commitean en un comando aparte. El cierre del brief de cada líder (`config/hooks/orquestar.sh`) lo
+- Los briefs también piden commitear en un comando aparte, para no gastar el reintento. El cierre del brief de cada líder (`config/hooks/orquestar.sh`) lo
   dice: «`git add` en un comando y el commit solo en el suyo, `git commit -q -m "título" -m "cuerpo"`, sin `cd`, sin
   `&& git log` y sin heredoc». La nota de commit de los agentes de stack-sync (`scripts/stack-sync.sh`) dice lo
   mismo para su `stack-sync-git.sh`.
@@ -49,16 +56,16 @@ cambia en los repos.
 ## Consecuencias
 
 - Qué cubre: el `git commit` suelto de un worker en su worktree corre sin diálogo.
-- Qué no cubre: un comando compuesto con un commit adentro vuelve entero al diálogo, y ahí deciden el orquestador o
-  Loren. Pasa lo mismo con un mensaje de varias líneas en un solo `-m`. Las 15 formas reales del 25/11 (los
-  comandos Bash con `git commit` de los workers de CX, sin los dos `python3 <<'EOF'` que solo lo nombran) eran
-  compuestas: `git add … && git commit … && git log`, `cd …;`, `diff <(…)`, dos commits seguidos. Tres traían
-  además un mensaje de varias líneas. Con esos hábitos no pasa ninguna, y el test las fija en el diálogo.
-- El caso de CX-829 (`diff <(…) && … && git add … && git commit … && git log`) queda cubierto solo si el worker
-  commitea aparte, y eso depende de que su brief lo diga. El 25/11 los briefs de los líderes los escribió el
-  coordinador con el formato de la skill de orquestación de la org, fuera de este repo, y el cierre de
-  `orquestar.sh` no llegó literal a ningún líder. Si un worker igual encadena, vuelve el diálogo: el hook no
-  intenta entenderlo.
+- Las 17 formas reales del 25/11 (los comandos Bash con `git commit` de los workers de CX, dos de ellas después de
+  un `python3 <<'EOF'`) eran compuestas: `git add … && git commit … && git log`, `cd …;`, `diff <(…)`, dos commits
+  seguidos. Tres traían además un mensaje de varias líneas. En un worker, el test fija las 17 en el `deny` con el
+  motivo; fuera de uno, en el diálogo.
+- El caso de CX-829 (`diff <(…) && … && git add … && git commit … && git log`) queda cubierto por el `deny`: el
+  worker recibe el motivo y manda el `git add` y el `git commit` por separado. No depende de la skill de
+  orquestación de la org, que el 25/11 escribió los briefs de los líderes sin el cierre de `orquestar.sh`.
+- Costo: un reintento del worker por cada comando compuesto. Si en un worker un script o un heredoc trae una línea
+  que empieza con `git commit` (un texto, no un commit), también se niega; el worker puede escribirlo con su
+  herramienta de archivos.
 - Las sesiones que no son workers (Loren, el orquestador) siguen viendo el `ask` del repo. La excepción es un
   worktree con una marca de stack-sync viva, como ya pasaba con `stack-sync-git.sh`. La marca de `busy/` y el token se
   pueden forjar escribiendo un archivo: sería evadir el `ask` a propósito, algo que la regla tampoco frenaba antes (un

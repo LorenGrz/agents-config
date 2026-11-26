@@ -2,14 +2,16 @@
 # test-worker-commit.sh - offline checks for config/hooks/worker-commit.sh (ADR 0062): temp repo with worktrees,
 # a fake orca and an isolated HOME. Covers: the hook rewrites only a lone `git commit` of a supervised worker in its
 # own worktree, with the allowed arguments (-m/--message quoted, -q, -a, -F <file>, --no-edit in a merge), and the
-# rewritten command really commits; the 15 real worker commands with a commit of 25/11 (anonymized, same shape) all
-# go to the dialog, and the commit each one carries, sent alone, is rewritten; the reviewers' repros (a push hidden
-# in a heredoc or in quotes, an EOF) and every other shape outside the list stay silent; so do bad flags, a base
+# rewritten command really commits; the 17 real worker commands with a commit of 25/11 (anonymized, same shape)
+# and every compound or multi-line command with a commit (the reviewers' repros: a push hidden in a heredoc or in
+# quotes, an EOF) are denied in a worker with the reason «send git add and git commit apart» and go to the dialog
+# outside one; the commit each real form carries, sent alone, is rewritten; a single command outside the list goes
+# to the dialog; so do bad flags, a base
 # branch (also by origin/HEAD), a detached HEAD, the main checkout, another terminal, no Orca, a stale busy mark,
 # the scout and reviewer subagents, a deny rule that matches git commit and a hooksPath of /dev/null; and the
 # wrapper refuses to run without the hook's one-time token, with a used token, with a bad argument or elsewhere.
 # WORKER_COMMIT_E2E=1 also runs `claude -p` (network, a few cents): without the hook a project `ask` on
-# `git commit *` stops the commit even in bypass; with it a lone commit passes and a commit with a push still asks.
+# `git commit *` stops the commit even in bypass; with it a lone commit passes and a commit with a push does not run.
 set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOOK="$HUB/config/hooks/worker-commit.sh"
@@ -51,11 +53,20 @@ export WORKER_COMMIT_ORCA="$W/bin/orca" ORCA_TERMINAL_HANDLE=term_w
 hook() { jq -n --arg c "$2" --arg d "$1" --arg t "${3:-}" \
   '{tool_name:"Bash",cwd:$d,tool_input:{command:$c,description:"x"}} + (if $t == "" then {} else {agent_type:$t} end)' |
   bash "$HOOK" | jq -r '.hookSpecificOutput.updatedInput.command // empty'; }
+# what <cwd> <command>: rewrite, deny (only with the expected reason) or dialog (no output)
+REASON='Mandá git add y git commit en comandos aparte, cada uno en una línea; el mensaje con -m en una línea (varios -m si hace falta)'
+what() { local o; o="$(jq -n --arg c "$2" --arg d "$1" '{tool_name:"Bash",cwd:$d,tool_input:{command:$c}}' | bash "$HOOK")"
+  if [ -z "$o" ]; then echo dialog
+  elif [ "$(jq -r '.hookSpecificOutput.permissionDecision // empty' <<<"$o")" = deny ]; then
+    [ "$(jq -r '.hookSpecificOutput.permissionDecisionReason' <<<"$o")" = "$REASON" ] && echo deny || echo deny-otro-motivo
+  elif [ -n "$(jq -r '.hookSpecificOutput.updatedInput.command // empty' <<<"$o")" ]; then echo rewrite
+  else echo otro; fi; }
 shape() { sed -E 's/--token [0-9a-f]{32}/--token TOKEN/' <<<"$1"; }
 run() { (cd "$1" && eval "$2") >/dev/null 2>&1; }
 w="bash $HOOK --token TOKEN"
 
-# --- 25/11: the 15 real worker commands with a commit (anonymized, same shape): all go to the dialog
+# --- 25/11: the 17 real worker commands with a commit (anonymized, same shape): denied with the reason in a worker,
+# the dialog outside one
 M='"feat(x): aviso en vivo (T-1)"' M2='"Tests y docs al día."'
 ML=$'"feat(x): disponibilidad por categoría (T-2)\n\nCard «Disponibilidad»: Marketing con «Disponible» y\nUtilidad con «Habilitada»."'
 # the same message as one line per -m, the shape the brief asks for
@@ -76,10 +87,13 @@ real=(
   "git commit -q -m $ML && git log --oneline -1"
   "git commit -q -m $ML && git log --oneline -4"
   "git reset -q && git add src/a.test.tsx src/b.test.ts && git commit -q -m $M && git add -A && git commit -q -m $M2 && git log --oneline -4"
+  $'python3 - <<\'EOF\'\np = "src/a.test.tsx"\nprint(p)\nEOF\ngrep -n "x" src/a.test.tsx; git add src/a.test.tsx && git commit -q -m '"$M"' && git log --oneline -4'
+  $'python3 - <<\'EOF\'\nimport pathlib\nEOF\ngit add -A && diff <(git diff --cached --numstat HEAD) <(git diff --cached --numstat --ignore-cr-at-eol HEAD) && echo eol-ok && git commit -q -m '"$M"' && git log --oneline -3'
 )
 for i in "${!real[@]}"; do
   c=${real[i]}
-  check "25/11 forma $((i + 1)) (compuesta): diálogo" "[ -z \"\$(hook $WT \"\$c\")\" ]"
+  check "25/11 forma $((i + 1)) en un worker: deny con el motivo" "[ \"\$(what $WT \"\$c\")\" = deny ]"
+  check "25/11 forma $((i + 1)) fuera de un worker: diálogo" "[ \"\$(ORCA_TERMINAL_HANDLE= what $WT \"\$c\")\" = dialog ]"
 done
 
 # ... and the commit each one carries, sent alone, is rewritten
@@ -87,7 +101,7 @@ for c in "git commit -q -m $M -m $M2" "git commit -q -m $M" "git commit -q -m $T
   check "25/11 commit suelto: reescribe ${c:0:40}…" "[ \"\$(shape \"\$(hook $WT \"\$c\")\")\" = \"$w\${c:3}\" ]"
 done
 echo a >"$WT/a"; git -C "$WT" add a
-check "commit suelto con mensaje multilínea entre comillas: diálogo (una sola línea)" "[ -z \"\$(hook $WT \"git commit -q -m \$ML\")\" ]"
+check "commit suelto con mensaje multilínea en un -m: deny con el motivo" "[ \"\$(what $WT \"git commit -q -m \$ML\")\" = deny ]"
 run "$WT" "$(hook "$WT" "git commit -q -m $T -m $B1 -m $B2")"
 check "tres -m: commitea título y cuerpo" "[ \"\$(git -C $WT log -1 --format=%B)\" = \$'feat(x): disponibilidad por categoría (T-2)\\n\\nCard «Disponibilidad»: Marketing con «Disponible» y\\n\\nUtilidad con «Habilitada».' ]"
 echo b >"$WT/b"; git -C "$WT" add b
@@ -117,17 +131,26 @@ touch -d '2 hours ago' "$STACK_SYNC_STATE/busy/pr-1"
 check "marca vencida de stack-sync: diálogo" "[ -z \"\$(ORCA_TERMINAL_HANDLE= hook $WT 'git commit -m \"x\"')\" ]"
 rm -f "$STACK_SYNC_STATE/busy/pr-1"
 
-# --- the reviewers' repros and every shape outside the list: dialog
-repros=(
+# --- the reviewers' repros and every shape outside the list. In a worker, a compound or multi-line command with a
+# commit at a command position is denied with the reason; a single command outside the list goes to the dialog.
+deny_cases=(
   $'echo \'"$(cat <<\'EOF\'\n\'; git push origin HEAD:refs/heads/pwned; echo \'\nEOF\n)"\' && git commit --allow-empty -q -m "x"'
   $'echo \'<<\'EOF\'\n\'; git push origin HEAD:refs/heads/x; echo \'\nEOF\n\' && git commit -m "x"'
   $'git commit -q -m "$(cat <<\'EOF\'\nmsg\nEOF)"; git push origin HEAD:refs/heads/x; : "$(cat <<\'EOF\'\nx\nEOF\n)"'
   $'git commit -m "$(cat <<\'EOF\'\nmsg\nEOF\ngit push origin HEAD\ncat <<\'EOF\'\nx\nEOF\n)"'
   $'git commit -q -F - <<\'EOF\'\nfeat: por stdin\nEOF'
-  'git commit -m "x" ; git push' 'git commit -m "x"; git push' "git commit -m 'x'' ; git push'" 'git commit -m "a"'"'b'"
-  'git commit -m "$(git push origin HEAD)"' 'git commit -m `git push`' 'git commit -F <(echo hi)' 'git commit -m "x" | tail -1'
-  'git commit -m "x" > log.txt' 'git commit -m "x" &' "git commit -m it\\'s" $'git commit -m "x" \\\n--no-verify' $'git commit -m x\ngit push' $'git commit -m "x"\ngit push' $'git commit -m "x\ny"'
-  'export HUSKY=0; git commit -m "x"' 'HUSKY=0 git commit -m "x"' 'env HUSKY=0 git commit -m "x"' "cd $WT && git commit -m x"
+  'git commit -m "x" ; git push' 'git commit -m "x"; git push' 'git commit -m "x" | tail -1' 'git commit -m "x" &'
+  $'git commit -m "x" \\\n--no-verify' $'git commit -m x\ngit push' $'git commit -m "x"\ngit push' $'git commit -m "x\ny"'
+  'export HUSKY=0; git commit -m "x"' "cd $WT && git commit -m x" 'git add -A && git commit -q -m "x"' 'git add a; git commit -m "x"'
+)
+for c in "${deny_cases[@]}"; do
+  check "worker, deny: ${c//$'\n'/⏎}" "[ \"\$(what $WT \"\$c\")\" = deny ]"
+  check "fuera de un worker, diálogo: ${c//$'\n'/⏎}" "[ \"\$(ORCA_TERMINAL_HANDLE= what $WT \"\$c\")\" = dialog ]"
+done
+repros=(
+  "git commit -m 'x'' ; git push'" 'git commit -m "a"'"'b'"
+  'git commit -m "$(git push origin HEAD)"' 'git commit -m `git push`' 'git commit -F <(echo hi)'
+  'git commit -m "x" > log.txt' "git commit -m it\\'s" 'HUSKY=0 git commit -m "x"' 'env HUSKY=0 git commit -m "x"'
   "git -C $WT commit -m x" 'git -c core.hooksPath=/dev/null commit -m "x"' ' git commit -m "x"' 'git commit  -m "x"' 'git commit -m "x" '
   'git commit -m "a\"b"' 'git commit -m "costo $HOME"' 'git commit --allow-empty -m "x"' 'git commit -s -m "x"' 'git commit -qm x'
   'git commit -m x' 'git commit -m "x" -- a' 'git commit -m "x" *' 'git commit -m "--amend"x' 'git commit -F -' 'git commit -F -x' 'git commit'
@@ -135,10 +158,14 @@ repros=(
   'echo "git commit -m x"' 'git push'
 )
 for c in "${repros[@]}"; do
-  check "diálogo: ${c//$'\n'/⏎}" "[ -z \"\$(hook $WT \"\$c\")\" ]"
+  check "worker, diálogo: ${c//$'\n'/⏎}" "[ \"\$(what $WT \"\$c\")\" = dialog ]"
 done
 
 # --- wrong target or session: dialog
+check "compuesto en rama base: diálogo" "[ \"\$(what $DEV 'git add a && git commit -m \\\"x\\\"')\" = dialog ]"
+check "compuesto en el checkout principal: diálogo" "[ \"\$(ORCA_TERMINAL_HANDLE=term_o what $R 'git add a && git commit -m \\\"x\\\"')\" = dialog ]"
+check "compuesto de otra terminal: diálogo" "[ \"\$(ORCA_TERMINAL_HANDLE=term_x what $WT 'git add a && git commit -m \\\"x\\\"')\" = dialog ]"
+check "compuesto de un subagente reviewer: diálogo" "[ -z \"\$(jq -n --arg d $WT '{cwd:\$d,agent_type:\"reviewer\",tool_input:{command:\"git add a && git commit -m x\"}}' | bash $HOOK)\" ]"
 check "diálogo: rama base (dev)" "[ -z \"\$(hook $DEV 'git commit -m \"x\"')\" ]"
 check "diálogo: rama base por origin/HEAD" "[ -z \"\$(ORCA_TERMINAL_HANDLE=term_h hook $HEADB 'git commit -m \"x\"')\" ]"
 check "diálogo: HEAD detached" "[ -z \"\$(ORCA_TERMINAL_HANDLE=term_d hook $DET 'git commit -m \"x\"')\" ]"
@@ -196,7 +223,7 @@ Then reply only with its output or the denial text." \
   check "e2e: con el hook, un commit suelto pasa sin diálogo" "[ \"\$(git -C $E/wt log -1 --format=%s)\" = con-hook ]"
   echo b >"$E/wt/b"; git -C "$E/wt" add b
   ask "$set_hook" "git commit -q -m \"con-push\" && git push origin feat/e"
-  check "e2e: commit con push, sigue preguntando (ni commit ni push)" "[ \"\$(git -C $E/wt log -1 --format=%s)\" = con-hook ] && ! git -C $E/origin.git rev-parse -q --verify feat/e >/dev/null"
+  check "e2e: commit con push en un worker, no corre (deny; ni commit ni push)" "[ \"\$(git -C $E/wt log -1 --format=%s)\" = con-hook ] && ! git -C $E/origin.git rev-parse -q --verify feat/e >/dev/null"
 fi
 
 echo "$pass ok, $failn fail"
