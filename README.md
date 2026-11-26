@@ -51,7 +51,7 @@ una pregunta con tres opciones, siempre en este orden (`lane-guard.sh` lo impone
 ```mermaid
 flowchart LR
   Q{"¿Trivial?"} -- sí --> D[Directo]
-  Q -- no --> P{"Continuar / Plan S / Plan L"} --> OQ{"Continuar / Orquestar"}
+  Q -- no --> P{"Continuar / Plan S / Plan L"} --> OQ{"Orquestar / Continuar"}
   OQ -- Orquestar --> LO[un líder por rama, en su sesión y worktree] --> O
   P -- Continuar --> W[worker en su worktree]
   P -- Plan S --> S[Plan corto]

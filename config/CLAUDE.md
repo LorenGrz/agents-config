@@ -28,7 +28,7 @@ AGENTS.md index say which. Where skills overlap, one default per task:
   lanes"; path: `~/.claude/plugins/cache/mattpocock/mattpocock-skills/*/skills/engineering/<name>/SKILL.md`),
   with leads or `worker`/`reasoner` in the worktree of the task branch. A plan the user starts directly
   ends with "Plan S/L because …".
-- `lane-guard.sh` keeps Continuar first in the Continuar/Orquestar question too. Picking Orquestar makes the
+- `lane-guard.sh` keeps Orquestar first in the Orquestar/Continuar question (ADR 0067). Picking Orquestar makes the
   `orquestar.sh` hook inject the procedure: leads are separate sessions (Orca `worker-start`, T3 Code
   `t3_thread_launch`), never subagents of the main session, and their worktrees get their CLAUDE.md
   imports approved first with `scripts/approve-claude-imports.sh`.

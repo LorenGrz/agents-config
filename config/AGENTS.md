@@ -52,11 +52,13 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   ticket). Option descriptions stay minimal: «directo», «plan corto», «plan complejo». Mark the recommended one with "(Recomendado)" and one
   short line of why, without moving it: Continuar stays first.
 - **Always after the lane question** (ADR 0040), one more question with exactly two options, in this
-  order: **Continuar** (the main session runs it) · **Orquestar** (one lead per task branch and repo, as a
-  separate session in its worktree with that repo's skills and only the context it needs; several branches
-  run in parallel; each lead may start its own `worker` and `scout`, never a reviewer). It may go as the second
-  question of the same `AskUserQuestion`. With more than one task branch (several tickets, or back and
-  front) Orquestar is the recommended one; with one, recommend by size, with one short line of why. Work
+  order (ADR 0067): **Orquestar** (one lead per task branch and repo, as a separate session in its worktree
+  with that repo's skills and only the context it needs; several branches run in parallel; each lead may
+  start its own `worker` and `scout`, never a reviewer) · **Continuar** (the main session runs it). It may go
+  as the second question of the same `AskUserQuestion`. Recommend by judgment, not size: Orquestar for a
+  ticket that touches a repo with its own skills (front, back), so the lead works with that repo's skills and
+  review skills, and for more than one task branch; Continuar for a fix that needs little judgment. One short
+  line of why, without moving the options. Work
   that depends on a contract (the front of a ticket whose back defines it) starts when that contract is
   committed. Picking Orquestar loads the fixed procedure (ADR 0039).
 - **Plan S has no interview:** investigate, then ask only the critical decisions that can't be deduced, in
