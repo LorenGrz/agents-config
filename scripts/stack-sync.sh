@@ -59,7 +59,8 @@ state="${STACK_SYNC_STATE:-$HOME/.local/state/stack-sync}"
 sgit="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/stack-sync-git.sh"
 SGIT_NOTE="Commit y push, **solo con \`$sgit\`**: el repo pide confirmación para \`git commit\` y \`git push\`, y esa
 pregunta frena esta pestaña sin nadie que la conteste. Ese comando solo commitea con \`-m\` (o \`--no-edit\` en un
-merge) y solo pushea a la rama de este PR. Si lo rechaza, no busques otra vía: escribilo en el reporte."
+merge) y solo pushea a la rama de este PR. Si lo rechaza, no busques otra vía: escribilo en el reporte.
+\`git add\` y el commit van en comandos separados, sin encadenar (tampoco \`&& git log\`)."
 model1="${STACK_SYNC_MODEL1:-claude-sonnet-5-5}" model2="${STACK_SYNC_MODEL2:-claude-opus-5-5}"
 max_attempts="${STACK_SYNC_MAX_ATTEMPTS:-2}" busy_minutes="${STACK_SYNC_BUSY_MINUTES:-60}"
 while [ $# -gt 0 ]; do
