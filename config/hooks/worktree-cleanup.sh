@@ -14,6 +14,7 @@
 set -uo pipefail
 
 BUDGET=10   # seconds for the whole run
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CALL_MAX=5  # seconds for one gh call
 
 manual=0; dry=0; cwd=""
@@ -103,6 +104,12 @@ clean_repo() {
     # d. remove (no --force: git refuses when it is not safe); -D because a squash merge leaves the branch "unmerged"
     if [ "$dry" -eq 1 ]; then
       lines+=("worktree-cleanup (dry-run): borraría $path (rama $branch, $reason)")
+      continue
+    fi
+    # Con algo corriendo adentro no se borra: un dev server vivo deja la carpeta a medias, y este hook no mata
+    # procesos por su cuenta (puede ser una sesión abierta ahí). ADR 0065.
+    if ! bash "$HERE/worktree-frenar.sh" --listar "$path" >/dev/null 2>&1; then
+      lines+=("worktree-cleanup: no borré $path (rama $branch, $reason): tiene procesos corriendo")
       continue
     fi
     git -C "$main" worktree remove "$path" >/dev/null 2>&1 || continue

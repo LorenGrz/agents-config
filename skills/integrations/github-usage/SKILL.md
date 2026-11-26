@@ -1,6 +1,6 @@
 ---
 name: github-usage
-description: Use when the task touches git or GitHub - branches, commits, push, merge, pull requests, issues, reviews, repos, code search, PR screenshots - to run the push workflow and the work-repo rules, and to choose between the git/gh CLI (local checkout) and the claude.ai GitHub connector (mcp__claude_ai_GitHub__*, no checkout).
+description: Use when the task touches git or GitHub - branches, commits, push, merge, pull requests, issues, reviews, repos, code search, PR screenshots - to run the push workflow and the work-repo rules, and to choose between the git/gh CLI (local checkout) and the claude.ai GitHub connector (mcp__claude_ai_GitHub__*, no checkout). In a repo of an organization that ships its own skill for this (org.json `replaces`), use that one.
 ---
 
 # GitHub Usage (git and GitHub)
@@ -69,7 +69,8 @@ If the repo has branch protection or a PR-based flow, stop after step 6 and open
 ### Organizations (work repos)
 
 Every repo that matches an organization (`organizations/INDEX.md`); personal repos keep the flow above.
-An org's `POLICIES.md` may add to these rules, never relax them.
+An org's `POLICIES.md` may add to these rules; it relaxes one only through an ADR in the org repo (baseline
+rule 7), and then the org's own git skill states the exception.
 
 - **Never commit on the base or release branches** (`main`, `master`, `dev`). Each task starts on a new
   branch named after what it solves, cut from the remote base: `git fetch` then

@@ -1,6 +1,6 @@
 ---
 name: google-workspace-usage
-description: Use when the user asks about email, calendar events, meetings, availability, Drive files, Docs or Sheets - read inbox, draft or send a reply, schedule a meeting, find or share a file - via the claude.ai Gmail, Google Calendar, Drive, Docs and Sheets connectors.
+description: Use when the user asks about email, calendar events, meetings, availability, Drive files, Docs or Sheets - read inbox, draft or send a reply, schedule a meeting, find or share a file - via the claude.ai Gmail, Google Calendar, Drive, Docs and Sheets connectors. In a repo of an organization that ships its own skill for this (org.json `replaces`), use that one.
 ---
 
 # Google Workspace Usage

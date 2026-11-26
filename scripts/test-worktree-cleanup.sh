@@ -63,6 +63,16 @@ out="$(bash "$HOOK" --cwd "$R")"
 check "--cwd deletes and prints plain text" '[ ! -d "$R-feat-dry" ] && ! has_branch "$R" feat-dry && grep -q "^worktree-cleanup: borré .*feat-dry" <<<"$out" && ! grep -q hookSpecificOutput <<<"$out"'
 check "--cwd with nothing to do says so" 'grep -q "nada que borrar" <<<"$(bash "$HOOK" --cwd "$R")"'
 
+# --- a merged worktree with something running inside is kept (ADR 0065): the hook never kills processes
+mkwt "$R" feat-busy; merged feat-busy "$(head_of "$R-feat-busy")" 25
+(cd "$R-feat-busy" && exec sleep 30) & busy=$!
+sleep 0.3
+out="$(bash "$HOOK" --cwd "$R")"
+check "keeps a merged worktree with a live process and says why" '[ -d "$R-feat-busy" ] && kill -0 $busy 2>/dev/null && grep -q "no borré .*feat-busy.*procesos" <<<"$out"'
+kill $busy 2>/dev/null; wait $busy 2>/dev/null
+bash "$HOOK" --cwd "$R" >/dev/null
+check "deletes it once nothing runs there" '[ ! -d "$R-feat-busy" ]'
+
 # --- cwd inside a linked worktree: its siblings are cleaned, itself is not
 mkwt "$R" feat-sib; merged feat-sib "$(head_of "$R-feat-sib")" 31
 run "$R-feat-open/" >/dev/null

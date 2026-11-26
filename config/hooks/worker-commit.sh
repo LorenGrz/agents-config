@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# worker-commit.sh - lets an Orca worker commit on its own branch without a permission dialog (ADR 0062).
+# worker-commit.sh - lets an Orca worker commit on its own branch without a permission dialog (ADR 0066).
 #
 # Work repos version `ask` rules for `git commit *` in .claude/settings.json. An `ask` rule prompts even in
 # bypassPermissions, and neither a user `allow` nor a hook's permissionDecision "allow" beats it, so workers
@@ -71,7 +71,7 @@ target_ok() {
 if [ $# -gt 0 ]; then
   die() { echo "worker-commit: $1" >&2; exit 2; }
   [ "$1" = --token ] && [[ ${2:-} =~ ^[0-9a-f]{32}$ ]] && [ "${3:-}" = commit ] ||
-    die "solo corre desde el hook (ADR 0062); usá git commit directo"
+    die "solo corre desde el hook (ADR 0066); usá git commit directo"
   tok="$TOKENS/$2"
   shift 3
   # nothing in the environment may skip or redirect the commit hooks: cleared before any check
@@ -211,5 +211,5 @@ printf -v qself '%q' "$SELF"
 new="bash $qself --token $token${cmd:3}"
 jq -c --arg c "$new" '{hookSpecificOutput: {hookEventName: "PreToolUse",
   updatedInput: (.tool_input + {command: $c}),
-  additionalContext: "worker-commit (ADR 0062): este git commit suelto corrió por worker-commit.sh, que el ask de git commit del repo no frena."}}' <<<"$input" 2>/dev/null
+  additionalContext: "worker-commit (ADR 0066): este git commit suelto corrió por worker-commit.sh, que el ask de git commit del repo no frena."}}' <<<"$input" 2>/dev/null
 exit 0

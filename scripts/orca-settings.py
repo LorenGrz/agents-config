@@ -5,6 +5,9 @@
   orca-settings.py apply    aplica config/orca/settings.json sobre la base (con Orca cerrado)
   orca-settings.py diff     muestra qué cambiaría apply
 
+apply también pone el hook `archive` de cada repo git de Orca, si está vacío (ADR 0065): antes de borrar un
+worktree, Orca corre worktree-frenar.sh y frena lo que siga corriendo adentro.
+
 Orca guarda sus preferencias en profile-state.db (documento "settings", content_hash = sha256 del JSON). Solo
 se escribe con Orca cerrado: abierto, pisa la base con lo que tiene en memoria. Se exporta con una lista de
 claves permitidas: cuentas, cookies, rutas de esta máquina, telemetría y semillas de atajos quedan afuera.
@@ -74,6 +77,31 @@ def nuevo(actual):
         s[k] = {**s[k], **v} if isinstance(v, dict) and isinstance(s.get(k), dict) else v
     return s
 
+# Hook `archive` de Orca, local de cada repo (no se commitea en el repo): frena lo que corre en el worktree.
+ARCHIVE = 'bash "$HOME/.claude/hooks/worktree-frenar.sh"'
+
+def con_archive(actual):
+    """Los repos git sin hook archive, con el de este repo; devuelve (repos, rutas cambiadas)."""
+    repos = json.loads(actual)
+    cambiados = []
+    for r in repos:
+        h = r.get('hookSettings') or {}
+        if r.get('kind', 'git') != 'git' or (h.get('scripts') or {}).get('archive', '').strip():
+            continue
+        r['hookSettings'] = {**h, 'scripts': {**(h.get('scripts') or {}), 'archive': ARCHIVE}}
+        cambiados.append(r.get('path', '?'))
+    return repos, cambiados
+
+def leer_repos(db):
+    c = sqlite3.connect(f'file:{db}?mode=ro', uri=True)
+    fila = c.execute("select payload from profile_state_documents where domain='repos'").fetchone()
+    return fila[0] if fila else '[]'
+
+def escribir(c, dominio, valor):
+    payload = json.dumps(valor, ensure_ascii=False, separators=(',', ':'))
+    c.execute("update profile_state_documents set payload=?, content_hash=?, revision=revision+1, updated_at=? where domain=?",
+              (payload, hashlib.sha256(payload.encode()).hexdigest(), int(time.time() * 1000), dominio))
+
 def orca_abierto():
     return subprocess.run(['pgrep', '-f', r'orca-ide/orca-ide\.js'], capture_output=True).returncode == 0
 
@@ -85,19 +113,22 @@ elif modo in ('apply', 'diff'):
     actual = leer(db)
     antes, despues = json.loads(actual), nuevo(actual)
     cambios = sorted(k for k in despues if antes.get(k) != despues[k])
-    if modo == 'diff' or not cambios:
+    repos, hooks = con_archive(leer_repos(db))
+    if modo == 'diff' or not (cambios or hooks):
         print(f'{len(cambios)} preferencias cambiarían' + (': ' + ', '.join(cambios) if cambios else ''))
+        print(f'{len(hooks)} repos sin hook archive' + (': ' + ', '.join(hooks) if hooks else ''))
         sys.exit(0)
     # Solo la base real la pisa un Orca abierto; una copia (ORCA_USER_DATA_PATH en otra carpeta) se escribe igual.
     if DATA == os.path.expanduser('~/.config/orca') and orca_abierto():
         sys.exit('Orca está abierto: cerralo y volvé a correr orca-settings.py apply')
-    payload = json.dumps(despues, ensure_ascii=False, separators=(',', ':'))
     c = sqlite3.connect(db)
     c.execute(f"vacuum into '{db}.agents-config-bak'") if not os.path.exists(f'{db}.agents-config-bak') else None
     with c:
-        c.execute("update profile_state_documents set payload=?, content_hash=?, revision=revision+1, updated_at=? where domain='settings'",
-                  (payload, hashlib.sha256(payload.encode()).hexdigest(), int(time.time() * 1000)))
+        if cambios:
+            escribir(c, 'settings', despues)
+        if hooks:
+            escribir(c, 'repos', repos)
         c.execute("update profile_state_meta set value=cast(value as integer)+1 where key='revision'")
-    print(f'{len(cambios)} preferencias aplicadas (respaldo: {db}.agents-config-bak)')
+    print(f'{len(cambios)} preferencias y {len(hooks)} hooks archive aplicados (respaldo: {db}.agents-config-bak)')
 else:
     print(__doc__.strip())

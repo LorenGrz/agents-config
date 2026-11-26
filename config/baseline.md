@@ -7,5 +7,5 @@ Vale en todo proyecto y toda organización. Una org puede pisar convenciones (ra
 3. **Mínimo privilegio**: IAM, DB y tokens con el alcance mínimo; datos de prod en solo lectura por defecto.
 4. **Git seguro**: sin force-push a ramas compartidas, sin comandos destructivos sin pedido explícito, no pisar cambios ajenos.
 5. **Decisiones críticas** (arquitectura, datos, auth, deploy): se preguntan, no se asumen, y quedan en un ADR.
-6. **Acciones hacia afuera** (push, publicar, deployar, crear repos remotos): confirmación previa.
+6. **Acciones hacia afuera** (push, publicar, deployar, crear repos remotos): confirmación previa. Una org puede eximir una acción puntual solo con un ADR en su repo (regla 7).
 7. **Política de org que reemplaza una práctica base**: se registra en un ADR del proyecto.

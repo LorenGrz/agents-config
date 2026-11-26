@@ -9,7 +9,8 @@
 # 2. Skills de Orca: viven en skills/meta del repo (ADR 0057); este paso solo lo recuerda.
 # 3. stack-sync (ADR 0045): crea la automatización si no está, con este repo como workspace. Sus repos y su owner
 #    salen de ~/.config/stack-sync/config, que no se commitea: sin ese archivo, stack-sync no hace nada.
-# 4. Preferencias: scripts/orca-settings.py apply. Con Orca abierto se saltea y lo dice.
+# 4. Preferencias y hook archive de cada repo (ADR 0065): scripts/orca-settings.py apply. Con Orca abierto se
+#    saltea y lo dice.
 # Las cuentas de agentes, el login de GitHub y los repos de cada proyecto se cargan a mano en Orca.
 set -euo pipefail
 

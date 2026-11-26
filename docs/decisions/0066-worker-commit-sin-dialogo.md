@@ -1,4 +1,4 @@
-# 0062 — Los workers de Orca commitean en su rama sin diálogo, con `worker-commit.sh`
+# 0066 — Los workers de Orca commitean en su rama sin diálogo, con `worker-commit.sh`
 
 Estado: aceptado (2026-11-26). Ajusta 0060 (los agentes de stack-sync también pasan por acá si usan `git commit` directo).
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-worker-commit.sh - offline checks for config/hooks/worker-commit.sh (ADR 0062): temp repo with worktrees,
+# test-worker-commit.sh - offline checks for config/hooks/worker-commit.sh (ADR 0066): temp repo with worktrees,
 # a fake orca and an isolated HOME. Covers: the hook rewrites only a lone `git commit` of a supervised worker in its
 # own worktree, with the allowed arguments (-m/--message quoted, -q, -a, -F <file>, --no-edit in a merge), and the
 # rewritten command really commits; the 17 real worker commands with a commit of 25/11 (anonymized, same shape)
