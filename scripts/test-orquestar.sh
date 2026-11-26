@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # test-orquestar.sh - offline checks for config/hooks/orquestar.sh (ADR 0039): it injects the fixed
 # orchestration procedure only when the user picked «Orquestar», and the lane guard accepts the
-# Continuar/Orquestar question.
+# Orquestar/Continuar question (Orquestar first, ADR 0067).
 set -uo pipefail
 HUB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOOK="$HUB/config/hooks/orquestar.sh"
@@ -32,8 +32,8 @@ check "Orquestar only offered, not picked, stays silent" \
   '[ -z "$(answered "{\"questions\":[{\"options\":[{\"label\":\"Orquestar\"}]}],\"answers\":{\"q\":\"Continuar\"}}")" ]'
 check "subagent is not checked" '[ -z "$(answered "{\"answers\":{\"q\":\"Orquestar\"}}" worker)" ]'
 
-check "lane guard: Continuar, Orquestar passes" '[ "$(ask Continuar "Orquestar (Recomendado)")" = 0 ]'
-check "lane guard: Orquestar moved first is denied" '[ "$(ask "Orquestar (Recomendado)" Continuar)" = 2 ]'
+check "lane guard: Orquestar, Continuar passes (ADR 0067)" '[ "$(ask Orquestar "Continuar (Recomendado)")" = 0 ]'
+check "lane guard: Continuar moved first is denied" '[ "$(ask "Continuar (Recomendado)" Orquestar)" = 2 ]'
 check "lane guard: Continuar, Plan S, Plan L still passes" '[ "$(ask Continuar "Plan S" "Plan L")" = 0 ]'
 
 echo "$pass ok, $failn failed"

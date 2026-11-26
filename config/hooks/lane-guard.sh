@@ -2,7 +2,7 @@
 # PreToolUse(AskUserQuestion|ExitPlanMode) hook: enforces the workflow-lane rules of config/CLAUDE.md
 # (ADR 0022, ADR 0025, ADR 0031) instead of leaving them as prompt text.
 #  - AskUserQuestion: a question offering the lanes must list them in the fixed order
-#    Continuar -> Plan S -> Plan L, or, for the follow-up question of ADR 0039, Continuar -> Orquestar.
+#    Continuar -> Plan S -> Plan L, or, for the follow-up question of ADR 0039, Orquestar -> Continuar (ADR 0067).
 #    The recommended one is marked in its label, never moved first (the tool's own
 #    "recommended first" guidance loses here).
 #  - ExitPlanMode: a Plan L is presented only after a grilling interview: the
@@ -18,7 +18,7 @@ tool=$(jq -r '.tool_name // empty' <<<"$input")
 case "$tool" in
   AskUserQuestion)
     # For every question whose options mention a lane, the lane options (in the order given)
-    # must be exactly: Continuar, Plan S, Plan L — or Continuar, Orquestar (ADR 0039).
+    # must be exactly: Continuar, Plan S, Plan L — or Orquestar, Continuar (ADR 0039, 0067).
     bad=$(jq -r '
       [.tool_input.questions[]?
         | [.options[]?.label
@@ -28,9 +28,9 @@ case "$tool" in
              elif startswith("plan l") then "L"
              elif startswith("orquestar") then "O"
              else empty end]
-        | select(length > 0 and . != ["C","S","L"] and . != ["C","O"])] | length' <<<"$input")
+        | select(length > 0 and . != ["C","S","L"] and . != ["O","C"])] | length' <<<"$input")
     if [ "${bad:-0}" != 0 ]; then
-      echo "lane-guard: las opciones de carril van siempre en este orden: Continuar, Plan S, Plan L (las tres), o Continuar, Orquestar (las dos). Marcá la recomendada con \"(Recomendado)\" en su label sin moverla de lugar; esto pisa la guía de AskUserQuestion de poner la recomendada primero." >&2
+      echo "lane-guard: las opciones de carril van siempre en este orden: Continuar, Plan S, Plan L (las tres), u Orquestar, Continuar (las dos). Marcá la recomendada con \"(Recomendado)\" en su label sin moverla de lugar; esto pisa la guía de AskUserQuestion de poner la recomendada primero." >&2
       exit 2
     fi ;;
   ExitPlanMode)
