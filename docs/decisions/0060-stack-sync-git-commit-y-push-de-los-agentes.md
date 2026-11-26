@@ -1,6 +1,6 @@
 # 0060 — Los agentes de stack-sync commitean y pushean con `stack-sync-git.sh`
 
-Estado: aceptado (2026-11-24). Reemplaza 0059. Ajusta 0044, 0047 y 0048 (cómo commitean y pushean sus agentes).
+Estado: aceptado (2026-11-24). Reemplaza 0059. Ajusta 0044, 0047 y 0048 (cómo commitean y pushean sus agentes). Ajustado por 0066 (un `git commit` suelto de sus agentes también pasa, por `worker-commit.sh`).
 
 ## Contexto
 

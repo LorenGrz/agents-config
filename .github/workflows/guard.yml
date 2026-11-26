@@ -46,5 +46,6 @@ jobs:
           bash scripts/test-install-blocks.sh
           bash scripts/test-install-settings.sh
           bash scripts/test-worktree-frenar.sh
+          bash scripts/test-worker-commit.sh
           bash skills/devops/project-init/scripts/test-manifest.sh
           bash skills/devops/project-init/scripts/test-docs-check.sh

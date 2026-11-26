@@ -104,13 +104,14 @@ Cada regla carga solo cuando Claude toca un archivo que coincide. Globales: `sec
 Registrados en `settings.base.json` (la fuente de verdad del cableado). La columna Plugin dice si el método
 del marketplace también lo trae: `scripts/gen-plugin.sh` arma `hooks/hooks.json` en la raíz con todos menos
 `guard-omarchy.sh`, `rtk.sh` y `marcar-capturas.sh`. Los que «niegan» bloquean la herramienta; `format-file.sh` reescribe el archivo
-editado, `marcar-capturas.sh` escribe imágenes marcadas junto a las capturas y `worktree-cleanup.sh` borra worktrees; el resto solo agrega contexto.
+editado, `worker-commit.sh` reescribe el `git commit` suelto de un worker, `marcar-capturas.sh` escribe imágenes marcadas junto a las capturas y `worktree-cleanup.sh` borra worktrees; el resto solo agrega contexto.
 
 | Script | Evento | Qué hace | Plugin |
 |---|---|---|---|
 | `guard-omarchy.sh` | PreToolUse (Edit\|Write\|MultiEdit) | niega ediciones bajo `~/.local/share/omarchy/` | no |
 | `scout-readonly.sh` | PreToolUse (Bash) | solo dentro del subagente `scout`: deja pasar comandos de lectura y niega escrituras y flags que modifican | sí |
 | `rtk.sh` | PreToolUse (Bash) | pasa los comandos de lectura o verificación (git status/diff/log, ls, find/grep, lint/test/tsc) por [rtk](https://github.com/rtk-ai/rtk) para comprimir la salida; el resto sigue el flujo normal de permisos. Sin rtk no hace nada | no |
+| `worker-commit.sh` | PreToolUse (Bash) | en un worker supervisado de Orca (o un agente de stack-sync con marca viva), en su worktree y en una rama que no es base, reescribe un `git commit` suelto en una línea (solo `-m`/`--message` entre comillas sin `$`, `-q`, `-a`, `-F <archivo>` y `--no-edit` en un merge) a `worker-commit.sh --token <t>`, que el `ask` de `git commit *` de un repo no frena. Solo donde un `ask` cubre `git commit`. No interpreta bash: en un worker, un comando compuesto o multilínea con un `git commit` se niega con el motivo «mandá `git add` y `git commit` en comandos aparte»; `--amend`, `--no-verify` o un `deny` de `git commit` dejan el diálogo. No concede permisos (ADR 0066) | sí |
 | `critical-reasoning.sh` | UserPromptSubmit, PreToolUse (Edit\|Write\|MultiEdit) | si el pedido o el archivo parecen caros de errar (arquitectura, bugs sin causa, seguridad, migraciones, prod, IAM), recuerda la pregunta Continuar / Plan S / Plan L y que en Plan L decide `reasoner`, una vez por sesión. Suma la skill de `.agents/critical.json` del proyecto que coincida (máx. 2). Callado en subagentes y en plan mode | sí |
 | `intent-router.sh` | UserPromptSubmit, PreToolUse (Bash y MCP de integraciones) | frase natural («traete los cambios») -> «skill X; corré `git pull origin <base>`»; primera llamada a `gh`, `git push` o a un MCP de Slack, Jira, GitHub, Google, Obsidian o NotebookLM -> «cargá la skill X». Una vez por sesión y skill, callado en subagentes | sí |
 | `lane-guard.sh` | PreToolUse (AskUserQuestion\|ExitPlanMode) | niega una pregunta de lanes que no esté en el orden Continuar, Plan S, Plan L (o Continuar, Orquestar, ADR 0039), y un `ExitPlanMode` de Plan L sin la entrevista de `mattpocock-skills:grilling` desde que se entró a plan mode (ADR 0025, 0031). No revisa subagentes | sí |
@@ -188,7 +189,7 @@ entrevista. Tests de project-init: `test-manifest.sh` y `test-docs-check.sh` (of
 
 - `bash scripts/lint-docs.sh --strict --files config/rules/*.md` revisa el frontmatter `paths:` de cada regla.
 - `bash scripts/test-cli-baselines.sh` y `bash scripts/test-packs.sh` revisan los baselines y los packs.
-- `bash scripts/test-lane-guard.sh`, `bash scripts/test-orquestar.sh`, `bash scripts/test-worktree-cleanup.sh` y `bash scripts/test-marcar-capturas.sh` revisan esos hooks.
+- `bash scripts/test-lane-guard.sh`, `bash scripts/test-orquestar.sh`, `bash scripts/test-worktree-cleanup.sh`, `bash scripts/test-marcar-capturas.sh` y `bash scripts/test-worker-commit.sh` revisan esos hooks.
 - `./install.sh --dry-run` muestra qué enlazaría o escribiría, sin tocar `~/.claude`.
 - `bash scripts/gen-intents.sh --check` compara `intents.json` y el bloque Shortcuts de `AGENTS.md` con las
   skills.
