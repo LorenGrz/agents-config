@@ -16,10 +16,11 @@
 #     - the whole command fits a small grammar (an allowlist, not a denylist): segments joined by `&&`, `||`, `;`,
 #       newlines or a pipe into `tail`/`head`; each segment is `cd <dir>`, `echo`, `true`, `pwd` or
 #       `git [-C <dir>] add|status|log|diff|show|merge-base|rev-parse|branch|commit`; exactly one `git commit` and
-#       at most one `cd`. Outside single quotes there is no `$`, backtick, backslash, parenthesis, brace, `&`
+#       at most one `cd`. Outside single quotes there is no `$`, backtick, backslash, parenthesis, brace, `#`, `&`
 #       (background) or redirection other than `2>&1` and `[2]>/dev/null`; so no `export`, assignment, `env`,
 #       `git -c`, command or process substitution. The one exception is a literal heredoc message
-#       (`-m "$(cat <<'EOF' ... EOF)"` or `-F - <<'EOF' ... EOF`, quoted delimiter, so the body never expands);
+#       (`-m "$(cat <<'EOF' ... EOF)"` or `-F - <<'EOF' ... EOF`, quoted delimiter, so the body never expands;
+#       no body line equals the delimiter, so the heredoc ends where bash ends it; no `<<-`);
 #     - only the commit flags below (no --amend, --no-verify, -n, --fixup...);
 #     - the target is a linked worktree on a branch that is not a base (main, master, dev, develop, qa, origin/HEAD);
 #     - no `deny` rule covers `git commit` (user, project or managed settings): the rewrite would dodge it too.
@@ -129,8 +130,9 @@ analysis="$(WC_CMD="$cmd" perl -e '
   my $c = $ENV{WC_CMD};
   my $a = $c;
   # literal heredocs (quoted delimiter) become placeholders of the same length
-  $a =~ s{("\$\(cat\s*<<-?\s*([\x27"])(\w+)\2\n.*?\n\3\n?\s*\)")}{q(") . (q(M) x (length($1) - 2)) . q(")}gse;
-  $a =~ s{(<<-?\s*([\x27"])(\w+)\2\n.*?\n\3)(?=\n|\z)}{q(H) x length($1)}gse;
+  # (bash ends the body at the first line equal to the delimiter, so no body line may be one; no <<-)
+  $a =~ s{("\$\(cat\s*<<\s*([\x27"])(\w+)\2\n(?:(?!\3\n)[^\n]*\n)*?\3\n\s*\)")}{q(") . (q(M) x (length($1) - 2)) . q(")}ge;
+  $a =~ s{(<<\s*([\x27"])(\w+)\2\n(?:(?!\3\n)[^\n]*\n)*?\3)(?=\n|\z)}{q(H) x length($1)}ge;
   # mask quoted text; refuse expansions and escapes
   my ($q, $m) = (q(), q());
   for my $ch (split //, $a) {
@@ -140,7 +142,7 @@ analysis="$(WC_CMD="$cmd" perl -e '
       next;
     }
     if ($ch eq "\x27" || $ch eq q(")) { $q = $ch; $m .= $ch; next }
-    exit 1 if $ch =~ /[\$`\\(){}]/;
+    exit 1 if $ch =~ /[\$`\\(){}#]/; # # would start a comment where this scan sees quotes
     $m .= $ch;
   }
   exit 1 if $q ne q();

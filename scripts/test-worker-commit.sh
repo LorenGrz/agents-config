@@ -4,7 +4,8 @@
 # worker in its own worktree, and the rewritten command really commits (the 25/11 shapes: cd + merge-base + status +
 # add + commit, add + commit with two -m + log | tail; a heredoc message; -F - with a heredoc; git -C; --no-edit in a
 # merge; a stack-sync busy mark); it stays silent outside its grammar (export, assignment, env, git -c, $(...),
-# <(...), backtick, backslash, line continuation, a heredoc before the commit, a background &, two commits, two cd),
+# <(...), backtick, backslash, line continuation, a heredoc before the commit, a heredoc message that hides a
+# command after its first delimiter line or uses <<-, an unquoted #, a background &, two commits, two cd),
 # for bad flags, a base branch (also by origin/HEAD), a detached HEAD, the main checkout, another worktree, another
 # terminal, no Orca, a stale busy mark, the scout and reviewer subagents, a deny rule on git commit and a hooksPath
 # of /dev/null; a commit with a push goes whole to the dialog; long commands stay fast; and the wrapper refuses to run
@@ -115,7 +116,11 @@ for c in 'export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_V
   'git commit -m `git push`' "git commit -m it\\'s" $'git commit -m x \\\n--no-verify' \
   $'cat > x.sh <<\'EOF\'\ngit commit -q -m init\nEOF' 'git commit -m x &' 'git commit -m x > log.txt' \
   'git commit -m x && git commit -m y' "cd $WT && cd $WT && git commit -m x" 'rm -rf x; git commit -m x' \
-  'diff <(git show HEAD:b) b; git add b && git commit -q -m x' 'git push' 'echo "git commit -m x"'; do
+  'diff <(git show HEAD:b) b; git add b && git commit -q -m x' 'git push' 'echo "git commit -m x"' \
+  $'git commit -m "$(cat <<\'EOF\'\nmsg\nEOF\ngit push origin HEAD\ncat <<\'EOF\'\nx\nEOF\n)"' \
+  $'git commit -m "$(cat <<\'EOF\'\nEOF\ngit push\ncat <<\'EOF\'\nEOF\n)"' \
+  $'git commit -m "$(cat <<-\'EOF\'\nmsg\n\tEOF\n)"' \
+  $'echo #\'\nexport SKIP=x\n#\'\ngit commit -m x'; do
   check "silencio: ${c//$'\n'/⏎}" "[ -z \"\$(hook $WT \"\$c\")\" ]"
 done
 

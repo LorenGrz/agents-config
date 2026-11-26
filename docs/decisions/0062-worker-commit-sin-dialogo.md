@@ -27,11 +27,12 @@ cambia en los repos.
   - el comando entero entra en una gramática chica (lista de lo permitido, no de lo prohibido): segmentos unidos por
     `&&`, `||`, `;`, saltos de línea o un pipe a `tail`/`head`; cada segmento es `cd <dir>`, `echo`, `true`, `pwd` o
     `git [-C <dir>] add|status|log|diff|show|merge-base|rev-parse|branch|commit`, con un solo `git commit` y a lo
-    sumo un `cd`. Fuera de comillas simples no hay `$`, backtick, `\`, paréntesis, llaves, `&` suelto ni otra
+    sumo un `cd`. Fuera de comillas simples no hay `$`, backtick, `\`, paréntesis, llaves, `#`, `&` suelto ni otra
     redirección que `2>&1` y `[2]>/dev/null`. Así quedan afuera `export`, asignaciones, `env`, `git -c`, la
     sustitución de comandos y de procesos, la continuación de línea y cualquier `git push` o `gh`. La única
     excepción es el mensaje en un heredoc literal (`-m "$(cat <<'EOF' … EOF)"` o `-F - <<'EOF' … EOF`, delimitador
-    entre comillas, sin expansión);
+    entre comillas, sin expansión, sin `<<-` y sin una línea del cuerpo igual al delimitador, así el heredoc termina
+    donde lo termina bash);
   - solo `-m`, `-F`, `-q`, `-a`, `-s`, `-v`, `--allow-empty` y `--no-edit` durante un merge;
   - el destino es un worktree enlazado en una rama que no es base (`main`, `master`, `dev`, `develop`, `qa`, la de
     `origin/HEAD`), y su `core.hooksPath` no es `/dev/null`;
