@@ -58,6 +58,8 @@ w="bash $HOOK --token TOKEN"
 # --- 25/11: the 15 real worker commands with a commit (anonymized, same shape): all go to the dialog
 M='"feat(x): aviso en vivo (T-1)"' M2='"Tests y docs al día."'
 ML=$'"feat(x): disponibilidad por categoría (T-2)\n\nCard «Disponibilidad»: Marketing con «Disponible» y\nUtilidad con «Habilitada»."'
+# the same message as one line per -m, the shape the brief asks for
+T='"feat(x): disponibilidad por categoría (T-2)"' B1='"Card «Disponibilidad»: Marketing con «Disponible» y"' B2='"Utilidad con «Habilitada»."'
 real=(
   "git add docs/a.md docs/b.md src/a.test.ts src/a.ts && git commit -q -m $M -m $M2 && git log --oneline -2"
   "git add docs/c.md src/a.test.ts src/a.ts && git commit -q -m $M -m $M2 && git log --oneline -3"
@@ -81,17 +83,19 @@ for i in "${!real[@]}"; do
 done
 
 # ... and the commit each one carries, sent alone, is rewritten
-for c in "git commit -q -m $M -m $M2" "git commit -q -m $M" "git commit -q -m $ML"; do
+for c in "git commit -q -m $M -m $M2" "git commit -q -m $M" "git commit -q -m $T -m $B1 -m $B2"; do
   check "25/11 commit suelto: reescribe ${c:0:40}…" "[ \"\$(shape \"\$(hook $WT \"\$c\")\")\" = \"$w\${c:3}\" ]"
 done
 echo a >"$WT/a"; git -C "$WT" add a
-run "$WT" "$(hook "$WT" "git commit -q -m $ML")"
-check "commit suelto multilínea: commitea con el mismo mensaje" "[ \"\$(git -C $WT log -1 --format=%B)\" = \$'feat(x): disponibilidad por categoría (T-2)\\n\\nCard «Disponibilidad»: Marketing con «Disponible» y\\nUtilidad con «Habilitada».' ]"
+check "commit suelto con mensaje multilínea entre comillas: diálogo (una sola línea)" "[ -z \"\$(hook $WT \"git commit -q -m \$ML\")\" ]"
+run "$WT" "$(hook "$WT" "git commit -q -m $T -m $B1 -m $B2")"
+check "tres -m: commitea título y cuerpo" "[ \"\$(git -C $WT log -1 --format=%B)\" = \$'feat(x): disponibilidad por categoría (T-2)\\n\\nCard «Disponibilidad»: Marketing con «Disponible» y\\n\\nUtilidad con «Habilitada».' ]"
 echo b >"$WT/b"; git -C "$WT" add b
 out="$(hook "$WT" "git commit -q -m 'fix: comillas simples; nada más' -m $M2")"
 run "$WT" "$out"
 check "comillas simples y dos -m: commitea" "[ \"\$(git -C $WT log -1 --format=%s)\" = 'fix: comillas simples; nada más' ]"
-check "el token se usa una vez" "! run $WT \"\$out\""
+echo b2 >"$WT/b2"; git -C "$WT" add b2
+check "el token se usa una vez (con algo staged)" "! run $WT \"\$out\" && ! git -C $WT diff --cached --quiet -- b2"
 printf 'feat: desde archivo\n' >"$W/msg.txt"; cp "$W/msg.txt" "$WT/.msg"; echo c >"$WT/c"; git -C "$WT" add c
 run "$WT" "$(hook "$WT" 'git commit -q -F .msg')"
 check "-F <archivo>: commitea" "[ \"\$(git -C $WT log -1 --format=%s)\" = 'feat: desde archivo' ]"
@@ -122,7 +126,7 @@ repros=(
   $'git commit -q -F - <<\'EOF\'\nfeat: por stdin\nEOF'
   'git commit -m "x" ; git push' 'git commit -m "x"; git push' "git commit -m 'x'' ; git push'" 'git commit -m "a"'"'b'"
   'git commit -m "$(git push origin HEAD)"' 'git commit -m `git push`' 'git commit -F <(echo hi)' 'git commit -m "x" | tail -1'
-  'git commit -m "x" > log.txt' 'git commit -m "x" &' "git commit -m it\\'s" $'git commit -m "x" \\\n--no-verify' $'git commit -m x\ngit push'
+  'git commit -m "x" > log.txt' 'git commit -m "x" &' "git commit -m it\\'s" $'git commit -m "x" \\\n--no-verify' $'git commit -m x\ngit push' $'git commit -m "x"\ngit push' $'git commit -m "x\ny"'
   'export HUSKY=0; git commit -m "x"' 'HUSKY=0 git commit -m "x"' 'env HUSKY=0 git commit -m "x"' "cd $WT && git commit -m x"
   "git -C $WT commit -m x" 'git -c core.hooksPath=/dev/null commit -m "x"' ' git commit -m "x"' 'git commit  -m "x"' 'git commit -m "x" '
   'git commit -m "a\"b"' 'git commit -m "costo $HOME"' 'git commit --allow-empty -m "x"' 'git commit -s -m "x"' 'git commit -qm x'
@@ -164,7 +168,8 @@ check "wrapper sin token: se niega" "! wrap $WT commit -m x"
 check "wrapper con un token inventado: se niega" "! wrap $WT --token 0123456789abcdef0123456789abcdef commit -m x"
 check "wrapper: token válido con --amend se niega" "! wrap $WT --token $(tok) commit --amend -m x"
 check "wrapper: token válido con --no-verify se niega" "! wrap $WT --token $(tok) commit --no-verify -m x"
-check "wrapper: token de un worktree en otro se niega" "! wrap $WT2 --token $(tok) commit --allow-empty -m x"
+echo z >"$WT2/z"; git -C "$WT2" add z
+check "wrapper: token de un worktree en otro se niega (con algo staged)" "! wrap $WT2 --token $(tok) commit -m x && ! git -C $WT2 diff --cached --quiet -- z"
 check "wrapper: deja registro" "grep -q 'term_w' $XDG_STATE_HOME/agents-config/worker-commit.log"
 
 # --- optional: the real thing, with claude -p (WORKER_COMMIT_E2E=1)

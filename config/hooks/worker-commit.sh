@@ -11,10 +11,10 @@
 #   hook (no arguments, PreToolUse JSON on stdin). It does not interpret bash: it rewrites only when the WHOLE
 #   command is one `git commit` with these arguments, separated by spaces, and nothing else:
 #       -q | --quiet | -a | --all | --no-edit (only while a merge is in progress)
-#       -m | --message  followed by '...' (no ' inside) or "..." (no " $ ` \ inside); a line break inside the
-#                       quotes is text, outside them it is refused
+#       -m | --message  followed by '...' (no ' inside) or "..." (no " $ ` \ inside)
 #       -F | --file     followed by a plain path ([A-Za-z0-9._/-], not starting with -)
-#   No &&, ;, |, $, backticks, <(, redirections, heredocs or prefixes (env, export, cd, git -C). Anything else,
+#   One line: no line break anywhere (a multi-line message goes as several -m). No &&, ;, |, $, backticks, <(,
+#   redirections, heredocs or prefixes (env, export, cd, git -C). Anything else,
 #   --amend, --no-verify and -n included, stays silent and the normal permission flow (the dialog) decides.
 #   It also needs: the session is a supervised Orca worker (`orca orchestration worker-start`) whose terminal
 #   ($ORCA_TERMINAL_HANDLE) works on that worktree, or a stack-sync agent with a live busy mark there (ADR 0060),
@@ -109,10 +109,8 @@ sq="'[^']*'"
 dq='"[^"$`\\]*"'
 path='[A-Za-z0-9._/][A-Za-z0-9._/-]*'
 arg="(-q|--quiet|-a|--all|--no-edit|(-m|--message) ($sq|$dq)|(-F|--file) $path)"
-# (the arguments are joined by single spaces and no flag or path holds a line break, so a line break can only be
-# inside the quotes of a message)
 re="^git commit( $arg)+\$"
-[[ $cmd =~ $re ]] || exit 0
+[[ $cmd != *$'\n'* && $cmd =~ $re ]] || exit 0
 
 top="$(target_ok "$cwd")" || exit 0
 real="$(cd "$top" && pwd -P)"
