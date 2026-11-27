@@ -28,6 +28,12 @@ JavaScript -> Node.js -> TypeScript -> React -> NestJS -> Supabase + WebSockets 
 - Long-term product track: Study Tracker / Developer Progress Tracker (StudyQuest).
 - Portfolio work should explain problem solved, stack, architecture decisions, lessons learned, repository link, and live demo when available.
 
+## Pull requests
+
+- One ticket per PR, in every repo, also where the org allows more (CX's `cx-pr` allows 3).
+- When analyzing tickets (`jira-ticket-review` included), still mark which ones could be grouped, even with
+  different functionality, as a suggestion only: each still gets its own PR.
+
 ## Model routing
 
 - Main session: Opus at high effort (ADR 0024); it designs the plans. Never pass `model: fable` to a subagent. Fable is only the advisor (`advisorModel: "fable"` in `~/.claude/settings.json`). A reasoner is Opus at high effort consulting that advisor: the main session is one, and so is every lead. Subagents (`worker`, `scout`, `reviewer`, `reasoner`) inherit the advisor but never call it (ADR 0061).

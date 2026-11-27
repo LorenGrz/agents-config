@@ -70,7 +70,7 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
   `to-tickets` splits it into `.scratch/<topic>/issues/NN-<slug>.md`, and execution follows `implement-spec`:
   one `worker` per unblocked ticket, in parallel, each in its own worktree from the task branch. `.scratch/`
   does not travel to worktrees: each worker's brief carries the absolute path of the main checkout's
-  `.scratch/<topic>/`. The lead commits each worker's diff and merges it into the task branch, then starts
+  `.scratch/<topic>/`. Each worker commits per functionality on its branch; the lead reviews the diff and merges it into the task branch, then starts
   the tickets it unblocks. Then the two-axis review below, from the parent; the PR follows the repo's or
   org's policy (in CX, the draft opens at the start). `to-spec`, `to-tickets`, `implement-spec` and
   `wayfinder` are user-invoked only: read their `SKILL.md` from the plugin and follow it, with the
@@ -103,8 +103,8 @@ Shared instructions for every coding agent. Agent-specific additions go in that 
 - Outside a plan, don't pull in the heavy process (grilling, `to-spec`, `to-tickets`, per-ticket workers)
   unless asked.
 - **Repo work goes to a background worker by default** (where the agent has subagents): every non-trivial
-  change runs in a worker on the task branch, in its own worktree or in its lead's; whoever started it
-  reviews the diff and commits. Trivial changes (one line or a typo) are done directly.
+  change runs in a worker on the task branch, in its own worktree or in its lead's; the worker commits
+  each functionality it adds (ADR 0068) and whoever started it reviews the diff. Trivial changes (one line or a typo) are done directly.
   In Plan S the main session executes and starts one only when the work needs it.
 
 ## Agent skills
