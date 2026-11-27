@@ -44,14 +44,14 @@ Pick the agent by role; each role's model is in your profile ("Model routing").
 - **Decide** (`reasoner`, or plan mode): architecture, unknown-cause bugs, plan review, hard-to-reverse
   calls. Never bulk writing. A decision costly to get wrong never goes to `worker` or `scout`.
 - **Implement** (`worker`): test first, then code and docs, given the exact files and the decided change (when to use
-  it: `AGENTS.md`); it writes the tests but runs none and never calls the advisor (ADR 0061). Whoever started it (the
-  main session or a lead) reviews its diff, then commits.
+  it: `AGENTS.md`); it writes the tests but runs none and never calls the advisor (ADR 0061). It commits each
+  functionality it adds and never pushes (ADR 0068); whoever started it (the main session or a lead) reviews its diff.
 - **Review** (`reviewer`): load `review-handoff` for the two briefs (Standards and Spec), the transport and
   the findings loop. It runs in any lane.
 - Transport. Lead: T3 Code `t3_thread_launch` in that repo's or workspace's project, Orca a worker there,
   Claude Code a subagent given the path. `worker`: `run_in_background`, `delegate_task` or an Orca worker
   (`orchestration`). Every brief says to read the repo's `AGENTS.md`/`CLAUDE.md` and `.claude/skills`
-  first; a worker's also carries its definition: no commit or push.
+  first; a worker's also carries its definition: one commit per functionality, no push.
 - **Bulk (external)** (`gemini-delegate`, `agy`): only when the user asks; then review the diff and run the
   acceptance command (ADR 0010).
 - A plan recommends the subagents (which, why) and asks. While executing an approved plan, delegating per

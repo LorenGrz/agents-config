@@ -42,7 +42,7 @@ una pregunta con tres opciones, siempre en este orden (`lane-guard.sh` lo impone
 
 - **Orquestador**: la sesión principal. Planifica, escribe los briefs e integra; en Plan L no escribe código.
 - **Líder**: una sesión en cada repo que toca el trabajo, con las skills y restricciones de ese repo, o en la carpeta del workspace cuando las skills viven ahí (ese líder puede mandar un líder a cada repo hijo). Implementa, puede lanzar `worker` y `scout`, y commitea en la rama de la tarea; no lanza reviewer: la revisión la lanza el padre, en dos ejes (Standards y Spec). En un solo repo es el orquestador.
-- **`worker`** (Opus): implementa algo ya decidido, en segundo plano: test primero, después código y docs; escribe los tests sin correrlos (los corre el reviewer Standards con el CI) y no consulta al advisor (ADR 0061); no commitea. Default para todo cambio no trivial. **`scout`**: solo lectura.
+- **`worker`** (Opus): implementa algo ya decidido, en segundo plano: test primero, después código y docs; escribe los tests sin correrlos (los corre el reviewer Standards con el CI) y no consulta al advisor (ADR 0061); commitea un commit por funcionalidad y no pushea (ADR 0068). Default para todo cambio no trivial. **`scout`**: solo lectura.
 - **`reasoner`**: decisiones caras de errar (arquitectura, bugs sin causa conocida, cambios difíciles de revertir).
 - **Reviewer**: dos agentes aparte (el subagente `reviewer`), en paralelo y sin editar, antes de cada PR y del merge que
   cierra un Plan L: **Standards** (reglas del repo, smells y los checks del CI) y **Spec** (contra el ticket o la spec),
@@ -56,7 +56,7 @@ flowchart LR
   P -- Continuar --> W[worker en su worktree]
   P -- Plan S --> S[Plan corto]
   P -- Plan L --> G[grilling, spec y tickets] --> WL[un líder por repo o workspace, con sus workers]
-  W --> O[El orquestador revisa y commitea]
+  W --> O[El worker commitea por funcionalidad; el orquestador revisa]
   D & S & O & WL --> R["Revisión: Standards y Spec en paralelo"] --> M["PR o merge: lo que queda de la spec va a un ADR"]
 ```
 
